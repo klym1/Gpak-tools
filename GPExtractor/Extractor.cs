@@ -9,6 +9,14 @@ using System.Threading.Tasks;
 
 namespace GPExtractor
 {
+
+    public class PictureEl
+    {
+        public int RowIndex { get; set; }
+        public int offsetX { get; set; }
+        public int Length { get; set; }
+    }
+
     public class Extractor
     {
         private readonly string _logPath;

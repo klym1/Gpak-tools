@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PaletteReader", "PaletteRea
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GPExtractor", "GPExtractor\GPExtractor.csproj", "{1DFBC20E-CEA9-4831-A923-4C651BC63E0F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PaletteTester", "PaletteTester\PaletteTester.csproj", "{4E6F3818-0A93-430B-8F15-3C035A167B0C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -25,6 +27,10 @@ Global
 		{1DFBC20E-CEA9-4831-A923-4C651BC63E0F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1DFBC20E-CEA9-4831-A923-4C651BC63E0F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1DFBC20E-CEA9-4831-A923-4C651BC63E0F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4E6F3818-0A93-430B-8F15-3C035A167B0C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4E6F3818-0A93-430B-8F15-3C035A167B0C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4E6F3818-0A93-430B-8F15-3C035A167B0C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4E6F3818-0A93-430B-8F15-3C035A167B0C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
