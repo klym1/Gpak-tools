@@ -36,7 +36,9 @@ namespace WindowsFormsTestClient
             var pixelSize = 2;
 
             var layout = extractResult.LayoutCollection.Last();
-            var imageBytes = extractResult.LayoutCollection.Last().Bytes.Skip(23).ToArray();
+
+
+            var imageBytes = layout.Bytes.Skip(30).ToArray();
             int z1 = 0;
             var bytesInBlock = 3;
 
@@ -50,9 +52,9 @@ namespace WindowsFormsTestClient
                 
                     switch (blockType)
                     {
-                        case 0: bytesInBlock = 11; break;
+                        case 0: bytesInBlock = 1; break;
                         case 1: bytesInBlock = 3; break;
-                        case 0xd0: bytesInBlock = 16; break;
+                        //case 0xd0: bytesInBlock = 16; break;
                         case 2: bytesInBlock = 5; break;
                         case 3: bytesInBlock = 7; break;
                         case 4: bytesInBlock = 9; break;
@@ -186,7 +188,7 @@ namespace WindowsFormsTestClient
                         new Block
                         {
                             offsetx = imageBytes[i + 3],
-                            length = 1, //todo resolve
+                            length = 1
                         }
                     })
                     {
@@ -234,9 +236,18 @@ namespace WindowsFormsTestClient
                 z1++;
             }
 
+            RenderImage(newBitmap2, piactureElements, pixelSize);
+
+            pictureBox1.Image = getBitmap(@"..\..\..\palette\0\OLD.PAL");
+            pictureBox2.Image = newBitmap2;
+        }
+
+        private static void RenderImage(Bitmap newBitmap2, Collection<MultiPictureEl> piactureElements, int pixelSize)
+        {
             using (var graphics = Graphics.FromImage(newBitmap2))
             {
-                graphics.FillRectangle(new SolidBrush(Color.SpringGreen), new Rectangle(0,0,newBitmap2.Width,newBitmap2.Height));
+                graphics.FillRectangle(new SolidBrush(Color.SpringGreen),
+                    new Rectangle(0, 0, newBitmap2.Width, newBitmap2.Height));
             }
 
             foreach (var it in piactureElements)
@@ -246,22 +257,20 @@ namespace WindowsFormsTestClient
                 var brush = new SolidBrush(color);
 
                 var offsetx = 0;
-                
+
                 foreach (var block in it.Collection)
                 {
                     offsetx += block.offsetx;
-                    
+
                     using (var graphics = Graphics.FromImage(newBitmap2))
                     {
-                        graphics.FillRectangle(brush, new Rectangle(new Point(offsetx * pixelSize, it.RowIndex * pixelSize), new Size(block.length * pixelSize, pixelSize)));
+                        graphics.FillRectangle(brush,
+                            new Rectangle(new Point(offsetx*pixelSize, it.RowIndex*pixelSize),
+                                new Size(block.length*pixelSize, pixelSize)));
                     }
                     offsetx += block.length;
-
                 }
             }
-
-            pictureBox1.Image = getBitmap(@"..\..\..\palette\0\OLD.PAL");
-            pictureBox2.Image = newBitmap2;
         }
 
         private Bitmap getBitmap(string path)

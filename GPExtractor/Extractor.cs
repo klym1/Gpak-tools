@@ -16,6 +16,7 @@ namespace GPExtractor
         public int length { get; set; }
     }
 
+    [DebuggerDisplay("{RowIndex} {Collection.Count}")]
     public class MultiPictureEl
     {
         public int RowIndex { get; set; }
@@ -31,14 +32,7 @@ namespace GPExtractor
             Collection = collection;
         }
     }
-
-    public class PictureEl
-    {
-        public int RowIndex { get; set; }
-        public int offsetX { get; set; }
-        public int Length { get; set; }
-    }
-
+    
     public class Extractor
     {
         private readonly string _logPath;
@@ -76,7 +70,7 @@ namespace GPExtractor
             {
                 if (layoutInfo.Bytes[i] == 17)
                 {
-                    Debug.WriteLine(i + " - " + layoutInfo.Bytes[i - 1] + " :: " + layoutInfo.Bytes[i + 1]);
+                 //   Debug.WriteLine(i + " - " + layoutInfo.Bytes[i - 1] + " :: " + layoutInfo.Bytes[i + 1]);
                 }
             }
 
@@ -109,7 +103,7 @@ namespace GPExtractor
             {
                 var offset = BitConverter.ToUInt32(new[] { bytes[z], bytes[z + 1], bytes[z + 2], bytes[z+3] }, 0);
 
-                var str = String.Format("{0:X2} {1:X2} {2:X2} {3:X2} |", bytes[z], bytes[z + 1], bytes[z + 2],
+                var str = String.Format("{0:X2} {1:X2} {2:X2} {3:X2} |\n", bytes[z], bytes[z + 1], bytes[z + 2],
                     bytes[z + 3]);
 
 
