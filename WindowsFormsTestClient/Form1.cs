@@ -36,7 +36,7 @@ namespace WindowsFormsTestClient
             var pixelSize = 2;
 
             var layout = extractResult.LayoutCollection.Last();
-            var imageBytes = extractResult.LayoutCollection.Last().Bytes.Skip(22).ToArray();
+            var imageBytes = extractResult.LayoutCollection.Last().Bytes.Skip(23).ToArray();
             int z1 = 0;
             var bytesInBlock = 3;
 
@@ -186,7 +186,7 @@ namespace WindowsFormsTestClient
                         new Block
                         {
                             offsetx = imageBytes[i + 3],
-                            length = 10,
+                            length = 1, //todo resolve
                         }
                     })
                     {

@@ -50,6 +50,8 @@ namespace GPExtractor
 
         private ImageLayoutInfo readImageLayoutInfo(byte[] bytes, uint offset)
         {
+            CheckItem(ref bytes, offset);
+
             var layoutInfo = new ImageLayoutInfo
             {
                 newImageOffset = BitConverter.ToInt32(new[] { bytes[offset], bytes[offset + 1], bytes[offset + 2], bytes[offset + 3] }, 0),
@@ -60,7 +62,7 @@ namespace GPExtractor
                 NumberOfRows = BitConverter.ToInt16(new[] { bytes[offset + 21], bytes[offset + 22] }, 0),
                 ByteOffset = offset,
             };
-
+            
             if (layoutInfo.newImageOffset > -1)
             {
                 layoutInfo.Bytes = bytes.Skip((int) offset).Take(layoutInfo.newImageOffset - 1).ToArray();
@@ -69,7 +71,15 @@ namespace GPExtractor
             {
                 layoutInfo.Bytes = bytes.Skip((int) offset).ToArray();
             }
-            
+
+            for (int i = 0; i < layoutInfo.Bytes.Length; i += 1)
+            {
+                if (layoutInfo.Bytes[i] == 17)
+                {
+                    Debug.WriteLine(i + " - " + layoutInfo.Bytes[i - 1] + " :: " + layoutInfo.Bytes[i + 1]);
+                }
+            }
+
             return layoutInfo;
         }
 
@@ -113,10 +123,8 @@ namespace GPExtractor
 
                 if (layoutInfo.newImageOffset > -1)
                 {
-                    var newimageOffset = offset + layoutInfo.newImageOffset;
                     var newImageLayoutInfo = readImageLayoutInfo(bytes, (uint)(offset + layoutInfo.newImageOffset));
 
-                    CheckItem(ref bytes, (uint)newimageOffset);
                     layoutInfoCollection.Add(newImageLayoutInfo);
                 }
 
@@ -125,9 +133,7 @@ namespace GPExtractor
 //                    str += String.Format("{0:X2} ", bytes[offset + k]);
 //                }
 //                str += "\n";
-
-                CheckItem(ref bytes, offset);
-
+                
             Debug.Write(str);
                 File.AppendAllText(_logPath, str);
                 z += 4;
