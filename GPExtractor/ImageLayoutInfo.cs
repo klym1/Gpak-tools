@@ -9,12 +9,9 @@ namespace GPExtractor
         public int Width { get; set; }
         public int Height { get; set; }
         public short NumberOfRows { get; set; }
-
-        public Collection<RowInfo> RowInfos { get; set; }
-
-        public ImageLayoutInfo()
-        {
-            RowInfos = new Collection<RowInfo>();
-        }
+        public uint ByteOffset { get; set; }
+        
+        public int newImageOffset { get; set; }
+        public byte[] Bytes { get; set; }
     }
 }

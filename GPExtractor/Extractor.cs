@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
@@ -9,6 +10,27 @@ using System.Threading.Tasks;
 
 namespace GPExtractor
 {
+    public struct Block
+    {
+        public int offsetx { get; set; }
+        public int length { get; set; }
+    }
+
+    public class MultiPictureEl
+    {
+        public int RowIndex { get; set; }
+        public Collection<Block> Collection { get; set; }
+
+        public MultiPictureEl()
+        {
+            Collection = new Collection<Block>();
+        }
+
+        public MultiPictureEl(Collection<Block> collection)
+        {
+            Collection = collection;
+        }
+    }
 
     public class PictureEl
     {
@@ -26,10 +48,34 @@ namespace GPExtractor
             _logPath = logPath;
         }
 
+        private ImageLayoutInfo readImageLayoutInfo(byte[] bytes, uint offset)
+        {
+            var layoutInfo = new ImageLayoutInfo
+            {
+                newImageOffset = BitConverter.ToInt32(new[] { bytes[offset], bytes[offset + 1], bytes[offset + 2], bytes[offset + 3] }, 0),
+                offsetY = BitConverter.ToInt16(new[] { bytes[offset + 4], bytes[offset + 5] }, 0),
+                offsetX = BitConverter.ToInt16(new[] { bytes[offset + 6], bytes[offset + 7] }, 0),
+                Width = BitConverter.ToInt16(new[] { bytes[offset + 8], bytes[offset + 9] }, 0),
+                Height = BitConverter.ToInt16(new[] { bytes[offset + 10], bytes[offset + 11] }, 0),
+                NumberOfRows = BitConverter.ToInt16(new[] { bytes[offset + 21], bytes[offset + 22] }, 0),
+                ByteOffset = offset,
+            };
+
+            if (layoutInfo.newImageOffset > -1)
+            {
+                layoutInfo.Bytes = bytes.Skip((int) offset).Take(layoutInfo.newImageOffset - 1).ToArray();
+            }
+            else
+            {
+                layoutInfo.Bytes = bytes.Skip((int) offset).ToArray();
+            }
+            
+            return layoutInfo;
+        }
+
         public ExtractorResult ExtractFromGp(string path)
         {
             var fullPath = Path.GetFullPath(path);
-            var fileName = Path.GetFileName(path);
 
             if (!File.Exists(fullPath))
             {
@@ -41,7 +87,6 @@ namespace GPExtractor
             CheckSignature(bytes);
 
             var numberOfFiles = GetNumberOfFiles(ref bytes);
-            var numberOfBytesForPalette = GetNumberOfBytesForColorPallete(ref bytes);
             var layoutInfoCollection = new Collection<ImageLayoutInfo>();
 
             int z = 0xE;
@@ -53,31 +98,12 @@ namespace GPExtractor
             for (int i = 0; i < numberOfFiles; i++)
             {
                 var offset = BitConverter.ToUInt32(new[] { bytes[z], bytes[z + 1], bytes[z + 2], bytes[z+3] }, 0);
-                var str = String.Format("{0:X2} {1:X2} {2:X2} {3:X2} | {4:D5} | {5:D5}|", bytes[z], bytes[z + 1], bytes[z + 2],
-                    bytes[z + 3], (i==0 ? 0 : offset - prevoffset), BitConverter.ToInt16(new byte[]{bytes[offset], bytes[offset+1]},0));
-                lastOffset = offset;
 
-                var layoutInfo = new ImageLayoutInfo
-                {
-                    offsetY = BitConverter.ToInt16(new []{bytes[offset+4], bytes[offset+5]},0),
-                    offsetX = BitConverter.ToInt16(new []{bytes[offset+6], bytes[offset+7]},0),
-                    Width = BitConverter.ToInt16(new []{bytes[offset+8], bytes[offset+9]},0),
-                    Height = BitConverter.ToInt16(new []{bytes[offset+10], bytes[offset+11]},0),
-                    NumberOfRows = BitConverter.ToInt16(new []{bytes[offset+21], bytes[offset+22]},0)
-                };
+                var str = String.Format("{0:X2} {1:X2} {2:X2} {3:X2} |", bytes[z], bytes[z + 1], bytes[z + 2],
+                    bytes[z + 3]);
 
-                for (uint j = offset + 23; j < offset + 23 + 5*layoutInfo.NumberOfRows; j+=5)
-                {
-                    layoutInfo.RowInfos.Add(new RowInfo
-                    {
-                        A = bytes[j],
-                        B = bytes[j+1],
-                        C = bytes[j+2],
-                        D = bytes[j+3],
-                        E = bytes[j+4],
-                    });
-                }
 
+                var layoutInfo = readImageLayoutInfo(bytes, offset);
                 layoutInfoCollection.Add(layoutInfo);
 
                 if (i == 0)
@@ -85,29 +111,34 @@ namespace GPExtractor
                     offset_ = offset;
                 }
 
-                for (var k = 0; k < 1000; k++)
+                if (layoutInfo.newImageOffset > -1)
                 {
-                    str += String.Format("{0:X2} ", bytes[offset + k]);
+                    var newimageOffset = offset + layoutInfo.newImageOffset;
+                    var newImageLayoutInfo = readImageLayoutInfo(bytes, (uint)(offset + layoutInfo.newImageOffset));
+
+                    CheckItem(ref bytes, (uint)newimageOffset);
+                    layoutInfoCollection.Add(newImageLayoutInfo);
                 }
-                str += "\n";
+
+//                for (var k = 0; k < 1000; k++)
+//                {
+//                    str += String.Format("{0:X2} ", bytes[offset + k]);
+//                }
+//                str += "\n";
 
                 CheckItem(ref bytes, offset);
 
-            Console.Write(str);
+            Debug.Write(str);
                 File.AppendAllText(_logPath, str);
                 z += 4;
-                prevoffset = offset;
                 z_ = z;
 
             }
 
-            var lastimageBytes = bytes.Skip((int) lastOffset).ToArray();
+            //var firstimageBytes = bytes.Skip((int)layoutInfoCollection.First().ByteOffset).ToArray();
 
             var cTable = new Collection<byte>();
 
-            //Console.WriteLine("______________________");
-            //File.AppendAllText(_logPath, "______________________\n");
-            var output = string.Empty;
             for (int i = z_; i < offset_; i++)
             {
                 cTable.Add(bytes[i]);    
@@ -118,7 +149,7 @@ namespace GPExtractor
             return new ExtractorResult
             {
                 PaletteBytes = cTable.ToArray(),
-                ImageBytes = lastimageBytes,
+                //ImageBytes = firstimageBytes,
                 LayoutCollection = layoutInfoCollection
             };
         }
