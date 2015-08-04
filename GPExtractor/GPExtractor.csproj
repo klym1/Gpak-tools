@@ -39,9 +39,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Block.cs" />
     <Compile Include="Extractor.cs" />
     <Compile Include="ExtractorResult.cs" />
+    <Compile Include="Helper.cs" />
     <Compile Include="ImageLayoutInfo.cs" />
+    <Compile Include="MultiPictureEl.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RowInfo.cs" />
   </ItemGroup>

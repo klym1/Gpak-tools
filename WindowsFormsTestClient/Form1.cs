@@ -24,19 +24,16 @@ namespace WindowsFormsTestClient
         private void Do()
         {
             var logPath = @"..\..\..\extractor_out.txt";
+            File.Create(logPath).Dispose();
 
             var extractor = new Extractor(logPath);
 
-            File.Create(logPath).Dispose();
-
             var extractResult = extractor.ExtractFromGp(@"..\..\..\gp\test15.gp");
-            
-            var newBitmap2 = new Bitmap(700, 700);
-            
-            var pixelSize = 2;
+           
 
             var layout = extractResult.LayoutCollection.Last();
 
+            Helper.DumpArray(layout.Bytes);
 
             var imageBytes = layout.Bytes.Skip(30).ToArray();
             int z1 = 0;
@@ -235,15 +232,16 @@ namespace WindowsFormsTestClient
 
                 z1++;
             }
-
-            RenderImage(newBitmap2, piactureElements, pixelSize);
-
+            
             pictureBox1.Image = getBitmap(@"..\..\..\palette\0\OLD.PAL");
-            pictureBox2.Image = newBitmap2;
+            pictureBox2.Image = RenderImage(piactureElements);
         }
 
-        private static void RenderImage(Bitmap newBitmap2, Collection<MultiPictureEl> piactureElements, int pixelSize)
+        private static Bitmap RenderImage(Collection<MultiPictureEl> piactureElements)
         {
+            var newBitmap2 = new Bitmap(700, 700);
+            var pixelSize = 2;
+
             using (var graphics = Graphics.FromImage(newBitmap2))
             {
                 graphics.FillRectangle(new SolidBrush(Color.SpringGreen),
@@ -271,6 +269,8 @@ namespace WindowsFormsTestClient
                     offsetx += block.length;
                 }
             }
+
+            return newBitmap2;
         }
 
         private Bitmap getBitmap(string path)

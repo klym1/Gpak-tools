@@ -10,29 +10,6 @@ using System.Threading.Tasks;
 
 namespace GPExtractor
 {
-    public struct Block
-    {
-        public int offsetx { get; set; }
-        public int length { get; set; }
-    }
-
-    [DebuggerDisplay("{RowIndex} {Collection.Count}")]
-    public class MultiPictureEl
-    {
-        public int RowIndex { get; set; }
-        public Collection<Block> Collection { get; set; }
-
-        public MultiPictureEl()
-        {
-            Collection = new Collection<Block>();
-        }
-
-        public MultiPictureEl(Collection<Block> collection)
-        {
-            Collection = collection;
-        }
-    }
-    
     public class Extractor
     {
         private readonly string _logPath;
@@ -121,12 +98,6 @@ namespace GPExtractor
 
                     layoutInfoCollection.Add(newImageLayoutInfo);
                 }
-
-//                for (var k = 0; k < 1000; k++)
-//                {
-//                    str += String.Format("{0:X2} ", bytes[offset + k]);
-//                }
-//                str += "\n";
                 
             Debug.Write(str);
                 File.AppendAllText(_logPath, str);
