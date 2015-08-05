@@ -7,11 +7,11 @@ using System.Linq;
 using System.Windows.Forms;
 using System.Xml;
 using GPExtractor;
+using ImageRenderer;
+using Types;
 
 namespace WindowsFormsTestClient
 {
-
-
     public partial class Form1 : Form
     {
         public Form1()
@@ -30,7 +30,6 @@ namespace WindowsFormsTestClient
 
             var extractResult = extractor.ExtractFromGp(@"..\..\..\gp\test15.gp");
            
-
             var layout = extractResult.LayoutCollection.Last();
 
             Helper.DumpArray(layout.Bytes);
@@ -232,85 +231,9 @@ namespace WindowsFormsTestClient
 
                 z1++;
             }
-            
-            pictureBox1.Image = getBitmap(@"..\..\..\palette\0\OLD.PAL");
-            pictureBox2.Image = RenderImage(piactureElements);
-        }
 
-        private static Bitmap RenderImage(Collection<MultiPictureEl> piactureElements)
-        {
-            var newBitmap2 = new Bitmap(700, 700);
-            var pixelSize = 2;
-
-            using (var graphics = Graphics.FromImage(newBitmap2))
-            {
-                graphics.FillRectangle(new SolidBrush(Color.SpringGreen),
-                    new Rectangle(0, 0, newBitmap2.Width, newBitmap2.Height));
-            }
-
-            foreach (var it in piactureElements)
-            {
-                var color = Color.Black;
-
-                var brush = new SolidBrush(color);
-
-                var offsetx = 0;
-
-                foreach (var block in it.Collection)
-                {
-                    offsetx += block.offsetx;
-
-                    using (var graphics = Graphics.FromImage(newBitmap2))
-                    {
-                        graphics.FillRectangle(brush,
-                            new Rectangle(new Point(offsetx*pixelSize, it.RowIndex*pixelSize),
-                                new Size(block.length*pixelSize, pixelSize)));
-                    }
-                    offsetx += block.length;
-                }
-            }
-
-            return newBitmap2;
-        }
-
-        private Bitmap getBitmap(string path)
-        {
-            var paletteBytes = File.ReadAllBytes(path);
-
-            var newBitmap = new Bitmap(500, 500);
-
-            var z = 0;
-            var y = 5;
-
-            var colorCollection = new Collection<Color>();
-
-            for (int i = 0; i < paletteBytes.Length - 2; i += 3)
-            {
-                colorCollection.Add(Color.FromArgb(255, paletteBytes[i], paletteBytes[i + 1], paletteBytes[i + 2]));
-            }
-
-            var pixelSize = 10;
-
-            foreach (var color in colorCollection)
-            {
-                var brush = new SolidBrush(color);
-
-                using (var graphics = Graphics.FromImage(newBitmap))
-                {
-                    graphics.FillRectangle(brush, new Rectangle(new Point(z, y), new Size(pixelSize, pixelSize)));
-                }
-
-                z += pixelSize;
-
-                if (z >= 100 * pixelSize)
-                {
-                    z = 0;
-                    y += pixelSize;
-                }
-
-            }
-
-            return newBitmap;
+            IRenderer renderer = new Renderer();
+            pictureBox2.Image = renderer.RenderBitmap(piactureElements);
         }
     }
 }

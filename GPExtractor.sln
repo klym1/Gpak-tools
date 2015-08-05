@@ -1,6 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
+# Visual Studio 14
+VisualStudioVersion = 14.0.23107.0
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WindowsFormsTestClient", "WindowsFormsTestClient\WindowsFormsTestClient.csproj", "{D029BD07-D488-4B5C-B1A6-19FAE7908909}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PaletteReader", "PaletteReader\PaletteReader.csproj", "{2E004177-980E-47E2-915D-D1D17D58BA4E}"
@@ -8,6 +10,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GPExtractor", "GPExtractor\GPExtractor.csproj", "{1DFBC20E-CEA9-4831-A923-4C651BC63E0F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PaletteTester", "PaletteTester\PaletteTester.csproj", "{4E6F3818-0A93-430B-8F15-3C035A167B0C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImageRenderer", "ImageRenderer\ImageRenderer.csproj", "{CF569618-3B66-48C0-B040-29BD57203C69}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Types", "Types\Types.csproj", "{A1778EDF-7B59-41C6-A961-A00F09356C44}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -31,6 +37,14 @@ Global
 		{4E6F3818-0A93-430B-8F15-3C035A167B0C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4E6F3818-0A93-430B-8F15-3C035A167B0C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4E6F3818-0A93-430B-8F15-3C035A167B0C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CF569618-3B66-48C0-B040-29BD57203C69}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CF569618-3B66-48C0-B040-29BD57203C69}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CF569618-3B66-48C0-B040-29BD57203C69}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CF569618-3B66-48C0-B040-29BD57203C69}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A1778EDF-7B59-41C6-A961-A00F09356C44}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1778EDF-7B59-41C6-A961-A00F09356C44}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1778EDF-7B59-41C6-A961-A00F09356C44}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1778EDF-7B59-41C6-A961-A00F09356C44}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
