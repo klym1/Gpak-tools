@@ -7,19 +7,26 @@ namespace GPExtractor
     {
         [ByteLayout(offset: 6)]
         public Int16 offsetX { get; set; }
+
         [ByteLayout(offset: 4)]
         public Int16 offsetY { get; set; }
+        
         [ByteLayout(offset: 8)]
         public Int16 Width { get; set; }
+        
         [ByteLayout(offset: 10)]
         public Int16 Height { get; set; }
+        
         [ByteLayout(offset: 21)]
         public Int16 NumberOfRows { get; set; }
-        //public uint ByteOffset { get; set; }
+        
         [ByteLayout(offset: 0)]
         public Int32 newImageOffset { get; set; }
+        
         [ByteLayout(offset: 12)]
         public Int32 EndOfHeader { get; set; }
+        
+        public byte[] HeaderBytes { get; set; }
         public byte[] Bytes { get; set; }
 
         public bool Equals(ImageLayoutInfo other)

@@ -14,6 +14,7 @@ namespace GPExtractor
     {
         private readonly string _logPath;
         private readonly IBinaryMapper _mapper;
+        private int ImageHeaderSize = 22;
 
         public Extractor(string logPath, IBinaryMapper mapper)
         {
@@ -23,18 +24,25 @@ namespace GPExtractor
 
         private ImageLayoutInfo readImageLayoutInfo(byte[] bytes, uint offset)
         {
-           
             var layoutInfo = _mapper.GetMappedObject<ImageLayoutInfo>(bytes, offset);
 
             CheckItem(layoutInfo);
-            
+
+            layoutInfo.HeaderBytes = bytes.Skip((int)offset).Take(ImageHeaderSize).ToArray();
+
             if (layoutInfo.newImageOffset > -1)
             {
-                layoutInfo.Bytes = bytes.Skip((int) offset).Take(layoutInfo.newImageOffset - 1).ToArray();
+                layoutInfo.Bytes = bytes
+                    .Skip((int) offset)
+                    .Skip(ImageHeaderSize)
+                    .Take(layoutInfo.newImageOffset - 1).ToArray();
             }
             else
             {
-                layoutInfo.Bytes = bytes.Skip((int) offset).ToArray();
+                layoutInfo.Bytes = bytes
+                    .Skip((int) offset)
+                    .Skip(ImageHeaderSize)
+                    .ToArray();
             }
 
             return layoutInfo;
@@ -94,7 +102,6 @@ namespace GPExtractor
             return new ExtractorResult
             {
                 PaletteBytes = cTable.ToArray(),
-                //ImageBytes = firstimageBytes,
                 LayoutCollection = layoutInfoCollection
             };
         }

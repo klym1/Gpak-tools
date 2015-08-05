@@ -28,11 +28,11 @@ namespace WindowsFormsTestClient
 
             var extractor = new Extractor(logPath, mapper);
 
-            var extractResult = extractor.ExtractFromGp(@"..\..\..\gp\test.gp");
+            var extractResult = extractor.ExtractFromGp(@"..\..\..\gp\test15.gp");
            
             var layout = extractResult.LayoutCollection.Last();
 
-            var imageBytes = layout.Bytes.Skip(22).ToArray();
+            var imageBytes = layout.Bytes;
             
             var piactureElements = new Collection<MultiPictureEl>();
 
@@ -96,6 +96,8 @@ namespace WindowsFormsTestClient
                 i += bytesInBlock;
         
             }
+
+            Debug.WriteLine("Offset: "  + i);
 
             IRenderer renderer = new Renderer();
             pictureBox2.Image = renderer.RenderBitmap(piactureElements);
