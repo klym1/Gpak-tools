@@ -13,26 +13,20 @@ namespace GPExtractor
     public class Extractor
     {
         private readonly string _logPath;
+        private readonly IBinaryMapper _mapper;
 
-        public Extractor(string logPath)
+        public Extractor(string logPath, IBinaryMapper mapper)
         {
             _logPath = logPath;
+            _mapper = mapper;
         }
 
         private ImageLayoutInfo readImageLayoutInfo(byte[] bytes, uint offset)
         {
-            CheckItem(ref bytes, offset);
+           
+            var layoutInfo = _mapper.GetMappedObject<ImageLayoutInfo>(bytes, offset);
 
-            var layoutInfo = new ImageLayoutInfo
-            {
-                newImageOffset = BitConverter.ToInt32(new[] { bytes[offset], bytes[offset + 1], bytes[offset + 2], bytes[offset + 3] }, 0),
-                offsetY = BitConverter.ToInt16(new[] { bytes[offset + 4], bytes[offset + 5] }, 0),
-                offsetX = BitConverter.ToInt16(new[] { bytes[offset + 6], bytes[offset + 7] }, 0),
-                Width = BitConverter.ToInt16(new[] { bytes[offset + 8], bytes[offset + 9] }, 0),
-                Height = BitConverter.ToInt16(new[] { bytes[offset + 10], bytes[offset + 11] }, 0),
-                NumberOfRows = BitConverter.ToInt16(new[] { bytes[offset + 21], bytes[offset + 22] }, 0),
-                ByteOffset = offset,
-            };
+            CheckItem(layoutInfo);
             
             if (layoutInfo.newImageOffset > -1)
             {
@@ -41,14 +35,6 @@ namespace GPExtractor
             else
             {
                 layoutInfo.Bytes = bytes.Skip((int) offset).ToArray();
-            }
-
-            for (int i = 0; i < layoutInfo.Bytes.Length; i += 1)
-            {
-                if (layoutInfo.Bytes[i] == 17)
-                {
-                 //   Debug.WriteLine(i + " - " + layoutInfo.Bytes[i - 1] + " :: " + layoutInfo.Bytes[i + 1]);
-                }
             }
 
             return layoutInfo;
@@ -71,19 +57,12 @@ namespace GPExtractor
             var layoutInfoCollection = new Collection<ImageLayoutInfo>();
 
             int z = 0xE;
-            
-            uint prevoffset = 0;
             int z_ = 0;
             uint offset_ = 0;
-            uint lastOffset = 0;
             for (int i = 0; i < numberOfFiles; i++)
             {
                 var offset = BitConverter.ToUInt32(new[] { bytes[z], bytes[z + 1], bytes[z + 2], bytes[z+3] }, 0);
-
-                var str = String.Format("{0:X2} {1:X2} {2:X2} {3:X2} |\n", bytes[z], bytes[z + 1], bytes[z + 2],
-                    bytes[z + 3]);
-
-
+                
                 var layoutInfo = readImageLayoutInfo(bytes, offset);
                 layoutInfoCollection.Add(layoutInfo);
 
@@ -98,15 +77,10 @@ namespace GPExtractor
 
                     layoutInfoCollection.Add(newImageLayoutInfo);
                 }
-                
-            Debug.Write(str);
-                File.AppendAllText(_logPath, str);
+          
                 z += 4;
                 z_ = z;
-
             }
-
-            //var firstimageBytes = bytes.Skip((int)layoutInfoCollection.First().ByteOffset).ToArray();
 
             var cTable = new Collection<byte>();
 
@@ -125,17 +99,11 @@ namespace GPExtractor
             };
         }
 
-        private void CheckItem(ref byte[] bytes, uint offset)
+        private void CheckItem(ImageLayoutInfo layoutInfo)
         {
-            var h = true
-                    && bytes[offset + 12] == 0xff
-                    && bytes[offset + 13] == 0xff
-                    && bytes[offset + 14] == 0xff
-                    && bytes[offset + 15] == 0xff;
-
-            if (!h)
+            if (layoutInfo.EndOfHeader != -1)
             {
-                var j = 6;
+                throw new Exception("EndOfHeader should be FF FF FF FF");
             }
         }
 

@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImageRenderer", "ImageRende
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Types", "Types\Types.csproj", "{A1778EDF-7B59-41C6-A961-A00F09356C44}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTests", "UnitTests\UnitTests.csproj", "{F095E5DE-E3CE-4A03-BFA3-D23AC00A6E37}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,6 +47,10 @@ Global
 		{A1778EDF-7B59-41C6-A961-A00F09356C44}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A1778EDF-7B59-41C6-A961-A00F09356C44}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A1778EDF-7B59-41C6-A961-A00F09356C44}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F095E5DE-E3CE-4A03-BFA3-D23AC00A6E37}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F095E5DE-E3CE-4A03-BFA3-D23AC00A6E37}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F095E5DE-E3CE-4A03-BFA3-D23AC00A6E37}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F095E5DE-E3CE-4A03-BFA3-D23AC00A6E37}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

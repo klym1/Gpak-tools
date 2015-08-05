@@ -26,13 +26,15 @@ namespace WindowsFormsTestClient
             var logPath = @"..\..\..\extractor_out.txt";
             File.Create(logPath).Dispose();
 
-            var extractor = new Extractor(logPath);
+            IBinaryMapper mapper = new BinaryAutoMapper();
+
+            var extractor = new Extractor(logPath, mapper);
 
             var extractResult = extractor.ExtractFromGp(@"..\..\..\gp\test15.gp");
            
             var layout = extractResult.LayoutCollection.Last();
 
-            Helper.DumpArray(layout.Bytes);
+            //Helper.DumpArray(layout.Bytes);
 
             var imageBytes = layout.Bytes.Skip(30).ToArray();
             int z1 = 0;
@@ -83,7 +85,7 @@ namespace WindowsFormsTestClient
                        imageBytes[i + 2]
 
                        );
-
+                       
                     new MultiPictureEl(new Collection<Block> {new Block{
                         offsetx = imageBytes[i + 1],
                         length = imageBytes[i + 2],
