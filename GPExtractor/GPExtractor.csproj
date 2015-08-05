@@ -39,12 +39,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ByteLayoutAttribute.cs" />
     <Compile Include="ByteMapper.cs" />
     <Compile Include="Extractor.cs" />
     <Compile Include="ExtractorResult.cs" />
     <Compile Include="Helper.cs" />
-    <Compile Include="ImageLayoutInfo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

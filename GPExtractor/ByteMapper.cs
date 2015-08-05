@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using Types;
 
 namespace GPExtractor
 {
@@ -74,6 +75,10 @@ namespace GPExtractor
                         } else if (proprtyType == typeof (Int32))
                         {
                             value = binaryReader.ReadInt32();
+                        }
+                        else
+                        {
+                            throw new Exception("Unsupported type");
                         }
 
                         propertyInfo.SetValue(emptyObject, value);

@@ -41,6 +41,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Block.cs" />
+    <Compile Include="ByteLayoutAttribute.cs" />
+    <Compile Include="ImageLayoutInfo.cs" />
     <Compile Include="MultiPictureEl.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

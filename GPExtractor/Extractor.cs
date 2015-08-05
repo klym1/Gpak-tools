@@ -7,6 +7,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using Types;
 
 namespace GPExtractor
 {
@@ -22,7 +23,7 @@ namespace GPExtractor
             _mapper = mapper;
         }
 
-        private ImageLayoutInfo readImageLayoutInfo(byte[] bytes, uint offset)
+        private ImageLayoutInfo ReadImageLayoutInfo(byte[] bytes, uint offset)
         {
             var layoutInfo = _mapper.GetMappedObject<ImageLayoutInfo>(bytes, offset);
 
@@ -71,7 +72,7 @@ namespace GPExtractor
             {
                 var offset = BitConverter.ToUInt32(new[] { bytes[z], bytes[z + 1], bytes[z + 2], bytes[z+3] }, 0);
                 
-                var layoutInfo = readImageLayoutInfo(bytes, offset);
+                var layoutInfo = ReadImageLayoutInfo(bytes, offset);
                 layoutInfoCollection.Add(layoutInfo);
 
                 if (i == 0)
@@ -81,7 +82,7 @@ namespace GPExtractor
 
                 if (layoutInfo.newImageOffset > -1)
                 {
-                    var newImageLayoutInfo = readImageLayoutInfo(bytes, (uint)(offset + layoutInfo.newImageOffset));
+                    var newImageLayoutInfo = ReadImageLayoutInfo(bytes, (uint)(offset + layoutInfo.newImageOffset));
 
                     layoutInfoCollection.Add(newImageLayoutInfo);
                 }

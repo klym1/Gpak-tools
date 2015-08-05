@@ -92,7 +92,6 @@ namespace WindowsFormsTestClient
                     RowIndex = rowIndex++
                 });
                 
-
                 i += bytesInBlock;
         
             }
@@ -100,7 +99,7 @@ namespace WindowsFormsTestClient
             Debug.WriteLine("Offset: "  + i);
 
             IRenderer renderer = new Renderer();
-            pictureBox2.Image = renderer.RenderBitmap(piactureElements);
+            pictureBox2.Image = renderer.RenderBitmap(piactureElements, layout);
         }
     }
 }
