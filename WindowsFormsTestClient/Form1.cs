@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Windows.Forms;
 using GPExtractor;
 using ImageRenderer;
@@ -29,11 +31,40 @@ namespace WindowsFormsTestClient
             var extractor = new Extractor(logPath, mapper);
 
             var extractResult = extractor.ExtractFromGp(@"..\..\..\gp\test15.gp");
-           
-            var layout = extractResult.LayoutCollection.Last();
 
-            var imageBytes = layout.Bytes;
-            
+            IRenderer renderer = new Renderer();
+
+            var bitMap = new Bitmap(600, 600);
+            SetupCanvas(bitMap);
+
+            var colorCollection = new Collection<Color> {Color.Pink, Color.Blue, Color.Red, Color.YellowGreen, Color.Gainsboro};
+
+            var i = 0;
+            foreach (var layout in extractResult.LayoutCollection.Take(5))
+            {
+                var tuple = MultiPictureEls(layout.Bytes);
+                Debug.WriteLine("Offset: " + tuple.Item2);
+
+                renderer.RenderBitmap(bitMap, tuple.Item1, layout, colorCollection[i]);
+
+                i++;
+            }
+
+
+            pictureBox2.Image = bitMap;
+        }
+
+        private static void SetupCanvas(Bitmap bitMap)
+        {
+            using (var graphics = Graphics.FromImage(bitMap))
+            {
+                graphics.FillRectangle(new SolidBrush(Color.SpringGreen),
+                    new Rectangle(0, 0, bitMap.Width, bitMap.Height));
+            }
+        }
+
+        private static Tuple<Collection<MultiPictureEl>,int> MultiPictureEls(byte[] imageBytes)
+        {
             var piactureElements = new Collection<MultiPictureEl>();
 
             var rowIndex = 0;
@@ -42,7 +73,7 @@ namespace WindowsFormsTestClient
             while (!(imageBytes[i] == 0xCD && imageBytes[i + 1] == 0xFF))
             {
                 int blockType = imageBytes[i];
-                
+
                 if (blockType == 0xE1) // magic number. 1-byte coded block. Investigate other similar cases
                 {
                     //E1  4B  E1  C7  => 1 27 20 1 23 28
@@ -51,11 +82,14 @@ namespace WindowsFormsTestClient
                     var a = (nextByte >> 4) | (1 << 4);
                     var b = (nextByte & 0xf) | (1 << 4);
 
-                    piactureElements.Add(new MultiPictureEl(new Collection<Block>{new Block
+                    piactureElements.Add(new MultiPictureEl(new Collection<Block>
                     {
-                        length = a,
-                        offsetx = b
-                    }})
+                        new Block
+                        {
+                            length = a,
+                            offsetx = b
+                        }
+                    })
                     {
                         RowIndex = rowIndex++
                     });
@@ -71,8 +105,8 @@ namespace WindowsFormsTestClient
                 }
 
                 //ordinary processing
-                var bytesInBlock = blockType * 2 + 1;
-                
+                var bytesInBlock = blockType*2 + 1;
+
                 Debug.Write(string.Format("{0:d3}. ", rowIndex));
                 Helper.DumpArray(imageBytes, i, bytesInBlock);
 
@@ -91,15 +125,11 @@ namespace WindowsFormsTestClient
                 {
                     RowIndex = rowIndex++
                 });
-                
+
                 i += bytesInBlock;
-        
             }
 
-            Debug.WriteLine("Offset: "  + i);
-
-            IRenderer renderer = new Renderer();
-            pictureBox2.Image = renderer.RenderBitmap(piactureElements, layout);
+            return Tuple.Create(piactureElements, i);
         }
     }
 }
