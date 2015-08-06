@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using FluentAssertions.Common;
 using GPExtractor;
 using NUnit.Framework;
+using Types;
 
 namespace UnitTests
 {

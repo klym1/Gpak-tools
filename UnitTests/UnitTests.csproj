@@ -63,6 +63,10 @@
       <Project>{1dfbc20e-cea9-4831-a923-4c651bc63e0f}</Project>
       <Name>GPExtractor</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Types\Types.csproj">
+      <Project>{A1778EDF-7B59-41C6-A961-A00F09356C44}</Project>
+      <Name>Types</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
