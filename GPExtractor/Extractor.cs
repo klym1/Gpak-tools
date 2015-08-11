@@ -15,7 +15,7 @@ namespace GPExtractor
     {
         private readonly string _logPath;
         private readonly IBinaryMapper _mapper;
-        private int ImageHeaderSize = 22;
+        private int ImageHeaderSize = 23;
 
         public Extractor(string logPath, IBinaryMapper mapper)
         {
