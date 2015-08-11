@@ -30,14 +30,12 @@ namespace WindowsFormsTestClient
 
             var extractor = new Extractor(logPath, mapper);
 
-            var extractResult = extractor.ExtractFromGp(@"..\..\..\gp\test15.gp");
+            var extractResult = extractor.ExtractFromGp(@"..\..\..\gp\test15_.gp");
 
             IRenderer renderer = new Renderer();
 
             var bitMap = new Bitmap(600, 600);
             SetupCanvas(bitMap);
-
-            var colorCollection = new Collection<Color> {Color.Pink, Color.Blue, Color.Red, Color.YellowGreen, Color.Gainsboro};
 
             var i = 0;
             foreach (var layout in extractResult.LayoutCollection.Take(5))
@@ -45,7 +43,7 @@ namespace WindowsFormsTestClient
                 var tuple = MultiPictureEls(layout.Bytes);
                 Debug.WriteLine("Offset: " + tuple.Item2);
 
-                renderer.RenderBitmap(bitMap, tuple.Item1, layout, colorCollection[i]);
+                renderer.RenderBitmap(bitMap, tuple.Item1, layout);
 
                 i++;
             }
@@ -98,7 +96,7 @@ namespace WindowsFormsTestClient
                     continue;
                 }
 
-                if (blockType > 10)
+                if (blockType > 20)
                 {
                     Debug.WriteLine("Unknow blocktype");
                     throw new Exception("wrong block type");
