@@ -23,7 +23,7 @@ namespace ImageRenderer
                 {
                     offsetx += block.offsetx;
 
-                    var randomColor = Color.FromArgb(255, random.Next(255), random.Next(255), random.Next(255));
+                    var randomColor = Color.FromArgb(255, block.length, 0, 0);
 
                     using (var graphics = Graphics.FromImage(bitMap))
                     {

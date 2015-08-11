@@ -45,11 +45,9 @@ namespace WindowsFormsTestClient
                 var countOffset = tupleCollection.Item1.Select(it => it.Collection.Count*2 + 1).Sum();
 
                 var partsCount = tupleCollection.Item1.Select(it => it.Collection.Count).Sum();
-
-                var result = SecondPart(layout.Bytes, countOffset, 8);
-
-               // Helper.DumpArray(layout.Bytes, countOffset, 54);
-
+                
+                var result = SecondPart(layout.Bytes, countOffset, partsCount);
+                
                 Debug.WriteLine("Offset: " + countOffset);
 
                 renderer.RenderBitmap(bitMap, tupleCollection.Item1, layout);
@@ -65,19 +63,38 @@ namespace WindowsFormsTestClient
         {
             using (var graphics = Graphics.FromImage(bitMap))
             {
-                graphics.FillRectangle(new SolidBrush(Color.SpringGreen),
+                graphics.FillRectangle(new SolidBrush(Color.White),
                     new Rectangle(0, 0, bitMap.Width, bitMap.Height));
             }
         }
 
-        private static int SecondPart(byte[] imageBytes, int offset, int partsCount)
+        private static int SecondPart(byte[] imageBytes, int initialOffset, int partsCount)
         {
-            for (int i = 0; i < (imageBytes.Length - offset)/ 17; i ++)
+            for (int i = 0; i < (imageBytes.Length - initialOffset)/ 17; i ++)
             {
                 Debug.Write(i + " - ");
-                Helper.DumpArray(imageBytes, offset + i*17 + 1, 17);
+                Helper.DumpArray(imageBytes, initialOffset + i*17 + 1, 17);
             }
+            
+            var pairsProcessed = 0;
+            var offset = initialOffset + 2; // skip CD FF bytes
+            while (offset < imageBytes.Length - 10)
+            {
+                Helper.DumpArray(imageBytes, offset, 2);
 
+                var byte1 = imageBytes[offset];
+                var byte2 = imageBytes[offset + 1];
+
+                offset += 2;
+
+                pairsProcessed++;
+
+                if (pairsProcessed == 8)
+                {
+                    pairsProcessed = 0;
+                    offset++;
+                }
+            }
             return 0;
         }
 
