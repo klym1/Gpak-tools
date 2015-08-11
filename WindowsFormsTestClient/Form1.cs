@@ -40,10 +40,19 @@ namespace WindowsFormsTestClient
             var i = 0;
             foreach (var layout in extractResult.LayoutCollection.Take(5))
             {
-                var tuple = MultiPictureEls(layout.Bytes);
-                Debug.WriteLine("Offset: " + tuple.Item2);
+                var tupleCollection = MultiPictureEls(layout.Bytes);
+                
+                var countOffset = tupleCollection.Item1.Select(it => it.Collection.Count*2 + 1).Sum();
 
-                renderer.RenderBitmap(bitMap, tuple.Item1, layout);
+                var partsCount = tupleCollection.Item1.Select(it => it.Collection.Count).Sum();
+
+                var result = SecondPart(layout.Bytes, countOffset, 8);
+
+               // Helper.DumpArray(layout.Bytes, countOffset, 54);
+
+                Debug.WriteLine("Offset: " + countOffset);
+
+                renderer.RenderBitmap(bitMap, tupleCollection.Item1, layout);
 
                 i++;
             }
@@ -61,22 +70,33 @@ namespace WindowsFormsTestClient
             }
         }
 
+        private static int SecondPart(byte[] imageBytes, int offset, int partsCount)
+        {
+            for (int i = 0; i < (imageBytes.Length - offset)/ 17; i ++)
+            {
+                Debug.Write(i + " - ");
+                Helper.DumpArray(imageBytes, offset + i*17 + 1, 17);
+            }
+
+            return 0;
+        }
+
         private static Tuple<Collection<MultiPictureEl>,int> MultiPictureEls(byte[] imageBytes)
         {
             var piactureElements = new Collection<MultiPictureEl>();
 
             var rowIndex = 0;
 
-            var i = 0;
-            while (!(imageBytes[i] == 0xCD && imageBytes[i + 1] == 0xFF))
+            var offset = 0;
+            while (!(imageBytes[offset] == 0xCD && imageBytes[offset + 1] == 0xFF))
             {
-                int blockType = imageBytes[i];
+                int blockType = imageBytes[offset];
 
                 if (blockType == 0xE1) // magic number. 1-byte coded block. Investigate other similar cases
                 {
                     //E1  4B  E1  C7  => 1 27 20 1 23 28
 
-                    var nextByte = imageBytes[i + 1];
+                    var nextByte = imageBytes[offset + 1];
                     var a = (nextByte >> 4) | (1 << 4);
                     var b = (nextByte & 0xf) | (1 << 4);
 
@@ -92,7 +112,7 @@ namespace WindowsFormsTestClient
                         RowIndex = rowIndex++
                     });
 
-                    i += 2;
+                    offset += 2;
                     continue;
                 }
 
@@ -106,7 +126,7 @@ namespace WindowsFormsTestClient
                 var bytesInBlock = blockType*2 + 1;
 
                 Debug.Write(string.Format("{0:d3}. ", rowIndex));
-                Helper.DumpArray(imageBytes, i, bytesInBlock);
+                Helper.DumpArray(imageBytes, offset, bytesInBlock);
 
                 var emptyCollection = new Collection<Block>();
 
@@ -114,8 +134,8 @@ namespace WindowsFormsTestClient
                 {
                     emptyCollection.Add(new Block
                     {
-                        offsetx = imageBytes[i + k + 1],
-                        length = imageBytes[i + k + 2],
+                        offsetx = imageBytes[offset + k + 1],
+                        length = imageBytes[offset + k + 2],
                     });
                 }
 
@@ -124,10 +144,10 @@ namespace WindowsFormsTestClient
                     RowIndex = rowIndex++
                 });
 
-                i += bytesInBlock;
+                offset += bytesInBlock;
             }
 
-            return Tuple.Create(piactureElements, i);
+            return Tuple.Create(piactureElements, offset);
         }
     }
 }
