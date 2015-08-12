@@ -2,7 +2,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Drawing;
+using System.Runtime.CompilerServices;
+using GPExtractor;
 using Types;
 
 namespace ImageRenderer
@@ -34,6 +37,37 @@ namespace ImageRenderer
                     offsetx += block.length;
                 }
             }
+        }
+
+        public Bitmap RenderPalette(Collection<Color> colorCollection)
+        {
+            var newBitmap = new Bitmap(500, 500);
+
+            var z = 0;
+            var y = 5;
+            
+            var pixelSize = 10;
+
+            foreach (var color in colorCollection)
+            {
+                var brush = new SolidBrush(color);
+
+                using (var graphics = Graphics.FromImage(newBitmap))
+                {
+                    graphics.FillRectangle(brush, new Rectangle(new Point(z, y), new Size(pixelSize, pixelSize)));
+                }
+
+                z += pixelSize;
+
+                if (z >= 100 * pixelSize)
+                {
+                    z = 0;
+                    y += pixelSize;
+                }
+
+            }
+
+            return newBitmap;
         }
     }
 }

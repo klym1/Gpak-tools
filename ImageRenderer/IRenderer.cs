@@ -12,5 +12,6 @@ namespace ImageRenderer
     public interface IRenderer
     {
         void RenderBitmap(Bitmap bitmap, Collection<MultiPictureEl> piactureElements, ImageLayoutInfo layout);
+        Bitmap RenderPalette(Collection<Color> colorCollection);
     }
 }

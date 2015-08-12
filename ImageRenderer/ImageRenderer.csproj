@@ -47,6 +47,10 @@
     <Compile Include="Renderer.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\GPExtractor\GPExtractor.csproj">
+      <Project>{1DFBC20E-CEA9-4831-A923-4C651BC63E0F}</Project>
+      <Name>GPExtractor</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Types\Types.csproj">
       <Project>{a1778edf-7b59-41c6-a961-a00f09356c44}</Project>
       <Name>Types</Name>

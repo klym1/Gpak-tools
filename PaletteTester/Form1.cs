@@ -28,16 +28,14 @@ namespace PaletteTester
             var bBytes = service.ReadSetFiles(@"..\..\..\palette\0\b.set");
             var gbBytes = service.ReadSetFiles(@"..\..\..\palette\0\gb.set");
 
-            for (int i = 0; i < 32; i++)
-            {
-                Debug.WriteLine("{0:X2} {1:X2} {2:X2}", gBytes[i], bBytes[i], gBytes[i]);
-            }
+           
+            var paletteBytes = File.ReadAllBytes(@"..\..\..\palette\0\old.pal");
+
+            pictureBox1.Image = getBitmap(paletteBytes);
         }
 
-        private Bitmap getBitmap(string path)
+        private Bitmap getBitmap(byte[] paletteBytes)
         {
-            var paletteBytes = File.ReadAllBytes(path);
-
             var newBitmap = new Bitmap(500, 500);
 
             var z = 0;
@@ -48,6 +46,11 @@ namespace PaletteTester
             for (int i = 0; i < paletteBytes.Length - 2; i += 3)
             {
                 colorCollection.Add(Color.FromArgb(255, paletteBytes[i], paletteBytes[i + 1], paletteBytes[i + 2]));
+
+                if (paletteBytes[i] == 0xfc && paletteBytes[i+1] == 0x00 && paletteBytes[i+2] == 0x00)
+                {
+                    var h = 5;
+                }
             }
 
             var pixelSize = 10;

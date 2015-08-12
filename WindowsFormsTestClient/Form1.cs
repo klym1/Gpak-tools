@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Drawing;
@@ -37,15 +38,33 @@ namespace WindowsFormsTestClient
             var bitMap = new Bitmap(600, 600);
             SetupCanvas(bitMap);
 
+            pictureBox2.Image = bitMap;
+
+            var paletteBytes = File.ReadAllBytes(@"..\..\..\palette\0\old.pal");
+
+            GetColorCollectionFromPalleteFile(paletteBytes);
+
+            pictureBox3.Image = renderer.RenderPalette(colorCollection);
+
+            pictureBox4.Image = ReadImagePalette(extractResult.PaletteBytes);
+
+
             var i = 0;
             foreach (var layout in extractResult.LayoutCollection.Take(5))
             {
                 var tupleCollection = MultiPictureEls(layout.Bytes);
-                
+
                 var countOffset = tupleCollection.Item1.Select(it => it.Collection.Count*2 + 1).Sum();
 
                 var partsCount = tupleCollection.Item1.Select(it => it.Collection.Count).Sum();
-                
+
+                var twentyThirdRow =
+                    tupleCollection.Item1.Where(it => it.RowIndex < 32).Select(it => it.Collection.Count).Sum();
+
+                twentyThirdRow += tupleCollection.Item1.First(it => it.RowIndex == 32).Collection.Count;
+
+                var allpartsLength = tupleCollection.Item1.Select(it => it.Collection.Sum(o => o.length)).Sum();
+
                 var result = SecondPart(layout.Bytes, countOffset, partsCount);
                 
                 Debug.WriteLine("Offset: " + countOffset);
@@ -55,8 +74,15 @@ namespace WindowsFormsTestClient
                 i++;
             }
 
+            
+        }
 
-            pictureBox2.Image = bitMap;
+        private void GetColorCollectionFromPalleteFile(byte[] paletteBytes)
+        {
+            for (int i = 0; i < paletteBytes.Length - 2; i += 3)
+            {
+                colorCollection.Add(Color.FromArgb(255, paletteBytes[i], paletteBytes[i + 1], paletteBytes[i + 2]));
+            }
         }
 
         private static void SetupCanvas(Bitmap bitMap)
@@ -72,20 +98,37 @@ namespace WindowsFormsTestClient
         {
             for (int i = 0; i < (imageBytes.Length - initialOffset)/ 17; i ++)
             {
-                Debug.Write(i + " - ");
-                Helper.DumpArray(imageBytes, initialOffset + i*17 + 1, 17);
+            //    Debug.Write(i + " - ");
+            //    Helper.DumpArray(imageBytes, initialOffset + i*17 + 1, 17);
             }
-            
+
+            var tupleCollection = new Collection<Tuple<byte, byte, int>> ();
+
             var pairsProcessed = 0;
             var offset = initialOffset + 2; // skip CD FF bytes
+            var sumOfThirdOctets = 0;
+
+            var pairNumber = 0;
+
             while (offset < imageBytes.Length - 10)
             {
+                Debug.Write(pairNumber + " - ");
                 Helper.DumpArray(imageBytes, offset, 2);
 
                 var byte1 = imageBytes[offset];
                 var byte2 = imageBytes[offset + 1];
 
+                var newnumber = (byte1) | ((byte2 & 0x0f) << 8);
+
+               
+                var thirdOctet = (byte2 >> 4);
+
+                sumOfThirdOctets += thirdOctet;
+
+                tupleCollection.Add(Tuple.Create(byte1, byte2, newnumber));
+
                 offset += 2;
+                pairNumber++;
 
                 pairsProcessed++;
 
@@ -93,6 +136,7 @@ namespace WindowsFormsTestClient
                 {
                     pairsProcessed = 0;
                     offset++;
+                    
                 }
             }
             return 0;
@@ -142,8 +186,8 @@ namespace WindowsFormsTestClient
                 //ordinary processing
                 var bytesInBlock = blockType*2 + 1;
 
-                Debug.Write(string.Format("{0:d3}. ", rowIndex));
-                Helper.DumpArray(imageBytes, offset, bytesInBlock);
+                //Debug.Write(string.Format("{0:d3}. ", rowIndex));
+                //Helper.DumpArray(imageBytes, offset, bytesInBlock);
 
                 var emptyCollection = new Collection<Block>();
 
@@ -166,5 +210,69 @@ namespace WindowsFormsTestClient
 
             return Tuple.Create(piactureElements, offset);
         }
+
+        private Collection<Color> colorCollection = new Collection<Color>();
+
+        private Bitmap ReadImagePalette(byte[] imagePaletteOffsets)
+        {
+            var newBitmap = new Bitmap(500, 500);
+
+            var z = 0;
+            var y = 5;
+
+            Helper.DumpArray(imagePaletteOffsets, 1556, 100);
+
+            var imageColorDictionary = new Dictionary<int, Color>();
+
+            for (int i = 0; i < imagePaletteOffsets.Length; i ++)
+            {
+                var offset = imagePaletteOffsets[i];
+
+                imageColorDictionary[i] = colorCollection[offset];
+            }
+
+
+            var first = imageColorDictionary.First().Value;
+            var k = 0;
+            foreach (var color in imageColorDictionary)
+            {
+                Debug.WriteLine("{0:X4} {1}", color.Key, color.Value);
+
+                if (first == color.Value)
+                {
+                    k++;
+                }
+                else
+                {
+                    first = color.Value;
+                    k = 0;
+                }
+            }
+
+            var pixelSize = 1;
+
+            foreach (var color in imageColorDictionary)
+            {
+                var brush = new SolidBrush(color.Value);
+
+                using (var graphics = Graphics.FromImage(newBitmap))
+                {
+                    graphics.FillRectangle(brush, new Rectangle(new Point(z, y), new Size(pixelSize, pixelSize)));
+                }
+
+                z += pixelSize;
+
+                if (z >= 100 * pixelSize)
+                {
+                    z = 0;
+                    y += pixelSize;
+                }
+
+            }
+
+            return newBitmap;
+        }
+
+        
     }
 }
