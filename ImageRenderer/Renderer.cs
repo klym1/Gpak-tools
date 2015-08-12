@@ -26,7 +26,7 @@ namespace ImageRenderer
                 {
                     offsetx += block.offsetx;
 
-                    var randomColor = Color.FromArgb(255, block.length, 0, 0);
+                    var randomColor = Color.FromArgb(255, 255, 0, 0);
 
                     using (var graphics = Graphics.FromImage(bitMap))
                     {
@@ -59,7 +59,7 @@ namespace ImageRenderer
 
                 z += pixelSize;
 
-                if (z >= 100 * pixelSize)
+                if (z >= 32 * pixelSize)
                 {
                     z = 0;
                     y += pixelSize;

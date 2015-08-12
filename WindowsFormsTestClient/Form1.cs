@@ -123,9 +123,14 @@ namespace WindowsFormsTestClient
                
                 var thirdOctet = (byte2 >> 4);
 
+                if (thirdOctet == 0xd)
+                {
+                    tupleCollection.Add(Tuple.Create(byte1, byte2, newnumber));
+                }
+
                 sumOfThirdOctets += thirdOctet;
 
-                tupleCollection.Add(Tuple.Create(byte1, byte2, newnumber));
+                //tupleCollection.Add(Tuple.Create(byte1, byte2, newnumber));
 
                 offset += 2;
                 pairNumber++;
@@ -220,7 +225,7 @@ namespace WindowsFormsTestClient
             var z = 0;
             var y = 5;
 
-            Helper.DumpArray(imagePaletteOffsets, 1556, 100);
+           // Helper.DumpArray(imagePaletteOffsets, 1556, 100);
 
             var imageColorDictionary = new Dictionary<int, Color>();
 
@@ -262,7 +267,7 @@ namespace WindowsFormsTestClient
 
                 z += pixelSize;
 
-                if (z >= 100 * pixelSize)
+                if (z >= 255 * pixelSize)
                 {
                     z = 0;
                     y += pixelSize;
