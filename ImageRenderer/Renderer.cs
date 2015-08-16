@@ -39,12 +39,12 @@ namespace ImageRenderer
             }
         }
 
-        public Bitmap RenderPalette(Collection<Color> colorCollection, int width, int pixelSize)
+        public Bitmap RenderPalette(ICollection<Color> colorCollection, int width, int pixelSize)
         {
             var newBitmap = new Bitmap(500, 500);
 
             var z = 0;
-            var y = 5;
+            var y = 0;
             
             foreach (var color in colorCollection)
             {
@@ -66,6 +66,21 @@ namespace ImageRenderer
             }
 
             return newBitmap;
+        }
+
+        public void DrawHorizontalColorLine(Bitmap bitmap, ICollection<Color> colorCollection, int offsetX, int offsetY)
+        {
+            var initialOffsetX = offsetX;
+            
+            foreach (var color in colorCollection)
+            {
+                using (var graphics = Graphics.FromImage(bitmap))
+                {
+                    graphics.FillRectangle(new SolidBrush(color),
+                        new Rectangle(new Point(initialOffsetX++, offsetY),
+                            new Size(PixelSize, PixelSize)));
+                }
+            }
         }
     }
 }

@@ -47,10 +47,13 @@ namespace WindowsFormsTestClient
             pictureBox3.Image = renderer.RenderPalette(colorCollection, 100, pixelSize:10);
 
 
-            var imagePaletteColors = ReadImagePaletteColors(extractResult.PaletteBytes);
+            var imagePaletteColors = OffsetsToColors(extractResult.PaletteBytes);
 
-            pictureBox4.Image = renderer.RenderPalette(imagePaletteColors, 111, pixelSize: 1);
+            var paletteImage = renderer.RenderPalette(imagePaletteColors, 111, pixelSize: 1);
 
+            renderer.DrawHorizontalColorLine(paletteImage, imagePaletteColors.Skip(30).Take(30).ToList(), 50, 50);
+
+            pictureBox4.Image = paletteImage;
 
             var i = 0;
             foreach (var layout in extractResult.LayoutCollection.Take(5))
@@ -187,7 +190,7 @@ namespace WindowsFormsTestClient
                 if (blockType > 20)
                 {
                     Debug.WriteLine("Unknow blocktype");
-                    //throw new Exception("wrong block type");
+                    throw new Exception("wrong block type");
                 }
 
                 //ordinary processing
@@ -220,16 +223,9 @@ namespace WindowsFormsTestClient
 
         private Collection<Color> colorCollection = new Collection<Color>();
 
-        private Collection<Color> ReadImagePaletteColors(byte[] imagePaletteOffsets)
+        private List<Color> OffsetsToColors(byte[] imagePaletteOffsets)
         {
-            var imageColorCollection = new Collection<Color>();
-
-            foreach (var offset in imagePaletteOffsets)
-            {
-                imageColorCollection.Add(colorCollection[offset]);
-            }
-            
-            return imageColorCollection;
+            return imagePaletteOffsets.Select(offset => colorCollection[offset]).ToList();
         }
     }
 }
