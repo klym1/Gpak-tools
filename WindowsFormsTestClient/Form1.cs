@@ -31,7 +31,7 @@ namespace WindowsFormsTestClient
 
             var extractor = new Extractor(logPath, mapper);
 
-            var extractResult = extractor.ExtractFromGp(@"..\..\..\gp\test15_.gp");
+            var extractResult = extractor.ExtractFromGp(@"..\..\..\gp\test15.gp");
 
             IRenderer renderer = new Renderer();
 
@@ -44,9 +44,12 @@ namespace WindowsFormsTestClient
 
             GetColorCollectionFromPalleteFile(paletteBytes);
 
-            pictureBox3.Image = renderer.RenderPalette(colorCollection);
+            pictureBox3.Image = renderer.RenderPalette(colorCollection, 100, pixelSize:10);
 
-            pictureBox4.Image = ReadImagePalette(extractResult.PaletteBytes);
+
+            var imagePaletteColors = ReadImagePaletteColors(extractResult.PaletteBytes);
+
+            pictureBox4.Image = renderer.RenderPalette(imagePaletteColors, 111, pixelSize: 1);
 
 
             var i = 0;
@@ -67,7 +70,7 @@ namespace WindowsFormsTestClient
 
                 var result = SecondPart(layout.Bytes, countOffset, partsCount);
                 
-                Debug.WriteLine("Offset: " + countOffset);
+                //Debug.WriteLine("Offset: " + countOffset);
 
                 renderer.RenderBitmap(bitMap, tupleCollection.Item1, layout);
 
@@ -112,15 +115,14 @@ namespace WindowsFormsTestClient
 
             while (offset < imageBytes.Length - 10)
             {
-                Debug.Write(pairNumber + " - ");
-                Helper.DumpArray(imageBytes, offset, 2);
+                //Debug.Write(pairNumber + " - ");
+                //Helper.DumpArray(imageBytes, offset, 2);
 
                 var byte1 = imageBytes[offset];
                 var byte2 = imageBytes[offset + 1];
 
                 var newnumber = (byte1) | ((byte2 & 0x0f) << 8);
-
-               
+                
                 var thirdOctet = (byte2 >> 4);
 
                 if (thirdOctet == 0xd)
@@ -154,7 +156,7 @@ namespace WindowsFormsTestClient
             var rowIndex = 0;
 
             var offset = 0;
-            while (!(imageBytes[offset] == 0xCD && imageBytes[offset + 1] == 0xFF))
+            while (!(imageBytes[offset] == 0xCD))
             {
                 int blockType = imageBytes[offset];
 
@@ -185,7 +187,7 @@ namespace WindowsFormsTestClient
                 if (blockType > 20)
                 {
                     Debug.WriteLine("Unknow blocktype");
-                    throw new Exception("wrong block type");
+                    //throw new Exception("wrong block type");
                 }
 
                 //ordinary processing
@@ -218,66 +220,16 @@ namespace WindowsFormsTestClient
 
         private Collection<Color> colorCollection = new Collection<Color>();
 
-        private Bitmap ReadImagePalette(byte[] imagePaletteOffsets)
+        private Collection<Color> ReadImagePaletteColors(byte[] imagePaletteOffsets)
         {
-            var newBitmap = new Bitmap(500, 500);
+            var imageColorCollection = new Collection<Color>();
 
-            var z = 0;
-            var y = 5;
-
-           // Helper.DumpArray(imagePaletteOffsets, 1556, 100);
-
-            var imageColorDictionary = new Dictionary<int, Color>();
-
-            for (int i = 0; i < imagePaletteOffsets.Length; i ++)
+            foreach (var offset in imagePaletteOffsets)
             {
-                var offset = imagePaletteOffsets[i];
-
-                imageColorDictionary[i] = colorCollection[offset];
+                imageColorCollection.Add(colorCollection[offset]);
             }
-
-
-            var first = imageColorDictionary.First().Value;
-            var k = 0;
-            foreach (var color in imageColorDictionary)
-            {
-                Debug.WriteLine("{0:X4} {1}", color.Key, color.Value);
-
-                if (first == color.Value)
-                {
-                    k++;
-                }
-                else
-                {
-                    first = color.Value;
-                    k = 0;
-                }
-            }
-
-            var pixelSize = 1;
-
-            foreach (var color in imageColorDictionary)
-            {
-                var brush = new SolidBrush(color.Value);
-
-                using (var graphics = Graphics.FromImage(newBitmap))
-                {
-                    graphics.FillRectangle(brush, new Rectangle(new Point(z, y), new Size(pixelSize, pixelSize)));
-                }
-
-                z += pixelSize;
-
-                if (z >= 255 * pixelSize)
-                {
-                    z = 0;
-                    y += pixelSize;
-                }
-
-            }
-
-            return newBitmap;
+            
+            return imageColorCollection;
         }
-
-        
     }
 }

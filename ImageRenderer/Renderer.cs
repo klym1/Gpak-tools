@@ -39,15 +39,13 @@ namespace ImageRenderer
             }
         }
 
-        public Bitmap RenderPalette(Collection<Color> colorCollection)
+        public Bitmap RenderPalette(Collection<Color> colorCollection, int width, int pixelSize)
         {
             var newBitmap = new Bitmap(500, 500);
 
             var z = 0;
             var y = 5;
             
-            var pixelSize = 10;
-
             foreach (var color in colorCollection)
             {
                 var brush = new SolidBrush(color);
@@ -59,7 +57,7 @@ namespace ImageRenderer
 
                 z += pixelSize;
 
-                if (z >= 32 * pixelSize)
+                if (z >= width * pixelSize)
                 {
                     z = 0;
                     y += pixelSize;
