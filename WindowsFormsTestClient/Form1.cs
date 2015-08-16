@@ -13,6 +13,28 @@ using Types;
 
 namespace WindowsFormsTestClient
 {
+    [DebuggerDisplay("{One}")]
+    public class SecondPartBlock
+    {
+        public byte One;
+        public byte Two;
+    }
+
+    [DebuggerDisplay("{Type} {Values}")]
+    public class CounterSection
+    {
+        public byte Type;
+        public int Counter { get { return SecondPartBlocks.Count; } }
+
+        public string Values
+        {
+            get { return String.Join(" ",SecondPartBlocks.Select(it => String.Format("{0:X2}", it.One)).ToArray()); }
+            
+        }
+
+        public List<SecondPartBlock> SecondPartBlocks;
+    }
+
     public partial class Form1 : Form
     {
         public Form1()
@@ -49,9 +71,20 @@ namespace WindowsFormsTestClient
 
             var imagePaletteColors = OffsetsToColors(extractResult.PaletteBytes);
 
-            var paletteImage = renderer.RenderPalette(imagePaletteColors, 111, pixelSize: 1);
+            var paletteImage = renderer.RenderPalette(imagePaletteColors, 140, pixelSize: 1);
 
-            renderer.DrawHorizontalColorLine(paletteImage, imagePaletteColors.Skip(30).Take(30).ToList(), 50, 50);
+
+
+            for (int j = 0; j < 15; j++)
+            {
+                var offset = 718 + (140)*j;
+                Debug.WriteLine("Offset: {0:D4} {1:X3} | {2:D4} {3:X3}", offset, offset, offset * 3, offset * 3);
+                renderer.DrawHorizontalColorLine(paletteImage, imagePaletteColors.Skip(offset).Take(140).ToList(), 50, 50 + 30 * (j));
+            }
+
+           
+
+           // renderer.DrawHorizontalColorLine(paletteImage, imagePaletteColors.Skip(858).Take(140).ToList(), 50, 80);
 
             pictureBox4.Image = paletteImage;
 
@@ -64,17 +97,8 @@ namespace WindowsFormsTestClient
 
                 var partsCount = tupleCollection.Item1.Select(it => it.Collection.Count).Sum();
 
-                var twentyThirdRow =
-                    tupleCollection.Item1.Where(it => it.RowIndex < 32).Select(it => it.Collection.Count).Sum();
-
-                twentyThirdRow += tupleCollection.Item1.First(it => it.RowIndex == 32).Collection.Count;
-
-                var allpartsLength = tupleCollection.Item1.Select(it => it.Collection.Sum(o => o.length)).Sum();
-
                 var result = SecondPart(layout.Bytes, countOffset, partsCount);
                 
-                //Debug.WriteLine("Offset: " + countOffset);
-
                 renderer.RenderBitmap(bitMap, tupleCollection.Item1, layout);
 
                 i++;
@@ -102,43 +126,34 @@ namespace WindowsFormsTestClient
 
         private static int SecondPart(byte[] imageBytes, int initialOffset, int partsCount)
         {
-            for (int i = 0; i < (imageBytes.Length - initialOffset)/ 17; i ++)
-            {
-            //    Debug.Write(i + " - ");
-            //    Helper.DumpArray(imageBytes, initialOffset + i*17 + 1, 17);
-            }
-
-            var tupleCollection = new Collection<Tuple<byte, byte, int>> ();
+            var tupleCollection = new Collection<Tuple<byte, byte>> ();
 
             var pairsProcessed = 0;
             var offset = initialOffset + 2; // skip CD FF bytes
-            var sumOfThirdOctets = 0;
-
-            var pairNumber = 0;
 
             while (offset < imageBytes.Length - 10)
             {
-                //Debug.Write(pairNumber + " - ");
-                //Helper.DumpArray(imageBytes, offset, 2);
+                //Debug.Write(pairNumber + ". ");
+                //Debug.Write(string.Format(" [{0:D4}] ",imageBytes[offset]));
 
+               // Helper.DumpArray(imageBytes, offset, 2);
                 var byte1 = imageBytes[offset];
                 var byte2 = imageBytes[offset + 1];
 
-                var newnumber = (byte1) | ((byte2 & 0x0f) << 8);
+               // var newnumber = (byte1) | ((byte2 & 0x0f) << 8);
                 
-                var thirdOctet = (byte2 >> 4);
+               // var thirdOctet = (byte2 >> 4);
 
-                if (thirdOctet == 0xd)
+                //if (thirdOctet == 0xd)
                 {
-                    tupleCollection.Add(Tuple.Create(byte1, byte2, newnumber));
+                    tupleCollection.Add(Tuple.Create(byte1, byte2));
                 }
 
-                sumOfThirdOctets += thirdOctet;
+               // sumOfThirdOctets += thirdOctet;
 
                 //tupleCollection.Add(Tuple.Create(byte1, byte2, newnumber));
 
                 offset += 2;
-                pairNumber++;
 
                 pairsProcessed++;
 
@@ -149,6 +164,31 @@ namespace WindowsFormsTestClient
                     
                 }
             }
+
+            var previousTuple = 0xD;
+            var countersCollection = new Collection<CounterSection>();
+
+            var tempCollection = new Collection<SecondPartBlock>();
+
+            foreach (var tuple in tupleCollection)
+            {
+                var currentTuple = tuple.Item2;
+
+                if (previousTuple != currentTuple)
+                {
+                    countersCollection.Add(new CounterSection{Type  = currentTuple, SecondPartBlocks = tempCollection.ToList()});
+                    tempCollection.Clear();
+                }
+                else
+                {
+                    tempCollection.Add(new SecondPartBlock{One = tuple.Item1, Two = tuple.Item2});
+                }
+
+                
+
+                previousTuple = currentTuple;
+            }
+
             return 0;
         }
 

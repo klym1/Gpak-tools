@@ -78,7 +78,7 @@ namespace ImageRenderer
                 {
                     graphics.FillRectangle(new SolidBrush(color),
                         new Rectangle(new Point(initialOffsetX++, offsetY),
-                            new Size(PixelSize, PixelSize)));
+                            new Size(PixelSize, 20)));
                 }
             }
         }
