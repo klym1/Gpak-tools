@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WindowsFormsTestClient", "WindowsFormsTestClient\WindowsFormsTestClient.csproj", "{D029BD07-D488-4B5C-B1A6-19FAE7908909}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GPExtractor", "GPExtractor\GPExtractor.csproj", "{1DFBC20E-CEA9-4831-A923-4C651BC63E0F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GPExtractor", "Extractor\GPExtractor.csproj", "{1DFBC20E-CEA9-4831-A923-4C651BC63E0F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImageRenderer", "ImageRenderer\ImageRenderer.csproj", "{CF569618-3B66-48C0-B040-29BD57203C69}"
 EndProject
