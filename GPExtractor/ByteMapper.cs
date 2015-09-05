@@ -23,8 +23,8 @@ namespace GPExtractor
                     newImageOffset =
                         BitConverter.ToInt32(
                             new[] {bytes[offset], bytes[offset + 1], bytes[offset + 2], bytes[offset + 3]}, 0), //sometimes it is FF FF FF FF, sometimes - not
-                    offsetY = BitConverter.ToInt16(new[] {bytes[offset + 4], bytes[offset + 5]}, 0),
-                    offsetX = BitConverter.ToInt16(new[] {bytes[offset + 6], bytes[offset + 7]}, 0),
+                    offsetY = BitConverter.ToInt16(new[] {bytes[offset + 6], bytes[offset + 7]}, 0),
+                    offsetX = BitConverter.ToInt16(new[] {bytes[offset + 4], bytes[offset + 5]}, 0),
                     Width = BitConverter.ToInt16(new[] {bytes[offset + 8], bytes[offset + 9]}, 0),
                     Height = BitConverter.ToInt16(new[] {bytes[offset + 10], bytes[offset + 11]}, 0),
                     EndOfHeader = BitConverter.ToInt32(new[] {bytes[offset + 12], bytes[offset + 13], bytes[offset + 14], bytes[offset + 15]}, 0), // should always be FF FF FF FF
