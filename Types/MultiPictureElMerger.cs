@@ -16,7 +16,7 @@ namespace Types
         public static ICollection<MultiPictureElGroup> SplitByGroups(this Collection<MultiPictureEl> elems)
         {
             var singleColumnCollection =
-                elems.Where(it => it.Collection.Count == 1).Select(it => it.Collection[0]).ToList();
+                elems.Where(it => it.Collection.Count >= 1).Select(it => it.Collection[0]).ToList();
             
 
             int i = 0;
