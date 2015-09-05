@@ -77,30 +77,24 @@ namespace WindowsFormsTestClient
 
             for (int j = 0; j < 15; j++)
             {
-                var offset = 718 + (140)*j;
-                Debug.WriteLine("Offset: {0:D4} {1:X3} | {2:D4} {3:X3}", offset, offset, offset * 3, offset * 3);
-                renderer.DrawHorizontalColorLine(paletteImage, imagePaletteColors.Skip(offset).Take(140).ToList(), 50, 50 + 30 * (j));
+              //  var offset = 677 + (140)*j;
+             //   Debug.WriteLine("Offset: {0:D4} {1:X3} | {2:D4} {3:X3}", offset, offset, offset * 3, offset * 3);
+              //  renderer.DrawHorizontalColorLine(paletteImage, imagePaletteColors.Skip(offset).Take(140).ToList(), 50, 50 + 30 * (j));
             }
-
-           
+            
 
            // renderer.DrawHorizontalColorLine(paletteImage, imagePaletteColors.Skip(858).Take(140).ToList(), 50, 80);
 
             pictureBox4.Image = paletteImage;
-
+            
             var i = 0;
             foreach (var layout in extractResult.LayoutCollection.Take(5))
             {
                 var tupleCollection = MultiPictureEls(layout.Bytes);
-
-                var countOffset = tupleCollection.Item1.Select(it => it.Collection.Count*2 + 1).Sum();
-
-                var partsCount = tupleCollection.Item1.Select(it => it.Collection.Count).Sum();
-
-                var result = SecondPart(layout.Bytes, countOffset, partsCount);
                 
-                renderer.RenderBitmap(bitMap, tupleCollection.Item1, layout);
+              //  renderer.RenderBitmap(bitMap, tupleCollection.Item1, layout);
 
+                renderer.RenderColorStripesOnBitmap(bitMap, tupleCollection.Item1, layout, imagePaletteColors);
                 i++;
             }
 
@@ -129,9 +123,9 @@ namespace WindowsFormsTestClient
             var tupleCollection = new Collection<Tuple<byte, byte>> ();
 
             var pairsProcessed = 0;
-            var offset = initialOffset + 2; // skip CD FF bytes
+            var offset = initialOffset+2; // skip CD FF bytes
 
-            while (offset < imageBytes.Length - 10)
+            while (offset < imageBytes.Length)
             {
                 //Debug.Write(pairNumber + ". ");
                 //Debug.Write(string.Format(" [{0:D4}] ",imageBytes[offset]));
@@ -165,33 +159,61 @@ namespace WindowsFormsTestClient
                 }
             }
 
-            var previousTuple = 0xD;
+            var previousTuple = 208;
             var countersCollection = new Collection<CounterSection>();
 
             var tempCollection = new Collection<SecondPartBlock>();
+
+            var secondPartUsed = true;
+            var partCount = 0;
 
             foreach (var tuple in tupleCollection)
             {
                 var currentTuple = tuple.Item2;
 
-                if (previousTuple != currentTuple)
+               // if (previousTuple != currentTuple)
                 {
-                    countersCollection.Add(new CounterSection{Type  = currentTuple, SecondPartBlocks = tempCollection.ToList()});
-                    tempCollection.Clear();
+                   // if (secondPartUsed)
+                    {
+                       partCount++;
+                       secondPartUsed = false;
+                    }
+                 //   else
+                    {
+                        secondPartUsed = true;
+                    }
+
+                    if (partCount == 35)
+                    {
+                        countersCollection.Add(new CounterSection
+                        {
+                            Type = currentTuple,
+                            SecondPartBlocks = tempCollection.ToList()
+                        });
+
+                        tempCollection.Clear();
+                        partCount = 0;
+                    }
                 }
-                else
+               // else
                 {
                     tempCollection.Add(new SecondPartBlock{One = tuple.Item1, Two = tuple.Item2});
                 }
-
+                 
                 
 
                 previousTuple = currentTuple;
             }
 
+            countersCollection.Add(new CounterSection
+            {
+                Type = 0,
+                SecondPartBlocks = tempCollection.ToList()
+            });
+
             return 0;
         }
-
+        
         private static Tuple<Collection<MultiPictureEl>,int> MultiPictureEls(byte[] imageBytes)
         {
             var piactureElements = new Collection<MultiPictureEl>();
@@ -258,7 +280,7 @@ namespace WindowsFormsTestClient
                 offset += bytesInBlock;
             }
 
-            return Tuple.Create(piactureElements, offset);
+            return Tuple.Create(piactureElements.MergeBlocks(), offset);
         }
 
         private Collection<Color> colorCollection = new Collection<Color>();

@@ -4,7 +4,9 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Drawing;
+using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Windows.Forms.VisualStyles;
 using GPExtractor;
 using Types;
 
@@ -16,8 +18,6 @@ namespace ImageRenderer
 
         public void RenderBitmap(Bitmap bitMap, Collection<MultiPictureEl> piactureElements, ImageLayoutInfo layout)
         {
-            var random = new Random();
-
             foreach (var it in piactureElements)
             {
                 var offsetx = 0;
@@ -26,16 +26,44 @@ namespace ImageRenderer
                 {
                     offsetx += block.offsetx;
 
-                    var randomColor = Color.FromArgb(255, 255, 0, 0);
-
                     using (var graphics = Graphics.FromImage(bitMap))
                     {
-                        graphics.FillRectangle(new SolidBrush(randomColor),
+                        graphics.FillRectangle(new SolidBrush(Color.Green),
                             new Rectangle(new Point(offsetx * PixelSize + layout.offsetX, it.RowIndex * PixelSize + layout.offsetY),
                                 new Size(block.length * PixelSize, PixelSize)));
                     }
                     offsetx += block.length;
                 }
+            }
+        }
+
+        public void RenderColorStripesOnBitmap(Bitmap bitMap, Collection<MultiPictureEl> piactureElements, ImageLayoutInfo layout,
+            ICollection<Color> colorCollection)
+        {
+            var currentStripeOffset = 0;
+            var rowIndex = 0;
+            var blockNumber = 0;
+
+            var grps = piactureElements.SplitByGroups();
+
+            foreach (var grp in grps)
+            {
+                foreach (var block in grp.FirstColumnBlocks)
+                {
+                    var stripe = colorCollection
+                        .Skip(currentStripeOffset)
+                        .Take(block.length)
+                        .ToList();
+
+                    DrawHorizontalColorLine(bitMap, stripe,
+                        offsetX: block.offsetx + layout.offsetX,
+                        offsetY: rowIndex + layout.offsetY);
+                    
+                    rowIndex++;
+
+                }
+
+                currentStripeOffset += grp.Length;
             }
         }
 
@@ -78,7 +106,7 @@ namespace ImageRenderer
                 {
                     graphics.FillRectangle(new SolidBrush(color),
                         new Rectangle(new Point(initialOffsetX++, offsetY),
-                            new Size(PixelSize, 20)));
+                            new Size(PixelSize, 1)));
                 }
             }
         }
