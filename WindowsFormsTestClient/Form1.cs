@@ -62,7 +62,8 @@ namespace WindowsFormsTestClient
 
             pictureBox2.Image = bitMap;
 
-            var paletteBytes = File.ReadAllBytes(@"..\..\..\palette\0\old.pal");
+           // var paletteBytes = File.ReadAllBytes(@"..\..\..\palette\0\old.pal");
+            var paletteBytes = File.ReadAllBytes(@"..\..\..\palette\0\agew_1.pal");
 
             GetColorCollectionFromPalleteFile(paletteBytes);
 
@@ -92,7 +93,7 @@ namespace WindowsFormsTestClient
             {
                 var tupleCollection = MultiPictureEls(layout.Bytes);
                 
-              //  renderer.RenderBitmap(bitMap, tupleCollection.Item1, layout);
+                renderer.RenderBitmap(bitMap, tupleCollection.Item1, layout);
 
                 renderer.RenderColorStripesOnBitmap(bitMap, tupleCollection.Item1, layout, imagePaletteColors);
                 i++;
