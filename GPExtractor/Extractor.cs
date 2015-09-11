@@ -98,8 +98,6 @@ namespace GPExtractor
                 cTable.Add(bytes[i]);    
             }
 
-   //         File.AppendAllText(_logPath, "\n");
-
             return new ExtractorResult
             {
                 PaletteBytes = cTable.ToArray(),

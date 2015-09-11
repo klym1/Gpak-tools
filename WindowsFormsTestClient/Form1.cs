@@ -47,13 +47,12 @@ namespace WindowsFormsTestClient
         private void Do()
         {
             const string logPath = @"..\..\..\extractor_out.txt";
-         //   File.Create(logPath).Dispose();
 
             IBinaryMapper mapper = new BinaryAutoMapper();
 
             var extractor = new Extractor(logPath, mapper);
 
-            var extractResult = extractor.ExtractFromGp(@"..\..\..\gp\test16.gp");
+            var extractResult = extractor.ExtractFromGp(@"..\..\..\gp\test8.gp");
 
             IRenderer renderer = new Renderer();
 
@@ -62,8 +61,8 @@ namespace WindowsFormsTestClient
 
             pictureBox2.Image = bitMap;
 
-            var paletteBytes = File.ReadAllBytes(@"..\..\..\palette\0\old.pal");
-           // var paletteBytes = File.ReadAllBytes(@"..\..\..\palette\0\agew_1.pal");
+           // var paletteBytes = File.ReadAllBytes(@"..\..\..\palette\0\old.pal");
+            var paletteBytes = File.ReadAllBytes(@"..\..\..\palette\0\agew_1.pal");
 
             GetColorCollectionFromPalleteFile(paletteBytes);
 
@@ -73,18 +72,6 @@ namespace WindowsFormsTestClient
             var imagePaletteColors = OffsetsToColors(extractResult.PaletteBytes);
 
             var paletteImage = renderer.RenderPalette(imagePaletteColors, 140, pixelSize: 1);
-
-
-
-            for (int j = 0; j < 15; j++)
-            {
-              //  var offset = 677 + (140)*j;
-             //   Debug.WriteLine("Offset: {0:D4} {1:X3} | {2:D4} {3:X3}", offset, offset, offset * 3, offset * 3);
-              //  renderer.DrawHorizontalColorLine(paletteImage, imagePaletteColors.Skip(offset).Take(140).ToList(), 50, 50 + 30 * (j));
-            }
-            
-
-           // renderer.DrawHorizontalColorLine(paletteImage, imagePaletteColors.Skip(858).Take(140).ToList(), 50, 80);
 
             pictureBox4.Image = paletteImage;
             
@@ -96,6 +83,9 @@ namespace WindowsFormsTestClient
                 renderer.RenderBitmap(bitMap, tupleCollection.Item1, layout);
 
                 renderer.RenderColorStripesOnBitmap(bitMap, tupleCollection.Item1, layout, imagePaletteColors);
+
+                var secondPartBlocks = SecondPart(layout.Bytes, tupleCollection.Item2);
+
                 i++;
             }
 
@@ -119,7 +109,7 @@ namespace WindowsFormsTestClient
             }
         }
 
-        private static int SecondPart(byte[] imageBytes, int initialOffset, int partsCount)
+        private static int SecondPart(byte[] imageBytes, int initialOffset)
         {
             var tupleCollection = new Collection<Tuple<byte, byte>> ();
 

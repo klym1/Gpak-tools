@@ -28,7 +28,7 @@ namespace ImageRenderer
 
                     using (var graphics = Graphics.FromImage(bitMap))
                     {
-                        graphics.FillRectangle(new SolidBrush(Color.Green),
+                        graphics.FillRectangle(new SolidBrush(Color.SkyBlue),
                             new Rectangle(new Point(offsetx * PixelSize + layout.offsetX, it.RowIndex * PixelSize + layout.offsetY),
                                 new Size(block.length * PixelSize, PixelSize)));
                     }
@@ -50,10 +50,7 @@ namespace ImageRenderer
             {
                 var lineoffset = (int)layout.offsetX;
 
-                var firstBlockDiffers = previousRow != null &&
-                                       previousRow.Collection[0].length != row.Collection[0].length;
-
-                if (rowIndex > 4 || firstBlockDiffers)
+                if (rowIndex > 3 || RowsDiffer(previousRow, row))
                 {
                     rowIndex = 0;
                     initStripeOffset = currentStripeOffset;
@@ -81,6 +78,13 @@ namespace ImageRenderer
                 rowIndex++;
                 previousRow = row;
             }
+        }
+
+        private static bool RowsDiffer(MultiPictureEl previousRow, MultiPictureEl row)
+        {
+            var firstBlockDiffers = previousRow != null &&
+                                    (!MultiPictureEl.Equals(previousRow, row));
+            return firstBlockDiffers;
         }
 
         public Bitmap RenderPalette(ICollection<Color> colorCollection, int width, int pixelSize)

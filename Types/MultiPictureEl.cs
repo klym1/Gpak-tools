@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Linq;
 
 namespace Types
 {
@@ -17,6 +18,11 @@ namespace Types
         public MultiPictureEl(Collection<Block> collection)
         {
             Collection = collection;
+        }
+
+        public static bool Equals(MultiPictureEl one, MultiPictureEl two)
+        {
+            return one.Collection.SequenceEqual(two.Collection);
         }
     }
 }
