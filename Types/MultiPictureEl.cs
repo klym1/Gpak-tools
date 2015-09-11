@@ -1,7 +1,5 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Linq;
-using System.Security.Policy;
 
 namespace Types
 {
@@ -20,20 +18,5 @@ namespace Types
         {
             Collection = collection;
         }
-    }
-
-    public class MultiPictureElGroup
-    {
-        public int GroupIndex { get; set; }
-        public Collection<Block> FirstColumnBlocks { get; set; }
-
-        public int Length {get { return FirstColumnBlocks.First().length; }}
-
-        public MultiPictureElGroup()
-        {
-            FirstColumnBlocks = new Collection<Block>();
-        }
-
-        
     }
 }

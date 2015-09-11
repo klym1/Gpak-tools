@@ -42,28 +42,44 @@ namespace ImageRenderer
         {
             var currentStripeOffset = 0;
             var rowIndex = 0;
-            var blockNumber = 0;
+            var initStripeOffset = 0;
 
-            var grps = piactureElements.SplitByGroups();
+            MultiPictureEl previousRow = null;
 
-            foreach (var grp in grps)
+            foreach (var row in piactureElements)
             {
-                foreach (var block in grp.FirstColumnBlocks)
+                var lineoffset = (int)layout.offsetX;
+
+                var firstBlockDiffers = previousRow != null &&
+                                       previousRow.Collection[0].length != row.Collection[0].length;
+
+                if (rowIndex > 4 || firstBlockDiffers)
+                {
+                    rowIndex = 0;
+                    initStripeOffset = currentStripeOffset;
+                }
+                
+                currentStripeOffset = initStripeOffset; 
+                
+                foreach (var block in row.Collection)
                 {
                     var stripe = colorCollection
                         .Skip(currentStripeOffset)
                         .Take(block.length)
                         .ToList();
 
-                    DrawHorizontalColorLine(bitMap, stripe,
-                        offsetX: block.offsetx + layout.offsetX,
-                        offsetY: rowIndex + layout.offsetY);
-                    
-                    rowIndex++;
+                    lineoffset += block.offsetx ;
 
+                    DrawHorizontalColorLine(bitMap, stripe,
+                        offsetX: lineoffset,
+                        offsetY: row.RowIndex + layout.offsetY);
+
+                    lineoffset += block.length;
+                    currentStripeOffset += block.length;
                 }
 
-                currentStripeOffset += grp.Length;
+                rowIndex++;
+                previousRow = row;
             }
         }
 

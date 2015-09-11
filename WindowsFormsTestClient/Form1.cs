@@ -47,13 +47,13 @@ namespace WindowsFormsTestClient
         private void Do()
         {
             const string logPath = @"..\..\..\extractor_out.txt";
-            File.Create(logPath).Dispose();
+         //   File.Create(logPath).Dispose();
 
             IBinaryMapper mapper = new BinaryAutoMapper();
 
             var extractor = new Extractor(logPath, mapper);
 
-            var extractResult = extractor.ExtractFromGp(@"..\..\..\gp\test15.gp");
+            var extractResult = extractor.ExtractFromGp(@"..\..\..\gp\test16.gp");
 
             IRenderer renderer = new Renderer();
 
@@ -62,8 +62,8 @@ namespace WindowsFormsTestClient
 
             pictureBox2.Image = bitMap;
 
-           // var paletteBytes = File.ReadAllBytes(@"..\..\..\palette\0\old.pal");
-            var paletteBytes = File.ReadAllBytes(@"..\..\..\palette\0\agew_1.pal");
+            var paletteBytes = File.ReadAllBytes(@"..\..\..\palette\0\old.pal");
+           // var paletteBytes = File.ReadAllBytes(@"..\..\..\palette\0\agew_1.pal");
 
             GetColorCollectionFromPalleteFile(paletteBytes);
 
