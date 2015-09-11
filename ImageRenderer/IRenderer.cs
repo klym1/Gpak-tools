@@ -16,6 +16,6 @@ namespace ImageRenderer
 
         Bitmap RenderPalette(ICollection<Color> colorCollection, int width, int pixelSize);
 
-        void DrawHorizontalColorLine(Bitmap bitmap, ICollection<Color> colorCollection, int offsetX, int offsetY);
+        void DrawHorizontalColorLine(Bitmap bitmap, ICollection<Color> colorCollection, int offsetX, int offsetY, int height = 1);
     }
 }

@@ -1,13 +1,7 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Windows.Forms.VisualStyles;
-using GPExtractor;
 using Types;
 
 namespace ImageRenderer
@@ -50,7 +44,7 @@ namespace ImageRenderer
             {
                 var lineoffset = (int)layout.offsetX;
 
-                if (rowIndex > 3 || RowsDiffer(previousRow, row))
+                if (rowIndex > 4 || RowsDiffer(previousRow, row))
                 {
                     rowIndex = 0;
                     initStripeOffset = currentStripeOffset;
@@ -116,7 +110,7 @@ namespace ImageRenderer
             return newBitmap;
         }
 
-        public void DrawHorizontalColorLine(Bitmap bitmap, ICollection<Color> colorCollection, int offsetX, int offsetY)
+        public void DrawHorizontalColorLine(Bitmap bitmap, ICollection<Color> colorCollection, int offsetX, int offsetY, int height = 1)
         {
             var initialOffsetX = offsetX;
             
@@ -126,7 +120,7 @@ namespace ImageRenderer
                 {
                     graphics.FillRectangle(new SolidBrush(color),
                         new Rectangle(new Point(initialOffsetX++, offsetY),
-                            new Size(PixelSize, 1)));
+                            new Size(PixelSize, height)));
                 }
             }
         }

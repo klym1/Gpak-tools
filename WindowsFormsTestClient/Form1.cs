@@ -52,7 +52,7 @@ namespace WindowsFormsTestClient
 
             var extractor = new Extractor(logPath, mapper);
 
-            var extractResult = extractor.ExtractFromGp(@"..\..\..\gp\test8.gp");
+            var extractResult = extractor.ExtractFromGp(@"..\..\..\gp\test16.gp");
 
             IRenderer renderer = new Renderer();
 
