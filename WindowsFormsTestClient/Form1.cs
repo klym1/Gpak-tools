@@ -13,28 +13,6 @@ using Types;
 
 namespace WindowsFormsTestClient
 {
-    [DebuggerDisplay("{One}")]
-    public class SecondPartBlock
-    {
-        public byte One;
-        public byte Two;
-    }
-
-    [DebuggerDisplay("{Type} {Values}")]
-    public class CounterSection
-    {
-        public byte Type;
-        public int Counter { get { return SecondPartBlocks.Count; } }
-
-        public string Values
-        {
-            get { return String.Join(" ",SecondPartBlocks.Select(it => String.Format("{0:X2}", it.One)).ToArray()); }
-            
-        }
-
-        public List<SecondPartBlock> SecondPartBlocks;
-    }
-
     public partial class Form1 : Form
     {
         public Form1()
@@ -111,21 +89,14 @@ namespace WindowsFormsTestClient
 
         private static int SecondPart(byte[] imageBytes, int initialOffset)
         {
-            var tupleCollection = new Collection<Tuple<byte, byte>> ();
-
-            var pairsProcessed = 0;
             var offset = initialOffset+1; // skip CD bytes
 
             var tempByteCollection = new Collection<byte>();
 
-            var collectionOfBlocks = new Collection<Collection<byte>>();
+            var collectionOfBlocks = new Collection<CounterSection>();
 
             while (offset < imageBytes.Length-1)
             {
-                //Debug.Write(pairNumber + ". ");
-                //Debug.Write(string.Format(" [{0:D4}] ",imageBytes[offset]));
-
-               // Helper.DumpArray(imageBytes, offset, 2);
                 var blockStartByte = imageBytes[offset];
 
                 var blockLength = blockStartByte & 0x0f;
@@ -141,7 +112,7 @@ namespace WindowsFormsTestClient
                     offset++;
                 }
 
-                collectionOfBlocks.Add(tempByteCollection);
+                collectionOfBlocks.Add(new CounterSection(tempByteCollection.ToList()));
                 tempByteCollection = new Collection<byte>();
 
             }
