@@ -52,7 +52,7 @@ namespace WindowsFormsTestClient
 
             var extractor = new Extractor(logPath, mapper);
 
-            var extractResult = extractor.ExtractFromGp(@"..\..\..\gp\test19.gp");
+            var extractResult = extractor.ExtractFromGp(@"..\..\..\gp\test17.gp");
 
             IRenderer renderer = new Renderer();
 
@@ -71,7 +71,7 @@ namespace WindowsFormsTestClient
 
             var imagePaletteColors = OffsetsToColors(extractResult.PaletteBytes);
 
-            var paletteImage = renderer.RenderPalette(imagePaletteColors, 140, pixelSize: 1);
+            var paletteImage = renderer.RenderPalette(imagePaletteColors, 139, pixelSize: 1);
 
             pictureBox4.Image = paletteImage;
             
@@ -114,93 +114,38 @@ namespace WindowsFormsTestClient
             var tupleCollection = new Collection<Tuple<byte, byte>> ();
 
             var pairsProcessed = 0;
-            var offset = initialOffset+2; // skip CD FF bytes
+            var offset = initialOffset+1; // skip CD bytes
 
-            while (offset < imageBytes.Length)
+            var tempByteCollection = new Collection<byte>();
+
+            var collectionOfBlocks = new Collection<Collection<byte>>();
+
+            while (offset < imageBytes.Length-1)
             {
                 //Debug.Write(pairNumber + ". ");
                 //Debug.Write(string.Format(" [{0:D4}] ",imageBytes[offset]));
 
                // Helper.DumpArray(imageBytes, offset, 2);
-                var byte1 = imageBytes[offset];
-                var byte2 = imageBytes[offset + 1];
+                var blockStartByte = imageBytes[offset];
 
-               // var newnumber = (byte1) | ((byte2 & 0x0f) << 8);
-                
-               // var thirdOctet = (byte2 >> 4);
+                var blockLength = blockStartByte & 0x0f;
+                var blockType = (blockStartByte >> 4);
 
-                //if (thirdOctet == 0xd)
+                if(blockType != 0xf) break;
+
+                offset++;
+
+                for (var i = 0; i < blockLength + 1; i++)
                 {
-                    tupleCollection.Add(Tuple.Create(byte1, byte2));
-                }
-
-               // sumOfThirdOctets += thirdOctet;
-
-                //tupleCollection.Add(Tuple.Create(byte1, byte2, newnumber));
-
-                offset += 2;
-
-                pairsProcessed++;
-
-                if (pairsProcessed == 8)
-                {
-                    pairsProcessed = 0;
+                    tempByteCollection.Add(imageBytes[offset]);
                     offset++;
-                    
                 }
+
+                collectionOfBlocks.Add(tempByteCollection);
+                tempByteCollection = new Collection<byte>();
+
             }
-
-            var previousTuple = 208;
-            var countersCollection = new Collection<CounterSection>();
-
-            var tempCollection = new Collection<SecondPartBlock>();
-
-            var secondPartUsed = true;
-            var partCount = 0;
-
-            foreach (var tuple in tupleCollection)
-            {
-                var currentTuple = tuple.Item2;
-
-               // if (previousTuple != currentTuple)
-                {
-                   // if (secondPartUsed)
-                    {
-                       partCount++;
-                       secondPartUsed = false;
-                    }
-                 //   else
-                    {
-                        secondPartUsed = true;
-                    }
-
-                    if (partCount == 35)
-                    {
-                        countersCollection.Add(new CounterSection
-                        {
-                            Type = currentTuple,
-                            SecondPartBlocks = tempCollection.ToList()
-                        });
-
-                        tempCollection.Clear();
-                        partCount = 0;
-                    }
-                }
-               // else
-                {
-                    tempCollection.Add(new SecondPartBlock{One = tuple.Item1, Two = tuple.Item2});
-                }
-                 
-                
-
-                previousTuple = currentTuple;
-            }
-
-            countersCollection.Add(new CounterSection
-            {
-                Type = 0,
-                SecondPartBlocks = tempCollection.ToList()
-            });
+            
 
             return 0;
         }
