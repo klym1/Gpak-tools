@@ -30,7 +30,7 @@ namespace WindowsFormsTestClient
 
             var extractor = new Extractor(logPath, mapper);
 
-            var extractResult = extractor.ExtractFromGp(@"c:\GpArch\gp\test15.gp");
+            var extractResult = extractor.ExtractFromGp(@"c:\GpArch\gp\test19.gp");
 
             IRenderer renderer = new Renderer();
 
@@ -108,19 +108,23 @@ namespace WindowsFormsTestClient
 
                 if (blockType != 0xf)
                 {
+                    //
+                    var h = 5;
                     break;
                 }
 
                 if (blockLength < 15) // last block
                 {
-                    blockLength = imageBytes.Length - offset - 1;
+                    var p = imageBytes.Length - offset - 1;
+
+                    blockLength = p > 15 ? 15: p;
                 }
 
                 offset++;
 
                 for (var i = 0; i < blockLength; i+=2)
                 {
-                    var block = new CounterBlock(i/2,imageBytes[offset], imageBytes[offset + 1]);
+                    var block = new CounterBlock(imageBytes[offset], imageBytes[offset + 1]);
                     tempByteCollection.Add(block);
                     offset+=2;
                 }

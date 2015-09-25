@@ -49,34 +49,26 @@ namespace Types
         public List<CounterBlock> SecondPartBlocks;
     }
 
-    [DebuggerDisplay("{One} {Two}")]
     public class CounterBlock
     {
-        //public int Index { get; set; }
-
-        private byte One { get; set; }
-        private byte Two { get; set; }
+        private readonly byte _one;
+        private readonly byte _two;
 
         public int Offset
         {
-            get { return (One | (FourthOcted << 8)); }
+            get { return (_one | ((_two) & 0x0f) << 8); }
         }
 
-        public byte ThirdOcted
+        //Always == 0xD //?
+        private byte ThirdOcted
         {
-            get { return (byte)((Two) >> 4); }
+            get { return (byte)((_two) >> 4); }
         }
 
-        private byte FourthOcted
+        public CounterBlock(byte one, byte two)
         {
-            get { return (byte)((Two) & 0x0f); }
-        }
-
-        public CounterBlock(int index, byte one, byte two)
-        {
-            //Index = index;
-            One = one;
-            Two = two;
+            _one = one;
+            _two = two;
         }
     }
 }

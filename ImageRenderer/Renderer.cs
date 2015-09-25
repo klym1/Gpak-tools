@@ -44,13 +44,16 @@ namespace ImageRenderer
         public void RenderCounterBlocksOnBitmap(Bitmap bitMap, Collection<MultiPictureEl> piactureElements, Collection<CounterSection> secondPartBlocks, ImageLayoutInfo layout, List<Color> imagePaletteColors)
         {
             var allOffsets2 = secondPartBlocks.SelectMany(it => it.SecondPartBlocks).ToList();
+            var blockLengths = piactureElements.SelectMany(it => it.Collection).Sum(it => it.length);
+
+            // secondsPart blocks total length should be equal to total length of firstPartBlocks. Currently not totally true (19262 / 19264)
+
             enumerator = allOffsets2.GetEnumerator();
             
             var blockLengthUsed = 0;
             var currentRow = 0;
             var previousBlockUsed = 0;
             CounterBlock previousBlock = null;
-           // var debt = 0;
 
             var borrow = false;
 
@@ -69,12 +72,14 @@ namespace ImageRenderer
                         var activeBlock = previousBlock;
 
                         var slice =
-                              imagePaletteColors.Skip(activeBlock.Offset + remaining)
-                                  .Take(block.length - blockLengthUsed)
+                              imagePaletteColors.Skip(activeBlock.Offset + previousBlockUsed)
+                                  .Take(32)
                                   .ToList();
 
+                        //var slice = Enumerable.Range(1, 20).Select(i => Color.Green).ToArray();
+
                         DrawHorizontalColorLine(bitMap, slice,
-                            block.offsetx + layout.offsetX + blockLengthUsed,
+                            offsetx + layout.offsetX + blockLengthUsed,
                             currentRow + layout.offsetY);
 
                         blockLengthUsed += remaining;
@@ -88,14 +93,13 @@ namespace ImageRenderer
 
                             if(currentCounterBlock == null) return;
                             
-
                             var slice =
                                 imagePaletteColors.Skip(currentCounterBlock.Offset)
                                     .Take(block.length - blockLengthUsed)
                                     .ToList();
 
-                            DrawHorizontalColorLine(bitMap, slice, 
-                                block.offsetx + layout.offsetX + blockLengthUsed, 
+                            DrawHorizontalColorLine(bitMap, slice,
+                                offsetx + layout.offsetX + blockLengthUsed, 
                                 currentRow + layout.offsetY);
 
                             blockLengthUsed += 16;
@@ -107,35 +111,32 @@ namespace ImageRenderer
                     {
                         var currentCounterBlock = fetchBlockAndMove();
 
-                        var UsedLength = block.length - blockLengthUsed;
+                        if(currentCounterBlock == null) return;
+                        
+                        var usedLength = block.length - blockLengthUsed;
 
-                        previousBlockUsed = UsedLength; ;
+                        previousBlockUsed = usedLength; ;
 
                         previousBlock = currentCounterBlock;
 
                         var slice =
                             imagePaletteColors.Skip(currentCounterBlock.Offset)
-                                .Take(UsedLength)
+                                .Take(usedLength)
                                 .ToList();
 
-                       // var slice = Enumerable.Range(0, diff).Select(o => Color.Red).ToArray();
-
                         DrawHorizontalColorLine(bitMap, slice,
-                            block.offsetx + layout.offsetX + blockLengthUsed,
+                            offsetx + layout.offsetX + blockLengthUsed,
                             currentRow + layout.offsetY);
 
                         borrow = true;
                     }
 
-                        
-
-                    currentRow++;
                     blockLengthUsed = 0;
-
-
-                    offsetx += block.length;
+                   offsetx += block.length;
 
                 }
+                
+                currentRow++;
 
             }
         }
