@@ -30,7 +30,7 @@ namespace WindowsFormsTestClient
 
             var extractor = new Extractor(logPath, mapper);
 
-            var extractResult = extractor.ExtractFromGp(@"c:\GpArch\gp\test18.gp");
+            var extractResult = extractor.ExtractFromGp(@"c:\GpArch\gp\test15.gp");
 
             IRenderer renderer = new Renderer();
 
@@ -106,7 +106,15 @@ namespace WindowsFormsTestClient
                 var blockLength = blockStartByte & 0x0f;
                 var blockType = (blockStartByte >> 4);
 
-                if(blockType != 0xf) break;
+                if (blockType != 0xf)
+                {
+                    break;
+                }
+
+                if (blockLength < 15) // last block
+                {
+                    blockLength = imageBytes.Length - offset - 1;
+                }
 
                 offset++;
 
