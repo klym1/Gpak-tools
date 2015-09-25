@@ -139,58 +139,7 @@ namespace ImageRenderer
 
             }
         }
-
-       
-        public void RenderColorStripesOnBitmap(Bitmap bitMap, Collection<MultiPictureEl> piactureElements, ImageLayoutInfo layout,
-            ICollection<Color> colorCollection)
-        {
-            var currentStripeOffset = 0;
-            var rowIndex = 0;
-            var initStripeOffset = 0;
-
-            MultiPictureEl previousRow = null;
-
-            foreach (var row in piactureElements)
-            {
-                var lineoffset = (int)layout.offsetX;
-
-                if (rowIndex > 4 || RowsDiffer(previousRow, row))
-                {
-                    rowIndex = 0;
-                    initStripeOffset = currentStripeOffset;
-                }
-                
-                currentStripeOffset = initStripeOffset; 
-                
-                foreach (var block in row.Collection)
-                {
-                    var stripe = colorCollection
-                        .Skip(currentStripeOffset)
-                        .Take(block.length)
-                        .ToList();
-
-                    lineoffset += block.offsetx ;
-
-                    DrawHorizontalColorLine(bitMap, stripe,
-                        offsetX: lineoffset,
-                        offsetY: row.RowIndex + layout.offsetY);
-
-                    lineoffset += block.length;
-                    currentStripeOffset += block.length;
-                }
-
-                rowIndex++;
-                previousRow = row;
-            }
-        }
-
-        private static bool RowsDiffer(MultiPictureEl previousRow, MultiPictureEl row)
-        {
-            var firstBlockDiffers = previousRow != null &&
-                                    (!MultiPictureEl.Equals(previousRow, row));
-            return firstBlockDiffers;
-        }
-
+        
         public Bitmap RenderPalette(ICollection<Color> colorCollection, int width, int pixelSize)
         {
             var newBitmap = new Bitmap(500, 500);
