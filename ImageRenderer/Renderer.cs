@@ -10,7 +10,7 @@ namespace ImageRenderer
     {
         const int PixelSize = 1;
 
-        public void RenderBitmap(Bitmap bitMap, Collection<MultiPictureEl> piactureElements, ImageLayoutInfo layout)
+        public void RenderBitmap(Bitmap bitMap, Collection<MultiPictureEl> piactureElements, Collection<CounterSection> secondPartBlocks, ImageLayoutInfo layout, List<Color> imagePaletteColors)
         {
             foreach (var it in piactureElements)
             {
@@ -25,12 +25,122 @@ namespace ImageRenderer
                         graphics.FillRectangle(new SolidBrush(Color.SkyBlue),
                             new Rectangle(new Point(offsetx * PixelSize + layout.offsetX, it.RowIndex * PixelSize + layout.offsetY),
                                 new Size(block.length * PixelSize, PixelSize)));
+
                     }
                     offsetx += block.length;
                 }
             }
         }
 
+        private CounterBlock fetchBlockAndMove()
+        {
+            enumerator.MoveNext();
+
+            return enumerator.Current;
+        }
+
+        private List<CounterBlock>.Enumerator enumerator;
+
+        public void RenderCounterBlocksOnBitmap(Bitmap bitMap, Collection<MultiPictureEl> piactureElements, Collection<CounterSection> secondPartBlocks, ImageLayoutInfo layout, List<Color> imagePaletteColors)
+        {
+            var allOffsets2 = secondPartBlocks.SelectMany(it => it.SecondPartBlocks).ToList();
+            enumerator = allOffsets2.GetEnumerator();
+            
+            var blockLengthUsed = 0;
+            var currentRow = 0;
+            var previousBlockUsed = 0;
+            CounterBlock previousBlock = null;
+           // var debt = 0;
+
+            var borrow = false;
+
+            foreach (var it in piactureElements)
+            {
+                var offsetx = 0;
+
+                foreach (var block in it.Collection)
+                {
+                    offsetx += block.offsetx;
+
+                    //draw Remaining
+                    if (borrow)
+                    {
+                        var remaining = 16 - previousBlockUsed;
+                        var activeBlock = previousBlock;
+
+                        var slice =
+                              imagePaletteColors.Skip(activeBlock.Offset + remaining)
+                                  .Take(block.length - blockLengthUsed)
+                                  .ToList();
+
+                        DrawHorizontalColorLine(bitMap, slice,
+                            block.offsetx + layout.offsetX + blockLengthUsed,
+                            currentRow + layout.offsetY);
+
+                        blockLengthUsed += remaining;
+                        borrow = false;
+
+                    }
+
+                        while (block.length - blockLengthUsed >= 16)
+                        {
+                            var currentCounterBlock = fetchBlockAndMove();
+
+                            if(currentCounterBlock == null) return;
+                            
+
+                            var slice =
+                                imagePaletteColors.Skip(currentCounterBlock.Offset)
+                                    .Take(block.length - blockLengthUsed)
+                                    .ToList();
+
+                            DrawHorizontalColorLine(bitMap, slice, 
+                                block.offsetx + layout.offsetX + blockLengthUsed, 
+                                currentRow + layout.offsetY);
+
+                            blockLengthUsed += 16;
+                        }
+
+                        var diff = block.length - blockLengthUsed;
+
+                    if (diff > 0)
+                    {
+                        var currentCounterBlock = fetchBlockAndMove();
+
+                        var UsedLength = block.length - blockLengthUsed;
+
+                        previousBlockUsed = UsedLength; ;
+
+                        previousBlock = currentCounterBlock;
+
+                        var slice =
+                            imagePaletteColors.Skip(currentCounterBlock.Offset)
+                                .Take(UsedLength)
+                                .ToList();
+
+                       // var slice = Enumerable.Range(0, diff).Select(o => Color.Red).ToArray();
+
+                        DrawHorizontalColorLine(bitMap, slice,
+                            block.offsetx + layout.offsetX + blockLengthUsed,
+                            currentRow + layout.offsetY);
+
+                        borrow = true;
+                    }
+
+                        
+
+                    currentRow++;
+                    blockLengthUsed = 0;
+
+
+                    offsetx += block.length;
+
+                }
+
+            }
+        }
+
+       
         public void RenderColorStripesOnBitmap(Bitmap bitMap, Collection<MultiPictureEl> piactureElements, ImageLayoutInfo layout,
             ICollection<Color> colorCollection)
         {

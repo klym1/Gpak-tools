@@ -30,7 +30,7 @@ namespace WindowsFormsTestClient
 
             var extractor = new Extractor(logPath, mapper);
 
-            var extractResult = extractor.ExtractFromGp(@"..\..\..\gp\test17.gp");
+            var extractResult = extractor.ExtractFromGp(@"c:\GpArch\gp\test15.gp");
 
             IRenderer renderer = new Renderer();
 
@@ -57,12 +57,14 @@ namespace WindowsFormsTestClient
             foreach (var layout in extractResult.LayoutCollection.Take(5))
             {
                 var tupleCollection = MultiPictureEls(layout.Bytes);
-                
-                renderer.RenderBitmap(bitMap, tupleCollection.Item1, layout);
 
-                renderer.RenderColorStripesOnBitmap(bitMap, tupleCollection.Item1, layout, imagePaletteColors);
+                var firstPartBlocks = tupleCollection.Item1;
 
                 var secondPartBlocks = SecondPart(layout.Bytes, tupleCollection.Item2);
+
+                renderer.RenderBitmap(bitMap, firstPartBlocks, secondPartBlocks, layout, imagePaletteColors);
+
+                renderer.RenderCounterBlocksOnBitmap(bitMap, firstPartBlocks, secondPartBlocks, layout, imagePaletteColors);
 
                 i++;
             }
@@ -87,13 +89,15 @@ namespace WindowsFormsTestClient
             }
         }
 
-        private static int SecondPart(byte[] imageBytes, int initialOffset)
+        private static Collection<CounterSection> SecondPart(byte[] imageBytes, int initialOffset)
         {
             var offset = initialOffset+1; // skip CD bytes
 
-            var tempByteCollection = new Collection<byte>();
+            var tempByteCollection = new Collection<CounterBlock>();
 
             var collectionOfBlocks = new Collection<CounterSection>();
+
+            var row = 0;
 
             while (offset < imageBytes.Length-1)
             {
@@ -106,19 +110,21 @@ namespace WindowsFormsTestClient
 
                 offset++;
 
-                for (var i = 0; i < blockLength + 1; i++)
+                for (var i = 0; i < blockLength; i+=2)
                 {
-                    tempByteCollection.Add(imageBytes[offset]);
-                    offset++;
+                    var block = new CounterBlock(i/2,imageBytes[offset], imageBytes[offset + 1]);
+                    tempByteCollection.Add(block);
+                    offset+=2;
                 }
 
-                collectionOfBlocks.Add(new CounterSection(tempByteCollection.ToList()));
-                tempByteCollection = new Collection<byte>();
-
+                collectionOfBlocks.Add(new CounterSection(tempByteCollection.ToList())
+                {
+                    Row = row++
+                });
+                tempByteCollection = new Collection<CounterBlock>();
             }
             
-
-            return 0;
+            return collectionOfBlocks;
         }
         
         private static Tuple<Collection<MultiPictureEl>,int> MultiPictureEls(byte[] imageBytes)
