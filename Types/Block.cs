@@ -10,6 +10,12 @@ namespace Types
         public int Offsetx { get; set; }
         public int Length { get; set; }
 
+        public Block(int offsetx, int length)
+        {
+            Offsetx = offsetx;
+            Length = length;
+        }
+
         public bool Equals(Block other)
         {
             return Offsetx == other.Offsetx && Length == other.Length;

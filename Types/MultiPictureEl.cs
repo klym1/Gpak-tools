@@ -17,11 +17,7 @@ namespace Types
         {
             RowIndex = rowIndex;
 
-            Collection = collection.Select(it => new Block
-            {
-                Length = it.Length,
-                Offsetx = it.Offsetx,
-            }).ToList();
+            Collection = collection.Select(it => new Block(it.Offsetx, it.Length)).ToList();
         }
 
         public static bool Equals(MultiPictureEl one, MultiPictureEl two)

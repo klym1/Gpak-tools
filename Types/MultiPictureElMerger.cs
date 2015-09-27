@@ -30,21 +30,13 @@ namespace Types
                 }
                 else
                 {
-                    newElem.Collection.Add(new Block
-                    {
-                        Length = currentBlock.Length,
-                        Offsetx = currentBlock.Offsetx,
-                    });
+                    newElem.Collection.Add(new Block(currentBlock.Offsetx, currentBlock.Length));
 
                     currentBlock = nextBlock;
                 }
             }
 
-            newElem.Collection.Add(new Block
-            {
-                Length = currentBlock.Length,
-                Offsetx = currentBlock.Offsetx,
-            });
+            newElem.Collection.Add(new Block(currentBlock.Offsetx, currentBlock.Length));
 
             return newElem;
         }

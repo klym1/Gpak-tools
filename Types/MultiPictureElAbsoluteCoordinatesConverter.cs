@@ -10,9 +10,7 @@ namespace Types
             return new Collection<AbsoluteMultiPictureEl>(elems.Select(ConvertToAbsoluteCoordinates).ToList());
         }
 
-        private static int id = 0;
 
-        //todo refactor
         public static AbsoluteMultiPictureEl ConvertToAbsoluteCoordinates(this MultiPictureEl elem)
         {
             var offsetX = 0;

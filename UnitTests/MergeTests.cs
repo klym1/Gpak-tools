@@ -13,21 +13,21 @@ namespace UnitTests
         {
             var elem = new MultiPictureEl(new Collection<Block>
             {
-                new Block {Offsetx = 12, Length = 100},
-                new Block {Offsetx = 0, Length = 1},
-                new Block {Offsetx = 12, Length = 50},
-                new Block {Offsetx = 0, Length = 2},
-                new Block {Offsetx = 0, Length = 3},
-                new Block {Offsetx = 1, Length = 3},
-            });
+                new Block (12, 100),
+                new Block (0, 1),
+                new Block (12, 50),
+                new Block (0, 2),
+                new Block (0, 3),
+                new Block (1, 3)
+            }, 0);
 
             var merged = elem.MergeBlocks();
 
             merged.Collection.ShouldBeEquivalentTo(new Collection<Block>
             {
-                new Block {Offsetx = 12, Length = 101},
-                new Block {Offsetx = 12, Length = 55},
-                new Block {Offsetx = 1, Length = 3},
+                new Block (12, 101),
+                new Block (12, 55),
+                new Block (1, 3)
             });
         }
     }

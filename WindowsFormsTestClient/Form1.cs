@@ -30,7 +30,7 @@ namespace WindowsFormsTestClient
 
             var extractor = new Extractor(logPath, mapper);
 
-            var extractResult = extractor.ExtractFromGp(@"c:\GpArch\gp\test18.gp");
+            var extractResult = extractor.ExtractFromGp(@"c:\GpArch\gp\test15.gp");
 
             IRenderer renderer = new Renderer();
 
@@ -61,7 +61,7 @@ namespace WindowsFormsTestClient
 
                 var secondPartBlocks = SecondPart(layout.Bytes, tupleCollection.Item2);
 
-                //renderer.RenderBitmap(bitMap, firstPartBlocks, secondPartBlocks, layout, imagePaletteColors);
+                renderer.RenderBitmap(bitMap, firstPartBlocks, secondPartBlocks, layout, imagePaletteColors);
 
                 renderer.RenderCounterBlocksOnBitmap(bitMap, firstPartBlocks, secondPartBlocks, layout, imagePaletteColors);
 
@@ -151,11 +151,7 @@ namespace WindowsFormsTestClient
 
                     piactureElements.Add(new MultiPictureEl(new Collection<Block>
                     {
-                        new Block
-                        {
-                            Length = a,
-                            Offsetx = b
-                        }
+                        new Block(b,a)
                     }, rowIndex++));
 
                     offset += 2;
@@ -178,11 +174,7 @@ namespace WindowsFormsTestClient
 
                 for (int k = 0; k < blockType*2; k += 2)
                 {
-                    emptyCollection.Add(new Block
-                    {
-                        Offsetx = imageBytes[offset + k + 1],
-                        Length = imageBytes[offset + k + 2],
-                    });
+                    emptyCollection.Add(new Block(imageBytes[offset + k + 1], imageBytes[offset + k + 2]));
                 }
 
                 piactureElements.Add(new MultiPictureEl(emptyCollection, rowIndex++));
