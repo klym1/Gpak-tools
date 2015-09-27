@@ -7,11 +7,11 @@ namespace GPExtractor
 {
     public class RawParser
     {
-        public Collection<CounterBlock> SecondPart(byte[] imageBytes, int initialOffset)
+        public Collection<RawColorBlock> GetRawColorBlocks(byte[] imageBytes, int initialOffset)
         {
             var offset = initialOffset + 1; // skip CD bytes
 
-            var tempByteCollection = new Collection<CounterBlock>();
+            var tempByteCollection = new Collection<RawColorBlock>();
 
             while (offset < imageBytes.Length - 1)
             {
@@ -36,7 +36,7 @@ namespace GPExtractor
 
                 for (var i = 0; i < blockLength; i += 2)
                 {
-                    var block = new CounterBlock(imageBytes[offset], imageBytes[offset + 1]);
+                    var block = new RawColorBlock(imageBytes[offset], imageBytes[offset + 1]);
                     tempByteCollection.Add(block);
                     offset += 2;
                 }

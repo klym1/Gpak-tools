@@ -7,7 +7,7 @@ namespace Types
 {
     public class BlocksDistributor
     {
-        public Collection<AbsoluteBlockContainer> GetDistributedCounterPartBlocks(List<AbsoluteBlock> piactureElements, Collection<CounterBlock> secondPartBlocks)
+        public Collection<AbsoluteBlockContainer> GetDistributedCounterPartBlocks(List<AbsoluteBlock> piactureElements, Collection<RawColorBlock> secondPartBlocks)
         {
             var blockContainerCollection = GetDistributedCounterPartBlocksInternal(piactureElements, secondPartBlocks);
 
@@ -16,7 +16,7 @@ namespace Types
             return blockContainerCollection;
         }
 
-        public Collection<AbsoluteBlockContainer> GetDistributedCounterPartBlocksInternal(List<AbsoluteBlock> piactureElements, Collection<CounterBlock> secondPartBlocks)
+        public Collection<AbsoluteBlockContainer> GetDistributedCounterPartBlocksInternal(List<AbsoluteBlock> piactureElements, Collection<RawColorBlock> secondPartBlocks)
         {
             _enumerator = secondPartBlocks.ToList().GetEnumerator();
             _blockEnumerator = piactureElements.ToList().GetEnumerator();
@@ -58,25 +58,25 @@ namespace Types
             return blockContainerCollection;
         }
 
-        private bool TryToAppendCounterBlock(AbsoluteBlockContainer absoluteBlockContainer, CounterBlock counterBlock, int blockSizeNeeded, out int lenthAdded)
+        private bool TryToAppendCounterBlock(AbsoluteBlockContainer absoluteBlockContainer, RawColorBlock rawColorBlock, int blockSizeNeeded, out int lenthAdded)
         {
-            var stripePadding = blockSizeNeeded < GetBlockLengthNeeded(counterBlock) ? (GetBlockLengthNeeded(counterBlock) - blockSizeNeeded) : 0; ;
+            var stripePadding = blockSizeNeeded < GetBlockLengthNeeded(rawColorBlock) ? (GetBlockLengthNeeded(rawColorBlock) - blockSizeNeeded) : 0; ;
 
             if (absoluteBlockContainer.CanAddFullBlock(blockSizeNeeded))
             {
-                absoluteBlockContainer.CounterBlockContainers.Add(new CounterBlockContainer(counterBlock, blockSizeNeeded, absoluteBlockContainer.TotalSpaceOccupied, stripePadding));
+                absoluteBlockContainer.CounterBlockContainers.Add(new CounterBlockContainer(rawColorBlock, blockSizeNeeded, absoluteBlockContainer.TotalSpaceOccupied, stripePadding));
                 lenthAdded = blockSizeNeeded;
                 return true;
             }
 
             var freeSpace = absoluteBlockContainer.FreeSpaceLeft;
 
-            absoluteBlockContainer.CounterBlockContainers.Add(new CounterBlockContainer(counterBlock, freeSpace, absoluteBlockContainer.TotalSpaceOccupied, stripePadding));
+            absoluteBlockContainer.CounterBlockContainers.Add(new CounterBlockContainer(rawColorBlock, freeSpace, absoluteBlockContainer.TotalSpaceOccupied, stripePadding));
             lenthAdded = freeSpace;
             return false;
         }
 
-        private CounterBlock FetchCounterBlock()
+        private RawColorBlock FetchCounterBlock()
         {
             _enumerator.MoveNext();
             return _enumerator.Current;
@@ -88,12 +88,12 @@ namespace Types
             return _blockEnumerator.Current;
         }
 
-        private List<CounterBlock>.Enumerator _enumerator;
+        private List<RawColorBlock>.Enumerator _enumerator;
         private List<AbsoluteBlock>.Enumerator _blockEnumerator;
 
-        private int GetBlockLengthNeeded(CounterBlock counterBlock)
+        private int GetBlockLengthNeeded(RawColorBlock rawColorBlock)
         {
-            var type = counterBlock.ThirdOctet;
+            var type = rawColorBlock.ThirdOctet;
             return type + 3;
         }
 

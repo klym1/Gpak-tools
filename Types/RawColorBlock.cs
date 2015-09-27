@@ -1,6 +1,6 @@
 namespace Types
 {
-    public class CounterBlock
+    public class RawColorBlock
     {
         private readonly byte _one;
         private readonly byte _two;
@@ -9,7 +9,7 @@ namespace Types
         public int Offset { get; private set; }
         public byte ThirdOctet { get; private set; }
 
-        public CounterBlock(byte one, byte two)
+        public RawColorBlock(byte one, byte two)
         {
             _one = one;
             _two = two;

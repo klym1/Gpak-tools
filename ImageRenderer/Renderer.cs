@@ -12,7 +12,7 @@ namespace ImageRenderer
     {
         const int PixelSize = 1;
 
-        public void RenderBitmap(Bitmap bitMap, List<AbsoluteBlock> piactureElements, Collection<CounterBlock> secondPartBlocks, ImageLayoutInfo layout, List<Color> imagePaletteColors)
+        public void RenderBitmap(Bitmap bitMap, List<AbsoluteBlock> piactureElements, ImageLayoutInfo layout)
         {
             using (var graphics = Graphics.FromImage(bitMap))
             {
@@ -26,7 +26,7 @@ namespace ImageRenderer
             }
         }
 
-        public void RenderCounterBlocksOnBitmap(Bitmap bitMap, List<AbsoluteBlock> piactureElements, Collection<CounterBlock> secondPartBlocks, ImageLayoutInfo layout, List<Color> imagePaletteColors)
+        public void RenderCounterBlocksOnBitmap(Bitmap bitMap, List<AbsoluteBlock> piactureElements, Collection<RawColorBlock> secondPartBlocks, ImageLayoutInfo layout, List<Color> imagePaletteColors)
         {
             var blocksDistributor = new BlocksDistributor();
 
@@ -36,8 +36,7 @@ namespace ImageRenderer
             {
                 foreach (var counterBlockContainer in blockContainer.CounterBlockContainers)
                 {
-                    var slice =
-                             imagePaletteColors.Skip(counterBlockContainer.CounterBlock.Offset + counterBlockContainer.StripePadding)
+                    var slice = imagePaletteColors.Skip(counterBlockContainer.RawColorBlock.Offset + counterBlockContainer.StripePadding)
                                  .Take(counterBlockContainer.Width)
                                  .ToList();
                     

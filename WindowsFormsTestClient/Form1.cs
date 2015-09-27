@@ -30,7 +30,7 @@ namespace WindowsFormsTestClient
 
             var extractor = new Extractor(logPath, mapper);
 
-            var extractResult = extractor.ExtractFromGp(@"c:\GpArch\gp\test18.gp");
+            var extractResult = extractor.ExtractFromGp(@"c:\GpArch\gp\test15.gp");
 
             IRenderer renderer = new Renderer();
 
@@ -41,12 +41,10 @@ namespace WindowsFormsTestClient
 
             var paletteBytes = File.ReadAllBytes(@"..\..\..\palette\0\agew_1.pal");
 
-            GetColorCollectionFromPalleteFile(paletteBytes);
+            var colorCollection = GetColorCollectionFromPalleteFile(paletteBytes);
 
             pictureBox3.Image = renderer.RenderPalette(colorCollection, 100, pixelSize:10);
-
-
-            var imagePaletteColors = OffsetsToColors(extractResult.PaletteBytes);
+            var imagePaletteColors = OffsetsToColors(extractResult.PaletteBytes, colorCollection);
 
             var paletteImage = renderer.RenderPalette(imagePaletteColors, 139, pixelSize: 1);
 
@@ -62,24 +60,26 @@ namespace WindowsFormsTestClient
                 var rawFirstPartBlocks = rawParser.ParseRawBlockGroups(layout.Bytes, out offset);
                 var firstPartBlocks = GetAbsoluteBlocks(rawFirstPartBlocks);
 
-                var secondPartBlocks = rawParser.SecondPart(layout.Bytes, offset);
+                var secondPartBlocks = rawParser.GetRawColorBlocks(layout.Bytes, offset);
 
-                renderer.RenderBitmap(bitMap, firstPartBlocks, secondPartBlocks, layout, imagePaletteColors);
+                renderer.RenderBitmap(bitMap, firstPartBlocks, layout);
 
                 renderer.RenderCounterBlocksOnBitmap(bitMap, firstPartBlocks, secondPartBlocks, layout, imagePaletteColors);
 
                 i++;
             }
-
-            
         }
 
-        private void GetColorCollectionFromPalleteFile(byte[] paletteBytes)
+        private Collection<Color> GetColorCollectionFromPalleteFile(byte[] paletteBytes)
         {
+            var colorCollection = new Collection<Color>();
+
             for (int i = 0; i < paletteBytes.Length - 2; i += 3)
             {
                 colorCollection.Add(Color.FromArgb(255, paletteBytes[i], paletteBytes[i + 1], paletteBytes[i + 2]));
             }
+
+            return colorCollection;
         }
 
         private static void SetupCanvas(Bitmap bitMap)
@@ -97,9 +97,7 @@ namespace WindowsFormsTestClient
             return absoluteBlocks;
         }
         
-        private Collection<Color> colorCollection = new Collection<Color>();
-
-        private List<Color> OffsetsToColors(byte[] imagePaletteOffsets)
+        private List<Color> OffsetsToColors(byte[] imagePaletteOffsets, Collection<Color> colorCollection)
         {
             return imagePaletteOffsets.Select(offset => colorCollection[offset]).ToList();
         }
