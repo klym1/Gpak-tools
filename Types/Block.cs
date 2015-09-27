@@ -33,20 +33,20 @@ namespace Types
     [DebuggerDisplay("{offsetx} {length}")]
     public class AbsoluteBlock
     {
-        public int Offsetx { get; set; }
+        public int OffsetX { get; set; }
         public int Length { get; set; }
         public int OffsetY { get; set; }
 
-        public AbsoluteBlock(int offsetx, int length, int offsetY)
+        public AbsoluteBlock(int offsetX, int length, int offsetY)
         {
-            Offsetx = offsetx;
+            OffsetX = offsetX;
             Length = length;
             OffsetY = offsetY;
         }
 
         public bool Equals(AbsoluteBlock other)
         {
-            return Offsetx == other.Offsetx && Length == other.Length;
+            return OffsetX == other.OffsetX && Length == other.Length;
         }
 
         public override bool Equals(object obj)
@@ -59,12 +59,12 @@ namespace Types
         {
             unchecked
             {
-                return (Offsetx * 397) ^ Length;
+                return (OffsetX * 397) ^ Length;
             }
         }
     }
 
-    public class BlockContainer
+    public class AbsoluteBlockContainer
     {
         public AbsoluteBlock Block;
         public List<CounterBlockContainer> CounterBlockContainers;
@@ -84,7 +84,7 @@ namespace Types
             return Block.Length >= CounterBlockContainers.Sum(it => it.Width) + lengthNeeded; 
         }
 
-        public BlockContainer(AbsoluteBlock block)
+        public AbsoluteBlockContainer(AbsoluteBlock block)
         {
             Block = block;
             CounterBlockContainers = new List<CounterBlockContainer>();

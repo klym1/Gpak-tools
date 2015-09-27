@@ -33,7 +33,7 @@ namespace Types
                 absoluteBlockCollection.Add(absoluteBlock);
             }
 
-            return new AbsoluteMultiPictureEl(absoluteBlockCollection, elem.RowIndex);
+            return new AbsoluteMultiPictureEl(absoluteBlockCollection);
         }
     }
 }

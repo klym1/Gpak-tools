@@ -33,12 +33,10 @@ namespace Types
     [DebuggerDisplay("{RowIndex} {Collection.Count}")]
     public class AbsoluteMultiPictureEl
     {
-        public int RowIndex { get; private set; }
         public List<AbsoluteBlock> Collection { get; private set; }
 
-        public AbsoluteMultiPictureEl(Collection<AbsoluteBlock> collection, int rowIndex)
+        public AbsoluteMultiPictureEl(Collection<AbsoluteBlock> collection)
         {
-            RowIndex = rowIndex;
             Collection = collection.ToList();
         }
 
@@ -78,15 +76,17 @@ namespace Types
 
     public class CounterBlockContainer
     {
-        public CounterBlock counterBlock;
+        public CounterBlock CounterBlock;
         public int Width;
         public int Offset;
+        public int StripePadding;
 
-        public CounterBlockContainer(CounterBlock counterBlock, int width, int offset)
+        public CounterBlockContainer(CounterBlock counterBlock, int width, int offset, int stripePadding)
         {
-            this.counterBlock = counterBlock;
+            CounterBlock = counterBlock;
             Width = width;
             Offset = offset;
+            StripePadding = stripePadding;
         }
     }
 }

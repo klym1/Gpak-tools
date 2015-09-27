@@ -63,7 +63,7 @@ namespace WindowsFormsTestClient
 
                 renderer.RenderBitmap(bitMap, firstPartBlocks, secondPartBlocks, layout, imagePaletteColors);
 
-                //renderer.RenderCounterBlocksOnBitmap(bitMap, firstPartBlocks, secondPartBlocks, layout, imagePaletteColors);
+                renderer.RenderCounterBlocksOnBitmap(bitMap, firstPartBlocks, secondPartBlocks, layout, imagePaletteColors);
 
                 i++;
             }
