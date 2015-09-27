@@ -23,8 +23,10 @@ namespace Types
             {
                 if (previousBlock != null)
                 {
-                    offsetX += previousBlock.Length + block.Offsetx;
+                    offsetX += previousBlock.Length;
                 }
+
+                offsetX += block.Offsetx;
 
                 previousBlock = block;
 

@@ -30,7 +30,7 @@ namespace WindowsFormsTestClient
 
             var extractor = new Extractor(logPath, mapper);
 
-            var extractResult = extractor.ExtractFromGp(@"c:\GpArch\gp\test16.gp");
+            var extractResult = extractor.ExtractFromGp(@"c:\GpArch\gp\test18.gp");
 
             IRenderer renderer = new Renderer();
 
