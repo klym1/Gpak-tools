@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 
@@ -5,37 +6,36 @@ namespace Types
 {
     public static class MultiPictureElAbsoluteCoordinatesConverter
     {
-        public static Collection<AbsoluteMultiPictureEl> ConvertToAbsoluteCoordinatesBlocks(this Collection<MultiPictureEl> elems)
+        public static List<AbsoluteBlock> ConvertToAbsoluteCoordinatesBlocks(this Collection<MultiPictureEl> elems)
         {
-            return new Collection<AbsoluteMultiPictureEl>(elems.Select(ConvertToAbsoluteCoordinates).ToList());
+            return new List<AbsoluteBlock>(elems.Select(ConvertToAbsoluteCoordinates).SelectMany(it => it).ToList());
         }
-
-
-        public static AbsoluteMultiPictureEl ConvertToAbsoluteCoordinates(this MultiPictureEl elem)
+        
+        private static List<AbsoluteBlock> ConvertToAbsoluteCoordinates(this MultiPictureEl elem)
         {
             var offsetX = 0;
 
             var absoluteBlockCollection = new Collection<AbsoluteBlock>();
 
-            Block previousBlock = null;
+            RawShapeBlock previousRawShapeBlock = null;
 
             foreach (var block in elem.Collection)
             {
-                if (previousBlock != null)
+                if (previousRawShapeBlock != null)
                 {
-                    offsetX += previousBlock.Length;
+                    offsetX += previousRawShapeBlock.Length;
                 }
 
                 offsetX += block.Offsetx;
 
-                previousBlock = block;
+                previousRawShapeBlock = block;
 
                 var absoluteBlock = new AbsoluteBlock(offsetX, block.Length, elem.RowIndex);
 
                 absoluteBlockCollection.Add(absoluteBlock);
             }
 
-            return new AbsoluteMultiPictureEl(absoluteBlockCollection);
+            return absoluteBlockCollection.ToList();
         }
     }
 }

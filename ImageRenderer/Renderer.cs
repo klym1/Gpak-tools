@@ -12,11 +12,11 @@ namespace ImageRenderer
     {
         const int PixelSize = 1;
 
-        public void RenderBitmap(Bitmap bitMap, Collection<AbsoluteMultiPictureEl> piactureElements, Collection<CounterBlock> secondPartBlocks, ImageLayoutInfo layout, List<Color> imagePaletteColors)
+        public void RenderBitmap(Bitmap bitMap, List<AbsoluteBlock> piactureElements, Collection<CounterBlock> secondPartBlocks, ImageLayoutInfo layout, List<Color> imagePaletteColors)
         {
-            foreach (var it in piactureElements)
+            foreach (var block in piactureElements)
             {
-                foreach (var block in it.Collection)
+                //foreach (var block in it.Collection)
                 {
                     using (var graphics = Graphics.FromImage(bitMap))
                     {
@@ -28,8 +28,8 @@ namespace ImageRenderer
                 }
             }
         }
-        
-        public void RenderCounterBlocksOnBitmap(Bitmap bitMap, Collection<AbsoluteMultiPictureEl> piactureElements, Collection<CounterBlock> secondPartBlocks, ImageLayoutInfo layout, List<Color> imagePaletteColors)
+
+        public void RenderCounterBlocksOnBitmap(Bitmap bitMap, List<AbsoluteBlock> piactureElements, Collection<CounterBlock> secondPartBlocks, ImageLayoutInfo layout, List<Color> imagePaletteColors)
         {
             var blocksDistributor = new BlocksDistributor();
 

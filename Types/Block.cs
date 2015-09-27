@@ -5,34 +5,15 @@ using System.Linq;
 namespace Types
 {
     [DebuggerDisplay("{offsetx} {length}")]
-    public class Block
+    public class RawShapeBlock
     {
         public int Offsetx { get; set; }
         public int Length { get; set; }
 
-        public Block(int offsetx, int length)
+        public RawShapeBlock(int offsetx, int length)
         {
             Offsetx = offsetx;
             Length = length;
-        }
-
-        public bool Equals(Block other)
-        {
-            return Offsetx == other.Offsetx && Length == other.Length;
-        }
-
-        public override bool Equals(object obj)
-        {
-            if (ReferenceEquals(null, obj)) return false;
-            return obj is Block && Equals((Block) obj);
-        }
-
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                return (Offsetx*397) ^ Length;
-            }
         }
     }
 
@@ -48,25 +29,6 @@ namespace Types
             OffsetX = offsetX;
             Length = length;
             OffsetY = offsetY;
-        }
-
-        public bool Equals(AbsoluteBlock other)
-        {
-            return OffsetX == other.OffsetX && Length == other.Length;
-        }
-
-        public override bool Equals(object obj)
-        {
-            if (ReferenceEquals(null, obj)) return false;
-            return obj is AbsoluteBlock && Equals((AbsoluteBlock)obj);
-        }
-
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                return (OffsetX * 397) ^ Length;
-            }
         }
     }
 

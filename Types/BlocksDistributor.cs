@@ -7,7 +7,7 @@ namespace Types
 {
     public class BlocksDistributor
     {
-        public Collection<AbsoluteBlockContainer> GetDistributedCounterPartBlocks(Collection<AbsoluteMultiPictureEl> piactureElements, Collection<CounterBlock> secondPartBlocks)
+        public Collection<AbsoluteBlockContainer> GetDistributedCounterPartBlocks(List<AbsoluteBlock> piactureElements, Collection<CounterBlock> secondPartBlocks)
         {
             var blockContainerCollection = GetDistributedCounterPartBlocksInternal(piactureElements, secondPartBlocks);
 
@@ -16,10 +16,10 @@ namespace Types
             return blockContainerCollection;
         }
 
-        public Collection<AbsoluteBlockContainer> GetDistributedCounterPartBlocksInternal(Collection<AbsoluteMultiPictureEl> piactureElements, Collection<CounterBlock> secondPartBlocks)
+        public Collection<AbsoluteBlockContainer> GetDistributedCounterPartBlocksInternal(List<AbsoluteBlock> piactureElements, Collection<CounterBlock> secondPartBlocks)
         {
             _enumerator = secondPartBlocks.ToList().GetEnumerator();
-            _blockEnumerator = piactureElements.SelectMany(it => it.Collection).ToList().GetEnumerator();
+            _blockEnumerator = piactureElements.ToList().GetEnumerator();
 
             var blockContainerCollection = new Collection<AbsoluteBlockContainer>();
 
@@ -79,14 +79,12 @@ namespace Types
         private CounterBlock FetchCounterBlock()
         {
             _enumerator.MoveNext();
-
             return _enumerator.Current;
         }
 
         private AbsoluteBlock FetchBlock()
         {
             _blockEnumerator.MoveNext();
-
             return _blockEnumerator.Current;
         }
 

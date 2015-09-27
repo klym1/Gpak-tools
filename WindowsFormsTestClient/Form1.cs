@@ -30,7 +30,7 @@ namespace WindowsFormsTestClient
 
             var extractor = new Extractor(logPath, mapper);
 
-            var extractResult = extractor.ExtractFromGp(@"c:\GpArch\gp\test15.gp");
+            var extractResult = extractor.ExtractFromGp(@"c:\GpArch\gp\test18.gp");
 
             IRenderer renderer = new Renderer();
 
@@ -128,9 +128,7 @@ namespace WindowsFormsTestClient
             return tempByteCollection;
         }
 
-        private static int Id = 0;
-
-        private static Tuple<Collection<AbsoluteMultiPictureEl>,int> MultiPictureEls(byte[] imageBytes)
+        private static Tuple<List<AbsoluteBlock>, int> MultiPictureEls(byte[] imageBytes)
         {
             var piactureElements = new Collection<MultiPictureEl>();
 
@@ -149,9 +147,9 @@ namespace WindowsFormsTestClient
                     var a = (nextByte >> 4) | (1 << 4);
                     var b = (nextByte & 0xf) | (1 << 4);
 
-                    piactureElements.Add(new MultiPictureEl(new Collection<Block>
+                    piactureElements.Add(new MultiPictureEl(new Collection<RawShapeBlock>
                     {
-                        new Block(b,a)
+                        new RawShapeBlock(b,a)
                     }, rowIndex++));
 
                     offset += 2;
@@ -170,11 +168,11 @@ namespace WindowsFormsTestClient
                 //Debug.Write(string.Format("{0:d3}. ", rowIndex));
                 //Helper.DumpArray(imageBytes, offset, bytesInBlock);
 
-                var emptyCollection = new Collection<Block>();
+                var emptyCollection = new Collection<RawShapeBlock>();
 
                 for (int k = 0; k < blockType*2; k += 2)
                 {
-                    emptyCollection.Add(new Block(imageBytes[offset + k + 1], imageBytes[offset + k + 2]));
+                    emptyCollection.Add(new RawShapeBlock(imageBytes[offset + k + 1], imageBytes[offset + k + 2]));
                 }
 
                 piactureElements.Add(new MultiPictureEl(emptyCollection, rowIndex++));
@@ -182,7 +180,8 @@ namespace WindowsFormsTestClient
                 offset += bytesInBlock;
             }
 
-            return Tuple.Create(piactureElements.MergeBlocks().ConvertToAbsoluteCoordinatesBlocks(), offset);
+            //possibly Merging is not necessary
+            return Tuple.Create(piactureElements.ConvertToAbsoluteCoordinatesBlocks(), offset);
         }
 
         private Collection<Color> colorCollection = new Collection<Color>();

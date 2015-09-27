@@ -3,6 +3,7 @@ using System.Linq;
 
 namespace Types
 {
+    //possibly Merging is not necessary
     public static class MultiPictureElMerger
     {
         public static Collection<MultiPictureEl> MergeBlocks(this Collection<MultiPictureEl> elems)
@@ -16,7 +17,7 @@ namespace Types
 
             if (blocks.Count < 2) return elem;
 
-            var newElem = new MultiPictureEl(new Collection<Block>(), elem.RowIndex);
+            var newElem = new MultiPictureEl(new Collection<RawShapeBlock>(), elem.RowIndex);
             
             var currentBlock = blocks[0];
 
@@ -30,13 +31,13 @@ namespace Types
                 }
                 else
                 {
-                    newElem.Collection.Add(new Block(currentBlock.Offsetx, currentBlock.Length));
+                    newElem.Collection.Add(new RawShapeBlock(currentBlock.Offsetx, currentBlock.Length));
 
                     currentBlock = nextBlock;
                 }
             }
 
-            newElem.Collection.Add(new Block(currentBlock.Offsetx, currentBlock.Length));
+            newElem.Collection.Add(new RawShapeBlock(currentBlock.Offsetx, currentBlock.Length));
 
             return newElem;
         }
