@@ -1,11 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Windows.Forms;
 using GPExtractor;
 using ImageRenderer;
@@ -43,7 +41,7 @@ namespace WindowsFormsTestClient
 
             var colorCollection = GetColorCollectionFromPalleteFile(paletteBytes);
 
-            pictureBox3.Image = renderer.RenderPalette(colorCollection, 100, pixelSize:10);
+           // pictureBox3.Image = renderer.RenderPalette(colorCollection, 100, pixelSize:10);
             var imagePaletteColors = OffsetsToColors(extractResult.PaletteBytes, colorCollection);
 
             //var paletteImage = renderer.RenderPalette(imagePaletteColors, 139, pixelSize: 1);
@@ -52,7 +50,18 @@ namespace WindowsFormsTestClient
 
             var rawParser = new RawParser();
 
-            var i = 0;
+            var sw = Stopwatch.StartNew();
+
+            Run(extractResult, rawParser, renderer, bitMap, imagePaletteColors);
+
+            sw.Stop();
+
+            label1.Text = sw.ElapsedMilliseconds.ToString("D");
+        }
+
+        private void Run(ExtractorResult extractResult, RawParser rawParser, IRenderer renderer, Bitmap bitMap,
+            List<Color> imagePaletteColors)
+        {
             foreach (var layout in extractResult.LayoutCollection.Take(1))
             {
                 int offset;
@@ -65,8 +74,6 @@ namespace WindowsFormsTestClient
                 //renderer.RenderBitmap(bitMap, firstPartBlocks, layout);
 
                 renderer.RenderCounterBlocksOnBitmap(bitMap, firstPartBlocks, secondPartBlocks, layout, imagePaletteColors);
-
-                i++;
             }
         }
 
