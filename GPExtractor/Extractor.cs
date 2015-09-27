@@ -8,13 +8,11 @@ namespace GPExtractor
 {
     public class Extractor
     {
-        private readonly string _logPath;
         private readonly IBinaryMapper _mapper;
         private const int ImageHeaderSize = 23;
 
-        public Extractor(string logPath, IBinaryMapper mapper)
+        public Extractor(IBinaryMapper mapper)
         {
-            _logPath = logPath;
             _mapper = mapper;
         }
 

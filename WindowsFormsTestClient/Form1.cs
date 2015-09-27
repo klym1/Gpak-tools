@@ -28,7 +28,7 @@ namespace WindowsFormsTestClient
 
             IBinaryMapper mapper = new BinaryAutoMapper();
 
-            var extractor = new Extractor(logPath, mapper);
+            var extractor = new Extractor(mapper);
 
             var extractResult = extractor.ExtractFromGp(@"c:\GpArch\gp\test15.gp");
 
@@ -46,9 +46,9 @@ namespace WindowsFormsTestClient
             pictureBox3.Image = renderer.RenderPalette(colorCollection, 100, pixelSize:10);
             var imagePaletteColors = OffsetsToColors(extractResult.PaletteBytes, colorCollection);
 
-            var paletteImage = renderer.RenderPalette(imagePaletteColors, 139, pixelSize: 1);
+            //var paletteImage = renderer.RenderPalette(imagePaletteColors, 139, pixelSize: 1);
 
-            pictureBox4.Image = paletteImage;
+            //pictureBox4.Image = paletteImage;
 
             var rawParser = new RawParser();
 
@@ -62,7 +62,7 @@ namespace WindowsFormsTestClient
 
                 var secondPartBlocks = rawParser.GetRawColorBlocks(layout.Bytes, offset);
 
-                renderer.RenderBitmap(bitMap, firstPartBlocks, layout);
+                //renderer.RenderBitmap(bitMap, firstPartBlocks, layout);
 
                 renderer.RenderCounterBlocksOnBitmap(bitMap, firstPartBlocks, secondPartBlocks, layout, imagePaletteColors);
 
@@ -93,8 +93,7 @@ namespace WindowsFormsTestClient
 
         private List<AbsoluteBlock> GetAbsoluteBlocks(RawShapeBlocksGroup[] blockGroups)
         {
-            var absoluteBlocks = blockGroups.ConvertToAbsoluteCoordinatesBlocks();
-            return absoluteBlocks;
+            return blockGroups.ConvertToAbsoluteCoordinatesBlocks();
         }
         
         private List<Color> OffsetsToColors(byte[] imagePaletteOffsets, Collection<Color> colorCollection)
