@@ -63,7 +63,7 @@ namespace WindowsFormsTestClient
 
                 renderer.RenderBitmap(bitMap, firstPartBlocks, secondPartBlocks, layout, imagePaletteColors);
 
-                renderer.RenderCounterBlocksOnBitmap(bitMap, firstPartBlocks, secondPartBlocks, layout, imagePaletteColors);
+                //renderer.RenderCounterBlocksOnBitmap(bitMap, firstPartBlocks, secondPartBlocks, layout, imagePaletteColors);
 
                 i++;
             }
@@ -94,10 +94,6 @@ namespace WindowsFormsTestClient
 
             var tempByteCollection = new Collection<CounterBlock>();
 
-            //var collectionOfBlocks = new Collection<CounterSection>();
-
-            var row = 0;
-
             while (offset < imageBytes.Length-1)
             {
                 var blockStartByte = imageBytes[offset];
@@ -127,18 +123,12 @@ namespace WindowsFormsTestClient
                     tempByteCollection.Add(block);
                     offset+=2;
                 }
-
-//                collectionOfBlocks.Add(new CounterSection(tempByteCollection.ToList())
-//                {
-//                    //Row = row++
-//                });
-//                //tempByteCollection = new Collection<CounterBlock>();
             }
             
             return tempByteCollection;
         }
         
-        private static Tuple<Collection<MultiPictureEl>,int> MultiPictureEls(byte[] imageBytes)
+        private static Tuple<Collection<AbsoluteMultiPictureEl>,int> MultiPictureEls(byte[] imageBytes)
         {
             var piactureElements = new Collection<MultiPictureEl>();
 
@@ -198,7 +188,7 @@ namespace WindowsFormsTestClient
                 offset += bytesInBlock;
             }
 
-            return Tuple.Create(piactureElements.MergeBlocks(), offset);
+            return Tuple.Create(piactureElements.MergeBlocks().ConvertToAbsoluteCoordinatesBlocks(), offset);
         }
 
         private Collection<Color> colorCollection = new Collection<Color>();

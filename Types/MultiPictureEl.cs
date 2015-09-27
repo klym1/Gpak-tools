@@ -21,7 +21,6 @@ namespace Types
             {
                 Length = it.Length,
                 Offsetx = it.Offsetx,
-                OffsetY = RowIndex
             }).ToList();
         }
 
@@ -31,23 +30,23 @@ namespace Types
         }
     }
 
-//    [DebuggerDisplay("{Values}")]
-//    public class CounterSection
-//    {
-//        public int Row { get; set; }
-//
-//        public CounterSection(List<CounterBlock> secondPartBlocks)
-//        {
-//            SecondPartBlocks = secondPartBlocks;
-//        }
-//
-//        public string Values
-//        {
-//            get { return String.Join(" ", SecondPartBlocks.Select(it => String.Format("{0:X2}", it.Offset)).ToArray()); }
-//        }
-//
-//        public List<CounterBlock> SecondPartBlocks;
-//    }
+    [DebuggerDisplay("{RowIndex} {Collection.Count}")]
+    public class AbsoluteMultiPictureEl
+    {
+        public int RowIndex { get; private set; }
+        public List<AbsoluteBlock> Collection { get; private set; }
+
+        public AbsoluteMultiPictureEl(Collection<AbsoluteBlock> collection, int rowIndex)
+        {
+            RowIndex = rowIndex;
+            Collection = collection.ToList();
+        }
+
+        public static bool Equals(AbsoluteMultiPictureEl one, AbsoluteMultiPictureEl two)
+        {
+            return one.Collection.SequenceEqual(two.Collection);
+        }
+    }
 
     public class CounterBlock
     {
@@ -69,6 +68,11 @@ namespace Types
         {
             _one = one;
             _two = two;
+
+            if (ThirdOcted != 0xD)
+            {
+                Debug.Write("Third octet is not 0xD");
+            }
         }
     }
 
@@ -76,11 +80,13 @@ namespace Types
     {
         public CounterBlock counterBlock;
         public int Width;
+        public int Offset;
 
-        public CounterBlockContainer(CounterBlock counterBlock, int width)
+        public CounterBlockContainer(CounterBlock counterBlock, int width, int offset)
         {
             this.counterBlock = counterBlock;
             Width = width;
+            Offset = offset;
         }
     }
 }

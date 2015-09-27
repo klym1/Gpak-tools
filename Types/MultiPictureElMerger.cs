@@ -1,6 +1,3 @@
-using System;
-using System.CodeDom;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 
@@ -37,7 +34,6 @@ namespace Types
                     {
                         Length = currentBlock.Length,
                         Offsetx = currentBlock.Offsetx,
-                        OffsetY = elem.RowIndex
                     });
 
                     currentBlock = nextBlock;
@@ -48,7 +44,6 @@ namespace Types
             {
                 Length = currentBlock.Length,
                 Offsetx = currentBlock.Offsetx,
-                OffsetY = elem.RowIndex
             });
 
             return newElem;

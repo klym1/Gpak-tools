@@ -9,7 +9,6 @@ namespace Types
     {
         public int Offsetx { get; set; }
         public int Length { get; set; }
-        public int OffsetY { get; set; }
 
         public bool Equals(Block other)
         {
@@ -31,9 +30,43 @@ namespace Types
         }
     }
 
+    [DebuggerDisplay("{offsetx} {length}")]
+    public class AbsoluteBlock
+    {
+        public int Offsetx { get; set; }
+        public int Length { get; set; }
+        public int OffsetY { get; set; }
+
+        public AbsoluteBlock(int offsetx, int length, int offsetY)
+        {
+            Offsetx = offsetx;
+            Length = length;
+            OffsetY = offsetY;
+        }
+
+        public bool Equals(AbsoluteBlock other)
+        {
+            return Offsetx == other.Offsetx && Length == other.Length;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            return obj is AbsoluteBlock && Equals((AbsoluteBlock)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                return (Offsetx * 397) ^ Length;
+            }
+        }
+    }
+
     public class BlockContainer
     {
-        public Block Block;
+        public AbsoluteBlock Block;
         public List<CounterBlockContainer> CounterBlockContainers;
 
         public int TotalSpaceOccupied
@@ -48,10 +81,10 @@ namespace Types
         
         public bool CanAddFullBlock(int lengthNeeded)
         {
-            return Block.Length > CounterBlockContainers.Sum(it => it.Width) + lengthNeeded; 
+            return Block.Length >= CounterBlockContainers.Sum(it => it.Width) + lengthNeeded; 
         }
 
-        public BlockContainer(Block block)
+        public BlockContainer(AbsoluteBlock block)
         {
             Block = block;
             CounterBlockContainers = new List<CounterBlockContainer>();
