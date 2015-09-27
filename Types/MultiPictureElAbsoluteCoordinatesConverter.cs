@@ -6,12 +6,12 @@ namespace Types
 {
     public static class MultiPictureElAbsoluteCoordinatesConverter
     {
-        public static List<AbsoluteBlock> ConvertToAbsoluteCoordinatesBlocks(this Collection<MultiPictureEl> elems)
+        public static List<AbsoluteBlock> ConvertToAbsoluteCoordinatesBlocks(this IEnumerable<RawShapeBlocksGroup> elems)
         {
             return new List<AbsoluteBlock>(elems.Select(ConvertToAbsoluteCoordinates).SelectMany(it => it).ToList());
         }
         
-        private static List<AbsoluteBlock> ConvertToAbsoluteCoordinates(this MultiPictureEl elem)
+        private static List<AbsoluteBlock> ConvertToAbsoluteCoordinates(this RawShapeBlocksGroup elem)
         {
             var offsetX = 0;
 

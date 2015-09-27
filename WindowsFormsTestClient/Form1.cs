@@ -51,15 +51,18 @@ namespace WindowsFormsTestClient
             var paletteImage = renderer.RenderPalette(imagePaletteColors, 139, pixelSize: 1);
 
             pictureBox4.Image = paletteImage;
-            
+
+            var rawParser = new RawParser();
+
             var i = 0;
             foreach (var layout in extractResult.LayoutCollection.Take(1))
             {
-                var tupleCollection = MultiPictureEls(layout.Bytes);
+                int offset;
 
-                var firstPartBlocks = tupleCollection.Item1;
+                var rawFirstPartBlocks = rawParser.ParseRawBlockGroups(layout.Bytes, out offset);
+                var firstPartBlocks = GetAbsoluteBlocks(rawFirstPartBlocks);
 
-                var secondPartBlocks = SecondPart(layout.Bytes, tupleCollection.Item2);
+                var secondPartBlocks = rawParser.SecondPart(layout.Bytes, offset);
 
                 renderer.RenderBitmap(bitMap, firstPartBlocks, secondPartBlocks, layout, imagePaletteColors);
 
@@ -88,102 +91,12 @@ namespace WindowsFormsTestClient
             }
         }
 
-        private static Collection<CounterBlock> SecondPart(byte[] imageBytes, int initialOffset)
+        private List<AbsoluteBlock> GetAbsoluteBlocks(RawShapeBlocksGroup[] blockGroups)
         {
-            var offset = initialOffset+1; // skip CD bytes
-
-            var tempByteCollection = new Collection<CounterBlock>();
-
-            while (offset < imageBytes.Length-1)
-            {
-                var blockStartByte = imageBytes[offset];
-
-                var blockLength = blockStartByte & 0x0f;
-                var blockType = (blockStartByte >> 4);
-
-                if (blockType != 0xf)
-                {
-                    //
-                    var h = 5;
-                    break;
-                }
-
-                if (blockLength < 15) // last block
-                {
-                    var p = imageBytes.Length - offset - 1;
-
-                    blockLength = p > 15 ? 15: p;
-                }
-
-                offset++;
-
-                for (var i = 0; i < blockLength; i+=2)
-                {
-                    var block = new CounterBlock(imageBytes[offset], imageBytes[offset + 1]);
-                    tempByteCollection.Add(block);
-                    offset+=2;
-                }
-            }
-            
-            return tempByteCollection;
+            var absoluteBlocks = blockGroups.ConvertToAbsoluteCoordinatesBlocks();
+            return absoluteBlocks;
         }
-
-        private static Tuple<List<AbsoluteBlock>, int> MultiPictureEls(byte[] imageBytes)
-        {
-            var piactureElements = new Collection<MultiPictureEl>();
-
-            var rowIndex = 0;
-
-            var offset = 0;
-            while (!(imageBytes[offset] == 0xCD))
-            {
-                int blockType = imageBytes[offset];
-
-                if (blockType == 0xE1) // magic number. 1-byte coded block. Investigate other similar cases
-                {
-                    //E1  4B  E1  C7  => 1 27 20 1 23 28
-
-                    var nextByte = imageBytes[offset + 1];
-                    var a = (nextByte >> 4) | (1 << 4);
-                    var b = (nextByte & 0xf) | (1 << 4);
-
-                    piactureElements.Add(new MultiPictureEl(new Collection<RawShapeBlock>
-                    {
-                        new RawShapeBlock(b,a)
-                    }, rowIndex++));
-
-                    offset += 2;
-                    continue;
-                }
-
-                if (blockType > 20)
-                {
-                    Debug.WriteLine("Unknow blocktype");
-                    throw new Exception("wrong block type");
-                }
-
-                //ordinary processing
-                var bytesInBlock = blockType*2 + 1;
-
-                //Debug.Write(string.Format("{0:d3}. ", rowIndex));
-                //Helper.DumpArray(imageBytes, offset, bytesInBlock);
-
-                var emptyCollection = new Collection<RawShapeBlock>();
-
-                for (int k = 0; k < blockType*2; k += 2)
-                {
-                    emptyCollection.Add(new RawShapeBlock(imageBytes[offset + k + 1], imageBytes[offset + k + 2]));
-                }
-
-                piactureElements.Add(new MultiPictureEl(emptyCollection, rowIndex++));
-
-                offset += bytesInBlock;
-            }
-
-            //possibly Merging is not necessary
-            return Tuple.Create(piactureElements.ConvertToAbsoluteCoordinatesBlocks(), offset);
-        }
-
+        
         private Collection<Color> colorCollection = new Collection<Color>();
 
         private List<Color> OffsetsToColors(byte[] imagePaletteOffsets)

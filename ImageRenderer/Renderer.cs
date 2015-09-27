@@ -14,17 +14,14 @@ namespace ImageRenderer
 
         public void RenderBitmap(Bitmap bitMap, List<AbsoluteBlock> piactureElements, Collection<CounterBlock> secondPartBlocks, ImageLayoutInfo layout, List<Color> imagePaletteColors)
         {
-            foreach (var block in piactureElements)
+            using (var graphics = Graphics.FromImage(bitMap))
             {
-                //foreach (var block in it.Collection)
+                foreach (var block in piactureElements)
                 {
-                    using (var graphics = Graphics.FromImage(bitMap))
-                    {
-                        graphics.FillRectangle(new SolidBrush(Color.Gray),
-                            new Rectangle(new Point(block.OffsetX * PixelSize + layout.offsetX, block.OffsetY * PixelSize + layout.offsetY),
-                                new Size(block.Length * PixelSize, PixelSize)));
-
-                    }
+                    graphics.FillRectangle(new SolidBrush(Color.Gray),
+                        new Rectangle(
+                            new Point(block.OffsetX*PixelSize + layout.offsetX, block.OffsetY*PixelSize + layout.offsetY),
+                            new Size(block.Length*PixelSize, PixelSize)));
                 }
             }
         }
@@ -82,7 +79,7 @@ namespace ImageRenderer
 
         public void DrawHorizontalColorLine(Bitmap bitmap, ICollection<Color> colorCollection, int offsetX, int offsetY, int height = 1)
         {
-            var initialOffsetX = (int)offsetX;
+            var initialOffsetX = offsetX;
             
             foreach (var color in colorCollection)
             {

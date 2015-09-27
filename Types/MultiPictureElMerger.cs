@@ -6,18 +6,18 @@ namespace Types
     //possibly Merging is not necessary
     public static class MultiPictureElMerger
     {
-        public static Collection<MultiPictureEl> MergeBlocks(this Collection<MultiPictureEl> elems)
+        public static Collection<RawShapeBlocksGroup> MergeBlocks(this Collection<RawShapeBlocksGroup> elems)
         {
-            return new Collection<MultiPictureEl>(elems.Select(MergeBlocks).ToList());
+            return new Collection<RawShapeBlocksGroup>(elems.Select(MergeBlocks).ToList());
         }
 
-        public static MultiPictureEl MergeBlocks(this MultiPictureEl elem)
+        public static RawShapeBlocksGroup MergeBlocks(this RawShapeBlocksGroup elem)
         {
             var blocks = elem.Collection;
 
             if (blocks.Count < 2) return elem;
 
-            var newElem = new MultiPictureEl(new Collection<RawShapeBlock>(), elem.RowIndex);
+            var newElem = new RawShapeBlocksGroup(new Collection<RawShapeBlock>(), elem.RowIndex);
             
             var currentBlock = blocks[0];
 

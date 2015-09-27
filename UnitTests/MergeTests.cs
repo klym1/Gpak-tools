@@ -11,7 +11,7 @@ namespace UnitTests
         [Test]
         public void MergeBlockHelperShouldWorkCorrectly()
         {
-            var elem = new MultiPictureEl(new Collection<RawShapeBlock>
+            var elem = new RawShapeBlocksGroup(new Collection<RawShapeBlock>
             {
                 new RawShapeBlock (12, 100),
                 new RawShapeBlock (0, 1),

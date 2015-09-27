@@ -21,8 +21,8 @@ namespace Types
     public class AbsoluteBlock
     {
         public int OffsetX { get; set; }
-        public int Length { get; set; }
         public int OffsetY { get; set; }
+        public int Length { get; set; }
 
         public AbsoluteBlock(int offsetX, int length, int offsetY)
         {
