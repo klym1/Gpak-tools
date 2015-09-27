@@ -44,7 +44,7 @@
     <Compile Include="BlocksDistributor.cs" />
     <Compile Include="ByteLayoutAttribute.cs" />
     <Compile Include="RawColorBlock.cs" />
-    <Compile Include="CounterBlockContainer.cs" />
+    <Compile Include="RawColorBlockContainer.cs" />
     <Compile Include="ImageLayoutInfo.cs" />
     <Compile Include="MultiPictureEl.cs" />
     <Compile Include="MultiPictureElAbsoluteCoordinatesConverter.cs" />

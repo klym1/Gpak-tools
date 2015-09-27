@@ -22,13 +22,7 @@ namespace WindowsFormsTestClient
 
         private void Do()
         {
-            const string logPath = @"..\..\..\extractor_out.txt";
-
-            IBinaryMapper mapper = new BinaryAutoMapper();
-
-            var extractor = new Extractor(mapper);
-
-            var extractResult = extractor.ExtractFromGp(@"c:\GpArch\gp\test15.gp");
+            var extractResult = new Extractor().ExtractFromGp(@"c:\GpArch\gp\test20.gp");
 
             IRenderer renderer = new Renderer();
 

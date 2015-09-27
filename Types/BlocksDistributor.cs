@@ -64,14 +64,14 @@ namespace Types
 
             if (absoluteBlockContainer.CanAddFullBlock(blockSizeNeeded))
             {
-                absoluteBlockContainer.CounterBlockContainers.Add(new CounterBlockContainer(rawColorBlock, blockSizeNeeded, absoluteBlockContainer.TotalSpaceOccupied, stripePadding));
+                absoluteBlockContainer.CounterBlockContainers.Add(new RawColorBlockContainer(rawColorBlock, blockSizeNeeded, absoluteBlockContainer.TotalSpaceOccupied, stripePadding));
                 lenthAdded = blockSizeNeeded;
                 return true;
             }
 
             var freeSpace = absoluteBlockContainer.FreeSpaceLeft;
 
-            absoluteBlockContainer.CounterBlockContainers.Add(new CounterBlockContainer(rawColorBlock, freeSpace, absoluteBlockContainer.TotalSpaceOccupied, stripePadding));
+            absoluteBlockContainer.CounterBlockContainers.Add(new RawColorBlockContainer(rawColorBlock, freeSpace, absoluteBlockContainer.TotalSpaceOccupied, stripePadding));
             lenthAdded = freeSpace;
             return false;
         }

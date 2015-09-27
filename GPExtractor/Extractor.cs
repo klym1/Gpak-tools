@@ -11,9 +11,9 @@ namespace GPExtractor
         private readonly IBinaryMapper _mapper;
         private const int ImageHeaderSize = 23;
 
-        public Extractor(IBinaryMapper mapper)
+        public Extractor()
         {
-            _mapper = mapper;
+            _mapper = new BinaryAutoMapper();
         }
 
         private ImageLayoutInfo ReadImageLayoutInfo(byte[] bytes, uint offset)

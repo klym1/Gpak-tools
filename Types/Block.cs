@@ -35,7 +35,7 @@ namespace Types
     public class AbsoluteBlockContainer
     {
         public AbsoluteBlock Block;
-        public List<CounterBlockContainer> CounterBlockContainers;
+        public List<RawColorBlockContainer> CounterBlockContainers;
 
         public int TotalSpaceOccupied
         {
@@ -55,7 +55,7 @@ namespace Types
         public AbsoluteBlockContainer(AbsoluteBlock block)
         {
             Block = block;
-            CounterBlockContainers = new List<CounterBlockContainer>();
+            CounterBlockContainers = new List<RawColorBlockContainer>();
         }
     }
 }
