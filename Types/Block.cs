@@ -30,7 +30,7 @@ namespace Types
         }
     }
 
-    [DebuggerDisplay("{offsetx} {length}")]
+    [DebuggerDisplay("{OffsetX} {OffsetY} {Length}")]
     public class AbsoluteBlock
     {
         public int OffsetX { get; set; }

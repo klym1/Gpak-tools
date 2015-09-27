@@ -30,7 +30,7 @@ namespace Types
         }
     }
 
-    [DebuggerDisplay("{RowIndex} {Collection.Count}")]
+    [DebuggerDisplay("{Collection.Count}")]
     public class AbsoluteMultiPictureEl
     {
         public List<AbsoluteBlock> Collection { get; private set; }
@@ -48,16 +48,21 @@ namespace Types
 
     public class CounterBlock
     {
+
         private readonly byte _one;
         private readonly byte _two;
+
+        public int FourthOctet
+        {
+            get { return (byte)((_two) & 0x0f); }
+        }
 
         public int Offset
         {
             get { return (_one | ((_two) & 0x0f) << 8); }
         }
 
-        //Always == 0xD //?
-        private byte ThirdOcted
+        public byte ThirdOctet
         {
             get { return (byte)((_two) >> 4); }
         }
@@ -66,11 +71,6 @@ namespace Types
         {
             _one = one;
             _two = two;
-
-            if (ThirdOcted != 0xD)
-            {
-                Debug.Write("Third octet is not 0xD");
-            }
         }
     }
 
@@ -80,13 +80,18 @@ namespace Types
         public int Width;
         public int Offset;
         public int StripePadding;
-
-        public CounterBlockContainer(CounterBlock counterBlock, int width, int offset, int stripePadding)
+        
+        public CounterBlockContainer( CounterBlock counterBlock, int width, int offset, int stripePadding)
         {
             CounterBlock = counterBlock;
             Width = width;
             Offset = offset;
             StripePadding = stripePadding;
+
+            if (width + stripePadding != 16)
+            {
+                //
+            }
         }
     }
 }

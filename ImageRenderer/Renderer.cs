@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Drawing;
@@ -49,6 +50,8 @@ namespace ImageRenderer
         {
             var blockContainerCollection = GetDistributedCounterPartBlocks(piactureElements, secondPartBlocks);
 
+            VerifyBlockContainerCollection(blockContainerCollection);
+
             foreach (var blockContainer in blockContainerCollection)
             {
                 foreach (var counterBlockContainer in blockContainer.CounterBlockContainers)
@@ -57,20 +60,27 @@ namespace ImageRenderer
                              imagePaletteColors.Skip(counterBlockContainer.CounterBlock.Offset + counterBlockContainer.StripePadding)
                                  .Take(counterBlockContainer.Width)
                                  .ToList();
-
+                    
                     DrawHorizontalColorLine(bitMap, slice,
-                         layout.offsetX + blockContainer.Block.OffsetX + counterBlockContainer.Offset,
-                         layout.offsetY + blockContainer.Block.OffsetY );
+                        layout.offsetX + blockContainer.Block.OffsetX + counterBlockContainer.Offset,
+                        layout.offsetY + blockContainer.Block.OffsetY );
                 }
+            }
+        }
+
+        private void VerifyBlockContainerCollection(Collection<AbsoluteBlockContainer> blockContainerCollection)
+        {
+            var all = blockContainerCollection.All(it => it.CounterBlockContainers.Sum(o => o.Width) == it.Block.Length);
+            if (!all)
+            {
+                throw new Exception("23423");
             }
         }
 
         private Collection<AbsoluteBlockContainer> GetDistributedCounterPartBlocks(Collection<AbsoluteMultiPictureEl> piactureElements, Collection<CounterBlock> secondPartBlocks)
         {
-            var allBlocks = piactureElements.SelectMany(it => it.Collection).ToList();
-
             _enumerator = secondPartBlocks.ToList().GetEnumerator();
-            _blockEnumerator = allBlocks.GetEnumerator();
+            _blockEnumerator = piactureElements.SelectMany(it => it.Collection).ToList().GetEnumerator();
 
             var blockContainerCollection = new Collection<AbsoluteBlockContainer>();
 
@@ -80,7 +90,7 @@ namespace ImageRenderer
             var currentBlockContainer = new AbsoluteBlockContainer(currentBlock);
             blockContainerCollection.Add(currentBlockContainer);
 
-            var blockLengthNeeded = 16;
+            var blockLengthNeeded = GetBlockLengthNeeded(currentCounterBlock);
 
             while (true)
             {
@@ -93,7 +103,7 @@ namespace ImageRenderer
                 {
                     currentCounterBlock = FetchCounterBlock();
                     if (currentCounterBlock == null) break;
-                    blockLengthNeeded = 16;
+                    blockLengthNeeded = GetBlockLengthNeeded(currentCounterBlock);
                 }
                 else
                 {
@@ -106,21 +116,34 @@ namespace ImageRenderer
                 }
             }
 
+            _enumerator.Dispose();
+            _blockEnumerator.Dispose();
+
             return blockContainerCollection;
         }
 
+        private int GetBlockLengthNeeded(CounterBlock counterBlock)
+        {
+            var type = counterBlock.ThirdOctet;
+            return type + 3;
+        }
+
+        private int id = 0;
+
         private bool TryToAppendCounterBlock(AbsoluteBlockContainer absoluteBlockContainer, CounterBlock counterBlock, int blockSizeNeeded, out int lenthAdded)
         {
+            var stripePadding = blockSizeNeeded < GetBlockLengthNeeded(counterBlock) ? (GetBlockLengthNeeded(counterBlock) - blockSizeNeeded) : 0; ;
+
             if (absoluteBlockContainer.CanAddFullBlock(blockSizeNeeded))
             {
-                absoluteBlockContainer.CounterBlockContainers.Add(new CounterBlockContainer(counterBlock, blockSizeNeeded, absoluteBlockContainer.TotalSpaceOccupied, blockSizeNeeded < 16 ? (16 - blockSizeNeeded) : 0));
+                absoluteBlockContainer.CounterBlockContainers.Add(new CounterBlockContainer(counterBlock, blockSizeNeeded, absoluteBlockContainer.TotalSpaceOccupied, stripePadding));
                 lenthAdded = blockSizeNeeded;
                 return true;
             }
             
             var freeSpace = absoluteBlockContainer.FreeSpaceLeft;
-
-            absoluteBlockContainer.CounterBlockContainers.Add(new CounterBlockContainer(counterBlock, freeSpace, absoluteBlockContainer.TotalSpaceOccupied, blockSizeNeeded < 16 ? (16 - blockSizeNeeded) : 0));
+            
+            absoluteBlockContainer.CounterBlockContainers.Add(new CounterBlockContainer(counterBlock, freeSpace, absoluteBlockContainer.TotalSpaceOccupied, stripePadding));
             lenthAdded = freeSpace;
             return false;
         }
@@ -156,7 +179,7 @@ namespace ImageRenderer
 
         public void DrawHorizontalColorLine(Bitmap bitmap, ICollection<Color> colorCollection, int offsetX, int offsetY, int height = 1)
         {
-            var initialOffsetX = offsetX;
+            var initialOffsetX = (int)offsetX;
             
             foreach (var color in colorCollection)
             {

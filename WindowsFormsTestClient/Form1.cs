@@ -53,7 +53,7 @@ namespace WindowsFormsTestClient
             pictureBox4.Image = paletteImage;
             
             var i = 0;
-            foreach (var layout in extractResult.LayoutCollection.Take(5))
+            foreach (var layout in extractResult.LayoutCollection.Take(1))
             {
                 var tupleCollection = MultiPictureEls(layout.Bytes);
 
@@ -61,7 +61,7 @@ namespace WindowsFormsTestClient
 
                 var secondPartBlocks = SecondPart(layout.Bytes, tupleCollection.Item2);
 
-                renderer.RenderBitmap(bitMap, firstPartBlocks, secondPartBlocks, layout, imagePaletteColors);
+                //renderer.RenderBitmap(bitMap, firstPartBlocks, secondPartBlocks, layout, imagePaletteColors);
 
                 renderer.RenderCounterBlocksOnBitmap(bitMap, firstPartBlocks, secondPartBlocks, layout, imagePaletteColors);
 
@@ -127,7 +127,9 @@ namespace WindowsFormsTestClient
             
             return tempByteCollection;
         }
-        
+
+        private static int Id = 0;
+
         private static Tuple<Collection<AbsoluteMultiPictureEl>,int> MultiPictureEls(byte[] imageBytes)
         {
             var piactureElements = new Collection<MultiPictureEl>();
@@ -154,7 +156,7 @@ namespace WindowsFormsTestClient
                             Length = a,
                             Offsetx = b
                         }
-                    },rowIndex++));
+                    }, rowIndex++));
 
                     offset += 2;
                     continue;
