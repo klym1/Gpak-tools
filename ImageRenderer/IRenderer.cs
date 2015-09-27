@@ -11,11 +11,11 @@ namespace ImageRenderer
 {
     public interface IRenderer
     {
-        void RenderBitmap(Bitmap bitmap, Collection<MultiPictureEl> piactureElements, Collection<CounterSection> secondPartBlocks, ImageLayoutInfo layout, List<Color> imagePaletteColors);
+        void RenderBitmap(Bitmap bitmap, Collection<MultiPictureEl> piactureElements, Collection<CounterBlock> secondPartBlocks, ImageLayoutInfo layout, List<Color> imagePaletteColors);
        // void RenderColorStripesOnBitmap(Bitmap bitmap, Collection<MultiPictureEl> piactureElements, ImageLayoutInfo layout, ICollection<Color> colorCollection);
 
         void RenderCounterBlocksOnBitmap(Bitmap bitMap, Collection<MultiPictureEl> piactureElements,
-            Collection<CounterSection> secondPartBlocks, ImageLayoutInfo layout, List<Color> imagePaletteColors);
+            Collection<CounterBlock> secondPartBlocks, ImageLayoutInfo layout, List<Color> imagePaletteColors);
 
         Bitmap RenderPalette(ICollection<Color> colorCollection, int width, int pixelSize);
 

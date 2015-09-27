@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using Types;
@@ -10,7 +11,7 @@ namespace ImageRenderer
     {
         const int PixelSize = 1;
 
-        public void RenderBitmap(Bitmap bitMap, Collection<MultiPictureEl> piactureElements, Collection<CounterSection> secondPartBlocks, ImageLayoutInfo layout, List<Color> imagePaletteColors)
+        public void RenderBitmap(Bitmap bitMap, Collection<MultiPictureEl> piactureElements, Collection<CounterBlock> secondPartBlocks, ImageLayoutInfo layout, List<Color> imagePaletteColors)
         {
             foreach (var it in piactureElements)
             {
@@ -18,33 +19,110 @@ namespace ImageRenderer
 
                 foreach (var block in it.Collection)
                 {
-                    offsetx += block.offsetx;
+                    offsetx += block.Offsetx;
 
                     using (var graphics = Graphics.FromImage(bitMap))
                     {
                         graphics.FillRectangle(new SolidBrush(Color.SkyBlue),
                             new Rectangle(new Point(offsetx * PixelSize + layout.offsetX, it.RowIndex * PixelSize + layout.offsetY),
-                                new Size(block.length * PixelSize, PixelSize)));
+                                new Size(block.Length * PixelSize, PixelSize)));
 
                     }
-                    offsetx += block.length;
+                    offsetx += block.Length;
                 }
             }
         }
 
-        private CounterBlock fetchBlockAndMove()
+        private CounterBlock fetchCounterBlock()
         {
             enumerator.MoveNext();
 
             return enumerator.Current;
         }
 
-        private List<CounterBlock>.Enumerator enumerator;
-
-        public void RenderCounterBlocksOnBitmap(Bitmap bitMap, Collection<MultiPictureEl> piactureElements, Collection<CounterSection> secondPartBlocks, ImageLayoutInfo layout, List<Color> imagePaletteColors)
+        private Block fetchBlock()
         {
-            var allOffsets2 = secondPartBlocks.SelectMany(it => it.SecondPartBlocks).ToList();
-            var blockLengths = piactureElements.SelectMany(it => it.Collection).Sum(it => it.length);
+            blockEnumerator.MoveNext();
+
+            return blockEnumerator.Current;
+        }
+
+        private List<CounterBlock>.Enumerator enumerator;
+        private List<Block>.Enumerator blockEnumerator;
+
+        public void RenderCounterBlocksOnBitmap(Bitmap bitMap, Collection<MultiPictureEl> piactureElements,
+            Collection<CounterBlock> secondPartBlocks, ImageLayoutInfo layout, List<Color> imagePaletteColors)
+        {
+            var allOffsets2 = secondPartBlocks.ToList();
+            var blockLengths = piactureElements.SelectMany(it => it.Collection).Sum(it => it.Length);
+
+            // secondsPart blocks total length should be equal to total length of firstPartBlocks. Currently not totally true (19262 / 19264)
+
+            var allBlocks = piactureElements.SelectMany(it => it.Collection).ToList();
+
+            enumerator = allOffsets2.GetEnumerator();
+            blockEnumerator = allBlocks.GetEnumerator();
+
+            Block currentBlock = null;
+            CounterBlock currentCounterBlock = null;
+            BlockContainer currentBlockContainer = null;
+
+            var blockContainerCollection = new Collection<BlockContainer>();
+
+            currentCounterBlock = fetchCounterBlock();
+
+            currentBlock = fetchBlock();
+            currentBlockContainer = new BlockContainer(currentBlock);
+            blockContainerCollection.Add(currentBlockContainer);
+
+            var blockLengthNeeded = 16;
+
+            while(true)
+            {
+                int lengthAdded;
+
+                var isSuccess = TryToAppendCounterBlock(currentBlockContainer, currentCounterBlock, blockLengthNeeded, out lengthAdded);
+
+                if (isSuccess)
+                {
+                    currentCounterBlock = fetchCounterBlock();
+                    if(currentCounterBlock == null) break;
+                    blockLengthNeeded = 16;
+                }
+                else
+                {
+                    currentBlock = fetchBlock();
+                    if(currentBlock == null) break;
+                    currentBlockContainer = new BlockContainer(currentBlock);
+                    blockContainerCollection.Add(currentBlockContainer);
+
+                    blockLengthNeeded -= lengthAdded;
+                }
+            }
+
+            var g = blockContainerCollection;
+        }
+        
+        private bool TryToAppendCounterBlock(BlockContainer blockContainer, CounterBlock counterBlock, int blockSizeNeeded, out int lenthAdded)
+        {
+            if (blockContainer.CanAddFullBlock(blockSizeNeeded))
+            {
+                blockContainer.CounterBlockContainers.Add(new CounterBlockContainer(counterBlock, blockSizeNeeded));
+                lenthAdded = blockSizeNeeded;
+                return true;
+            }
+            
+            var freeSpace = blockContainer.FreeSpaceLeft;
+
+            blockContainer.CounterBlockContainers.Add(new CounterBlockContainer(counterBlock, freeSpace));
+            lenthAdded = freeSpace;
+            return false;
+        }
+
+        public void RenderCounterBlocksOnBitmap2(Bitmap bitMap, Collection<MultiPictureEl> piactureElements, Collection<CounterBlock> secondPartBlocks, ImageLayoutInfo layout, List<Color> imagePaletteColors)
+        {
+            var allOffsets2 = secondPartBlocks.Select(it => it).ToList();
+            var blockLengths = piactureElements.SelectMany(it => it.Collection).Sum(it => it.Length);
 
             // secondsPart blocks total length should be equal to total length of firstPartBlocks. Currently not totally true (19262 / 19264)
 
@@ -63,7 +141,7 @@ namespace ImageRenderer
 
                 foreach (var block in it.Collection)
                 {
-                    offsetx += block.offsetx;
+                    offsetx += block.Offsetx;
 
                     //draw Remaining
                     if (borrow)
@@ -87,15 +165,15 @@ namespace ImageRenderer
 
                     }
 
-                        while (block.length - blockLengthUsed >= 16)
+                        while (block.Length - blockLengthUsed >= 16)
                         {
-                            var currentCounterBlock = fetchBlockAndMove();
+                            var currentCounterBlock = fetchCounterBlock();
 
                             if(currentCounterBlock == null) return;
                             
                             var slice =
                                 imagePaletteColors.Skip(currentCounterBlock.Offset)
-                                    .Take(block.length - blockLengthUsed)
+                                    .Take(block.Length - blockLengthUsed)
                                     .ToList();
 
                             DrawHorizontalColorLine(bitMap, slice,
@@ -105,15 +183,15 @@ namespace ImageRenderer
                             blockLengthUsed += 16;
                         }
 
-                        var diff = block.length - blockLengthUsed;
+                        var diff = block.Length - blockLengthUsed;
 
                     if (diff > 0)
                     {
-                        var currentCounterBlock = fetchBlockAndMove();
+                        var currentCounterBlock = fetchCounterBlock();
 
                         if(currentCounterBlock == null) return;
                         
-                        var usedLength = block.length - blockLengthUsed;
+                        var usedLength = block.Length - blockLengthUsed;
 
                         previousBlockUsed = usedLength; ;
 
@@ -132,7 +210,7 @@ namespace ImageRenderer
                     }
 
                     blockLengthUsed = 0;
-                   offsetx += block.length;
+                   offsetx += block.Length;
 
                 }
                 

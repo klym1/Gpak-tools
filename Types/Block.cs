@@ -1,16 +1,19 @@
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 
 namespace Types
 {
     [DebuggerDisplay("{offsetx} {length}")]
-    public struct Block
+    public class Block
     {
-        public int offsetx { get; set; }
-        public int length { get; set; }
+        public int Offsetx { get; set; }
+        public int Length { get; set; }
+        public int OffsetY { get; set; }
 
         public bool Equals(Block other)
         {
-            return offsetx == other.offsetx && length == other.length;
+            return Offsetx == other.Offsetx && Length == other.Length;
         }
 
         public override bool Equals(object obj)
@@ -23,8 +26,35 @@ namespace Types
         {
             unchecked
             {
-                return (offsetx*397) ^ length;
+                return (Offsetx*397) ^ Length;
             }
+        }
+    }
+
+    public class BlockContainer
+    {
+        public Block Block;
+        public List<CounterBlockContainer> CounterBlockContainers;
+
+        public int TotalSpaceOccupied
+        {
+            get { return CounterBlockContainers.Sum(it => it.Width); }
+        }
+
+        public int FreeSpaceLeft
+        {
+            get { return Block.Length - TotalSpaceOccupied; }
+        }
+        
+        public bool CanAddFullBlock(int lengthNeeded)
+        {
+            return Block.Length > CounterBlockContainers.Sum(it => it.Width) + lengthNeeded; 
+        }
+
+        public BlockContainer(Block block)
+        {
+            Block = block;
+            CounterBlockContainers = new List<CounterBlockContainer>();
         }
     }
 }

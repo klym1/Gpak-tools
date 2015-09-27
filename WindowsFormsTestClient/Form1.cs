@@ -30,7 +30,7 @@ namespace WindowsFormsTestClient
 
             var extractor = new Extractor(logPath, mapper);
 
-            var extractResult = extractor.ExtractFromGp(@"c:\GpArch\gp\test19.gp");
+            var extractResult = extractor.ExtractFromGp(@"c:\GpArch\gp\test16.gp");
 
             IRenderer renderer = new Renderer();
 
@@ -39,7 +39,6 @@ namespace WindowsFormsTestClient
 
             pictureBox2.Image = bitMap;
 
-           // var paletteBytes = File.ReadAllBytes(@"..\..\..\palette\0\old.pal");
             var paletteBytes = File.ReadAllBytes(@"..\..\..\palette\0\agew_1.pal");
 
             GetColorCollectionFromPalleteFile(paletteBytes);
@@ -89,13 +88,13 @@ namespace WindowsFormsTestClient
             }
         }
 
-        private static Collection<CounterSection> SecondPart(byte[] imageBytes, int initialOffset)
+        private static Collection<CounterBlock> SecondPart(byte[] imageBytes, int initialOffset)
         {
             var offset = initialOffset+1; // skip CD bytes
 
             var tempByteCollection = new Collection<CounterBlock>();
 
-            var collectionOfBlocks = new Collection<CounterSection>();
+            //var collectionOfBlocks = new Collection<CounterSection>();
 
             var row = 0;
 
@@ -129,14 +128,14 @@ namespace WindowsFormsTestClient
                     offset+=2;
                 }
 
-                collectionOfBlocks.Add(new CounterSection(tempByteCollection.ToList())
-                {
-                    Row = row++
-                });
-                tempByteCollection = new Collection<CounterBlock>();
+//                collectionOfBlocks.Add(new CounterSection(tempByteCollection.ToList())
+//                {
+//                    //Row = row++
+//                });
+//                //tempByteCollection = new Collection<CounterBlock>();
             }
             
-            return collectionOfBlocks;
+            return tempByteCollection;
         }
         
         private static Tuple<Collection<MultiPictureEl>,int> MultiPictureEls(byte[] imageBytes)
@@ -162,13 +161,10 @@ namespace WindowsFormsTestClient
                     {
                         new Block
                         {
-                            length = a,
-                            offsetx = b
+                            Length = a,
+                            Offsetx = b
                         }
-                    })
-                    {
-                        RowIndex = rowIndex++
-                    });
+                    },rowIndex++));
 
                     offset += 2;
                     continue;
@@ -192,15 +188,12 @@ namespace WindowsFormsTestClient
                 {
                     emptyCollection.Add(new Block
                     {
-                        offsetx = imageBytes[offset + k + 1],
-                        length = imageBytes[offset + k + 2],
+                        Offsetx = imageBytes[offset + k + 1],
+                        Length = imageBytes[offset + k + 2],
                     });
                 }
 
-                piactureElements.Add(new MultiPictureEl(emptyCollection)
-                {
-                    RowIndex = rowIndex++
-                });
+                piactureElements.Add(new MultiPictureEl(emptyCollection, rowIndex++));
 
                 offset += bytesInBlock;
             }

@@ -10,17 +10,19 @@ namespace Types
     [DebuggerDisplay("{RowIndex} {Collection.Count}")]
     public class MultiPictureEl
     {
-        public int RowIndex { get; set; }
-        public Collection<Block> Collection { get; set; }
+        public int RowIndex { get; private set; }
+        public List<Block> Collection { get; private set; }
 
-        public MultiPictureEl()
+        public MultiPictureEl(Collection<Block> collection, int rowIndex)
         {
-            Collection = new Collection<Block>();
-        }
+            RowIndex = rowIndex;
 
-        public MultiPictureEl(Collection<Block> collection)
-        {
-            Collection = collection;
+            Collection = collection.Select(it => new Block
+            {
+                Length = it.Length,
+                Offsetx = it.Offsetx,
+                OffsetY = RowIndex
+            }).ToList();
         }
 
         public static bool Equals(MultiPictureEl one, MultiPictureEl two)
@@ -29,25 +31,23 @@ namespace Types
         }
     }
 
-    [DebuggerDisplay("{Values}")]
-    public class CounterSection
-    {
-        //public int Counter { get { return SecondPartBlocks.Count; } }
-
-        public int Row { get; set; }
-
-        public CounterSection(List<CounterBlock> secondPartBlocks)
-        {
-            SecondPartBlocks = secondPartBlocks;
-        }
-
-        public string Values
-        {
-            get { return String.Join(" ", SecondPartBlocks.Select(it => String.Format("{0:X2}", it.Offset)).ToArray()); }
-        }
-
-        public List<CounterBlock> SecondPartBlocks;
-    }
+//    [DebuggerDisplay("{Values}")]
+//    public class CounterSection
+//    {
+//        public int Row { get; set; }
+//
+//        public CounterSection(List<CounterBlock> secondPartBlocks)
+//        {
+//            SecondPartBlocks = secondPartBlocks;
+//        }
+//
+//        public string Values
+//        {
+//            get { return String.Join(" ", SecondPartBlocks.Select(it => String.Format("{0:X2}", it.Offset)).ToArray()); }
+//        }
+//
+//        public List<CounterBlock> SecondPartBlocks;
+//    }
 
     public class CounterBlock
     {
@@ -69,6 +69,18 @@ namespace Types
         {
             _one = one;
             _two = two;
+        }
+    }
+
+    public class CounterBlockContainer
+    {
+        public CounterBlock counterBlock;
+        public int Width;
+
+        public CounterBlockContainer(CounterBlock counterBlock, int width)
+        {
+            this.counterBlock = counterBlock;
+            Width = width;
         }
     }
 }

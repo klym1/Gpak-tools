@@ -19,27 +19,25 @@ namespace Types
 
             if (blocks.Count < 2) return elem;
 
-            var newElem = new MultiPictureEl
-            {
-                RowIndex = elem.RowIndex
-            };
-
+            var newElem = new MultiPictureEl(new Collection<Block>(), elem.RowIndex);
+            
             var currentBlock = blocks[0];
 
             for (int i = 1; i < blocks.Count; i++)
             {
                 var nextBlock = blocks[i];
 
-                if (nextBlock.offsetx == 0)
+                if (nextBlock.Offsetx == 0)
                 {
-                    currentBlock.length += nextBlock.length;
+                    currentBlock.Length += nextBlock.Length;
                 }
                 else
                 {
                     newElem.Collection.Add(new Block
                     {
-                        length = currentBlock.length,
-                        offsetx = currentBlock.offsetx
+                        Length = currentBlock.Length,
+                        Offsetx = currentBlock.Offsetx,
+                        OffsetY = elem.RowIndex
                     });
 
                     currentBlock = nextBlock;
@@ -48,8 +46,9 @@ namespace Types
 
             newElem.Collection.Add(new Block
             {
-                length = currentBlock.length,
-                offsetx = currentBlock.offsetx
+                Length = currentBlock.Length,
+                Offsetx = currentBlock.Offsetx,
+                OffsetY = elem.RowIndex
             });
 
             return newElem;
