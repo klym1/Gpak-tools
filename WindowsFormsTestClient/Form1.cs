@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Drawing;
@@ -58,16 +59,34 @@ namespace WindowsFormsTestClient
         {
             foreach (var layout in extractResult.LayoutCollection.Take(1))
             {
-                int offset;
+                int offset = 0;
 
-                var rawFirstPartBlocks = rawParser.ParseRawBlockGroups(layout.Bytes, out offset);
-                var firstPartBlocks = GetAbsoluteBlocks(rawFirstPartBlocks);
+                ImageLayoutInfo layout1 = layout;
 
-                var secondPartBlocks = rawParser.GetRawColorBlocks(layout.Bytes, offset);
-
+                var rawFirstPartBlocks = WithMeasurement(() => rawParser.ParseRawBlockGroups(layout1.Bytes, out offset), "rawFirstPartBlocks");
+                var firstPartBlocks = WithMeasurement(() => GetAbsoluteBlocks(rawFirstPartBlocks), "firstPartBlocks");
+                var secondPartBlocks = WithMeasurement(() => rawParser.GetRawColorBlocks(layout1.Bytes, offset), "secondPartBlocks");
+                
                 //renderer.RenderBitmap(bitMap, firstPartBlocks, layout);
 
-                renderer.RenderCounterBlocksOnBitmap(bitMap, firstPartBlocks, secondPartBlocks, layout, imagePaletteColors);
+                WithMeasurement(() => renderer.RenderCounterBlocksOnBitmap(bitMap, firstPartBlocks, secondPartBlocks, layout1, imagePaletteColors), "RenderCounterBlocksOnBitmap");
+                
+            }
+        }
+
+        private T WithMeasurement<T>(Func<T> func, string name = null)
+        {
+            using (Timer(name))
+            {
+                return func();
+            }
+        }
+
+        private void WithMeasurement(Action act, string name = null)
+        {
+            using (Timer(name))
+            {
+                act();
             }
         }
 
@@ -100,6 +119,18 @@ namespace WindowsFormsTestClient
         private List<Color> OffsetsToColors(byte[] imagePaletteOffsets, Collection<Color> colorCollection)
         {
             return imagePaletteOffsets.Select(offset => colorCollection[offset]).ToList();
+        }
+
+        private IDisposable Timer(string name = null)
+        {
+            var sw = new Stopwatch();
+            var disposable = Disposable.Create(sw.Start, delegate
+            {
+                sw.Stop();
+                Debug.WriteLine("{0} : {1:D}", name ?? "Default", sw.ElapsedMilliseconds);
+            });
+
+            return disposable;
         }
     }
 }

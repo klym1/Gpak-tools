@@ -17,4 +17,30 @@ namespace GPExtractor
             Debug.WriteLine(str);
         }
     }
+
+    public static class Disposable
+    {
+        private sealed class DisposableResult : IDisposable
+        {
+            private readonly Action onDispose;
+
+            public DisposableResult(Action onDispose)
+            {
+                
+                this.onDispose = onDispose;
+            }
+
+            public void Dispose()
+            {
+                onDispose();
+            }
+        }
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
+        public static IDisposable Create(Action before, Action after)
+        {
+            before();
+            return new DisposableResult(after);
+        }
+    }
 }
