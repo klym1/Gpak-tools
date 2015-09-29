@@ -51,21 +51,6 @@ namespace ImageRenderer
             }
         }
 
-        public void DrawHorizontalColorLine(Bitmap bitmap, ICollection<Color> colorCollection, int offsetX, int offsetY)
-        {
-            var initialOffsetX = offsetX;
-
-            foreach (var color in colorCollection)
-            {
-                using (var graphics = Graphics.FromImage(bitmap))
-                {
-                    graphics.FillRectangle(new SolidBrush(color),
-                        new Rectangle(new Point(initialOffsetX++, offsetY),
-                            new Size(1, 1)));
-                }
-            }
-        }
-
         public void SetupCanvas()
         {
             using (var graphics = Graphics.FromImage(_bitmap))
