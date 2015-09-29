@@ -22,7 +22,7 @@ namespace WindowsFormsTestClient
 
         private void Do()
         {
-            var extractResult = new Extractor().ExtractFromGp(@"c:\GpArch\gp\test20.gp");
+            var extractResult = new Extractor().ExtractFromGp(@"c:\GpArch\gp\test18.gp");
 
             IRenderer renderer = new Renderer();
 

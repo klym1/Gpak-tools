@@ -32,23 +32,16 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Block.cs" />
-    <Compile Include="BlocksDistributor.cs" />
+    <Compile Include="AbsoluteBlock.cs" />
+    <Compile Include="AbsoluteBlockContainer.cs" />
+    <Compile Include="RawShapeBlock.cs" />
     <Compile Include="ByteLayoutAttribute.cs" />
     <Compile Include="RawColorBlock.cs" />
     <Compile Include="RawColorBlockContainer.cs" />
     <Compile Include="ImageLayoutInfo.cs" />
     <Compile Include="MultiPictureEl.cs" />
-    <Compile Include="MultiPictureElAbsoluteCoordinatesConverter.cs" />
-    <Compile Include="MultiPictureElMerger.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -1,8 +1,9 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using Types;
 
-namespace Types
+namespace GPExtractor
 {
     public static class MultiPictureElAbsoluteCoordinatesConverter
     {
