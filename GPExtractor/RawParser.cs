@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Drawing;
 using System.Linq;
 using Types;
 
@@ -97,6 +98,18 @@ namespace GPExtractor
             }
 
             return rawShapeBlocksGroups.ToArray();
+        }
+
+        public Collection<Color> GetColorCollectionFromPalleteFile(byte[] paletteBytes)
+        {
+            var colorCollection = new Collection<Color>();
+
+            for (int i = 0; i < paletteBytes.Length - 2; i += 3)
+            {
+                colorCollection.Add(Color.FromArgb(255, paletteBytes[i], paletteBytes[i + 1], paletteBytes[i + 2]));
+            }
+
+            return colorCollection;
         }
     }
 }

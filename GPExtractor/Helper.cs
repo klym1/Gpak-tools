@@ -16,6 +16,39 @@ namespace GPExtractor
             
             Debug.WriteLine(str);
         }
+
+        public static T WithMeasurement<T>(Func<T> func, string name = null, Action<TimeSpan> onFinish = null)
+        {
+            using (Timer(name, onFinish))
+            {
+                return func();
+            }
+        }
+
+        public static void WithMeasurement(Action act, string name = null, Action<TimeSpan> onFinish = null)
+        {
+            using (Timer(name, onFinish))
+            {
+                act();
+            }
+        }
+
+        private static IDisposable Timer(string name = null, Action<TimeSpan> onFinish = null)
+        {
+            var sw = new Stopwatch();
+            var disposable = Disposable.Create(sw.Start, delegate
+            {
+                sw.Stop();
+                Debug.WriteLine("{0} : {1:D}", name ?? "Default", sw.ElapsedMilliseconds);
+
+                if (onFinish != null)
+                {
+                    onFinish(sw.Elapsed);
+                }
+            });
+
+            return disposable;
+        }
     }
 
     public static class Disposable

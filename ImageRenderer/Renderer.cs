@@ -26,6 +26,15 @@ namespace ImageRenderer
             }
         }
 
+        public void SetupCanvas(Bitmap bitMap)
+        {
+            using (var graphics = Graphics.FromImage(bitMap))
+            {
+                graphics.FillRectangle(new SolidBrush(Color.White),
+                    new Rectangle(0, 0, bitMap.Width, bitMap.Height));
+            }
+        }
+
         public void RenderCounterBlocksOnBitmap(Bitmap bitMap, List<AbsoluteBlock> piactureElements, Collection<RawColorBlock> secondPartBlocks, ImageLayoutInfo layout, List<Color> imagePaletteColors)
         {
             var blocksDistributor = new BlocksDistributor();

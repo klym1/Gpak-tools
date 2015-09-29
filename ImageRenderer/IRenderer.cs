@@ -8,9 +8,8 @@ namespace ImageRenderer
     public interface IRenderer
     {
         void RenderBitmap(Bitmap bitmap, List<AbsoluteBlock> piactureElements, ImageLayoutInfo layout);
-
         void RenderCounterBlocksOnBitmap(Bitmap bitMap, List<AbsoluteBlock> piactureElements, Collection<RawColorBlock> secondPartBlocks, ImageLayoutInfo layout, List<Color> imagePaletteColors);
-
         Bitmap RenderPalette(ICollection<Color> colorCollection, int width, int pixelSize);
+        void SetupCanvas(Bitmap bitMap);
     }
 }
