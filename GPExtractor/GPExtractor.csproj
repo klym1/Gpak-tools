@@ -45,6 +45,7 @@
     <Compile Include="Extractor.cs" />
     <Compile Include="ExtractorResult.cs" />
     <Compile Include="Helper.cs" />
+    <Compile Include="ImageGenerator.cs" />
     <Compile Include="MultiPictureElAbsoluteCoordinatesConverter.cs" />
     <Compile Include="MultiPictureElMerger.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

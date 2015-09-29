@@ -32,10 +32,12 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AbsoluteBlock.cs" />
     <Compile Include="AbsoluteBlockContainer.cs" />
+    <Compile Include="ImageView.cs" />
     <Compile Include="RawShapeBlock.cs" />
     <Compile Include="ByteLayoutAttribute.cs" />
     <Compile Include="RawColorBlock.cs" />
