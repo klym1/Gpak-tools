@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Drawing;
 using Types;
 
@@ -7,9 +6,16 @@ namespace ImageRenderer
 {
     public class BitmapRenderer : IRenderer
     {
-        public void RenderBitmap(Bitmap bitMap, List<AbsoluteBlock> piactureElements, ImageLayoutInfo layout)
+        private readonly Bitmap _bitmap;
+
+        public BitmapRenderer(Bitmap bitmap)
         {
-            using (var graphics = Graphics.FromImage(bitMap))
+            this._bitmap = bitmap;
+        }
+
+        public void RenderBitmap(List<AbsoluteBlock> piactureElements, ImageLayoutInfo layout)
+        {
+            using (var graphics = Graphics.FromImage(_bitmap))
             {
                 foreach (var block in piactureElements)
                 {
@@ -21,10 +27,8 @@ namespace ImageRenderer
             }
         }
 
-        public Bitmap RenderPalette(ICollection<Color> colorCollection, int width, int pixelSize)
+        public void RenderPalette(ICollection<Color> colorCollection, int width, int pixelSize)
         {
-            var newBitmap = new Bitmap(500, 500);
-
             var z = 0;
             var y = 0;
 
@@ -32,7 +36,7 @@ namespace ImageRenderer
             {
                 var brush = new SolidBrush(color);
 
-                using (var graphics = Graphics.FromImage(newBitmap))
+                using (var graphics = Graphics.FromImage(_bitmap))
                 {
                     graphics.FillRectangle(brush, new Rectangle(new Point(z, y), new Size(pixelSize, pixelSize)));
                 }
@@ -45,8 +49,6 @@ namespace ImageRenderer
                     y += pixelSize;
                 }
             }
-
-            return newBitmap;
         }
 
         public void DrawHorizontalColorLine(Bitmap bitmap, ICollection<Color> colorCollection, int offsetX, int offsetY)
@@ -64,13 +66,28 @@ namespace ImageRenderer
             }
         }
 
-        public void SetupCanvas(Bitmap bitMap)
+        public void SetupCanvas()
         {
-            using (var graphics = Graphics.FromImage(bitMap))
+            using (var graphics = Graphics.FromImage(_bitmap))
             {
                 graphics.FillRectangle(new SolidBrush(Color.White),
-                    new Rectangle(0, 0, bitMap.Width, bitMap.Height));
+                    new Rectangle(0, 0, _bitmap.Width, _bitmap.Height));
             }
+        }
+
+        public void RenderImage(ImageView imageView)
+        {
+            var lockedBitmap = new LockBitmap(_bitmap);
+
+            lockedBitmap.LockBits();
+
+            for (int i = 0; i < imageView.Width; i++)
+                for (int j = 0; j < imageView.Height; j++)
+                {
+                    lockedBitmap.SetPixel(j, i, imageView.Pixels[i, j]);
+                }
+
+            lockedBitmap.UnlockBits();
         }
     }
 }

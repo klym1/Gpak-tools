@@ -19,9 +19,9 @@ namespace WindowsFormsTestClient
         {
             var extractResult = new Extractor().ExtractFromGp(@"c:\GpArch\gp\test18.gp");
 
-            IRenderer renderer = new BitmapRenderer();
-
             var bitMap = new Bitmap(600, 600);
+
+            IRenderer renderer = new BitmapRenderer(bitMap);
             
             pictureBox2.Image = bitMap;
 
@@ -34,17 +34,16 @@ namespace WindowsFormsTestClient
             var imagePaletteColors = OffsetsToColors(extractResult.PaletteBytes, colorCollection);
 
             Helper.WithMeasurement(
-                () => Run(extractResult, rawParser, renderer, bitMap, imagePaletteColors), 
+                () => Run(extractResult, rawParser, renderer, imagePaletteColors), 
                 name : "Run", 
                 onFinish: elapsed => label1.Text = String.Format("{0:D}", elapsed.Milliseconds));
         }
 
-        private void Run(ExtractorResult extractResult, RawParser rawParser, IRenderer renderer, Bitmap bitMap,
-            List<Color> imagePaletteColors)
+        private void Run(ExtractorResult extractResult, RawParser rawParser, IRenderer renderer, List<Color> imagePaletteColors)
         {
             var imageView = new ImageView(600, 600);
 
-            Helper.WithMeasurement(() => renderer.SetupCanvas(bitMap), name: "SetupCanvas");
+            Helper.WithMeasurement(renderer.SetupCanvas, name: "SetupCanvas");
 
             var imageGenerator = new ImageGenerator();
 
@@ -65,7 +64,7 @@ namespace WindowsFormsTestClient
 
                 Helper.WithMeasurement(() => imageGenerator.RenderCounterBlocksOnBitmap(imageView, firstPartBlocks, secondPartBlocks, layout1, imagePaletteColors), "RenderCounterBlocksOnBitmap");
                 
-                renderer.Render(imageView);
+                renderer.RenderImage(imageView);
             }
         }
         
