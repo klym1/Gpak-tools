@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Drawing;
 using System.Linq;
@@ -66,7 +67,7 @@ namespace GPExtractor
                     var a = (nextByte >> 4) | (1 << 4);
                     var b = (nextByte & 0xf) | (1 << 4);
 
-                    rawShapeBlocksGroups.Add(new RawShapeBlocksGroup(new Collection<RawShapeBlock>
+                    rawShapeBlocksGroups.Add(new RawShapeBlocksGroup(new List<RawShapeBlock>
                     {
                         new RawShapeBlock(b,a)
                     }, rowIndex++));
@@ -83,7 +84,7 @@ namespace GPExtractor
                 //ordinary processing
                 var bytesInBlock = blockType * 2 + 1;
 
-                var emptyCollection = new Collection<RawShapeBlock>();
+                var emptyCollection = new List<RawShapeBlock>();
 
                 for (int k = 0; k < blockType * 2; k += 2)
                 {

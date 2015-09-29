@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using FluentAssertions;
 using NUnit.Framework;
@@ -11,7 +12,7 @@ namespace UnitTests
         [Test]
         public void MergeBlockHelperShouldWorkCorrectly()
         {
-            var elem = new RawShapeBlocksGroup(new Collection<RawShapeBlock>
+            var elem = new RawShapeBlocksGroup(new List<RawShapeBlock>
             {
                 new RawShapeBlock (12, 100),
                 new RawShapeBlock (0, 1),

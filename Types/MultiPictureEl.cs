@@ -11,10 +11,10 @@ namespace Types
         public int RowIndex { get; private set; }
         public List<RawShapeBlock> Collection { get; private set; }
 
-        public RawShapeBlocksGroup(Collection<RawShapeBlock> collection, int rowIndex)
+        public RawShapeBlocksGroup(List<RawShapeBlock> collection, int rowIndex)
         {
             RowIndex = rowIndex;
-            Collection = collection.ToList();
+            Collection = collection;
         }
 
         public static bool Equals(RawShapeBlocksGroup one, RawShapeBlocksGroup two)

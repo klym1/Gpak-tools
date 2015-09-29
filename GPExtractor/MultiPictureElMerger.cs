@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 
@@ -17,7 +18,7 @@ namespace Types
 
             if (blocks.Count < 2) return elem;
 
-            var newElem = new RawShapeBlocksGroup(new Collection<RawShapeBlock>(), elem.RowIndex);
+            var newElem = new RawShapeBlocksGroup(new List<RawShapeBlock>(), elem.RowIndex);
             
             var currentBlock = blocks[0];
 
