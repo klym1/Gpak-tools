@@ -19,7 +19,7 @@ namespace GPExtractor
 
         public static T WithMeasurement<T>(Func<T> func, string name = null, Action<TimeSpan> onFinish = null)
         {
-            using (Timer(name, onFinish))
+            using (Stopwatch(name, onFinish))
             {
                 return func();
             }
@@ -27,16 +27,16 @@ namespace GPExtractor
 
         public static void WithMeasurement(Action act, string name = null, Action<TimeSpan> onFinish = null)
         {
-            using (Timer(name, onFinish))
+            using (Stopwatch(name, onFinish))
             {
                 act();
             }
         }
 
-        private static IDisposable Timer(string name = null, Action<TimeSpan> onFinish = null)
+        private static IDisposable Stopwatch(string name = null, Action<TimeSpan> onFinish = null)
         {
             var sw = new Stopwatch();
-            var disposable = Disposable.Create(sw.Start, delegate
+            var disposable = Disposable.Create(before: sw.Start, after: delegate
             {
                 sw.Stop();
                 Debug.WriteLine("{0} : {1:D}", name ?? "Default", sw.ElapsedMilliseconds);
@@ -55,17 +55,16 @@ namespace GPExtractor
     {
         private sealed class DisposableResult : IDisposable
         {
-            private readonly Action onDispose;
+            private readonly Action _onDispose;
 
             public DisposableResult(Action onDispose)
             {
-                
-                this.onDispose = onDispose;
+                this._onDispose = onDispose;
             }
 
             public void Dispose()
             {
-                onDispose();
+                _onDispose();
             }
         }
 

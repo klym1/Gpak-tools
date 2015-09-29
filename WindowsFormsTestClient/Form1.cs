@@ -33,22 +33,30 @@ namespace WindowsFormsTestClient
 
             var imagePaletteColors = OffsetsToColors(extractResult.PaletteBytes, colorCollection);
 
-            Helper.WithMeasurement(() => Run(extractResult, rawParser, renderer, bitMap, imagePaletteColors), onFinish: elapsed => label1.Text = String.Format("{0:D}", elapsed.Milliseconds));
+            Helper.WithMeasurement(
+                () => Run(extractResult, rawParser, renderer, bitMap, imagePaletteColors), 
+                name : "Run", 
+                onFinish: elapsed => label1.Text = String.Format("{0:D}", elapsed.Milliseconds));
         }
 
         private void Run(ExtractorResult extractResult, RawParser rawParser, IRenderer renderer, Bitmap bitMap,
             List<Color> imagePaletteColors)
         {
-            renderer.SetupCanvas(bitMap);
+            Helper.WithMeasurement(() => renderer.SetupCanvas(bitMap), name: "SetupCanvas");
 
             foreach (var layout in extractResult.LayoutCollection.Take(1))
             {
                 int offset = 0;
 
                 ImageLayoutInfo layout1 = layout;
+                
+                var firstPartBlocks = Helper.WithMeasurement(() =>
+                {
+                    var rawFirstPartBlocks = rawParser.ParseRawBlockGroups(layout1.Bytes, out offset);
+                    return rawFirstPartBlocks.ConvertToAbsoluteCoordinatesBlocks();
 
-                var rawFirstPartBlocks = Helper.WithMeasurement(() => rawParser.ParseRawBlockGroups(layout1.Bytes, out offset), "rawFirstPartBlocks");
-                var firstPartBlocks = Helper.WithMeasurement(() => rawFirstPartBlocks.ConvertToAbsoluteCoordinatesBlocks(), "firstPartBlocks");
+                }, "firstPartBlocks");
+                
                 var secondPartBlocks = Helper.WithMeasurement(() => rawParser.GetRawColorBlocks(layout1.Bytes, offset), "secondPartBlocks");
                 
                 Helper.WithMeasurement(() => renderer.RenderCounterBlocksOnBitmap(bitMap, firstPartBlocks, secondPartBlocks, layout1, imagePaletteColors), "RenderCounterBlocksOnBitmap");
