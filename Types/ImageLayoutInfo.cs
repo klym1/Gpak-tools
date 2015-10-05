@@ -27,6 +27,8 @@ namespace Types
         
         public byte[] HeaderBytes { get; set; }
         public byte[] Bytes { get; set; }
+        public long GlobalByteOffsetEnd { get; set; }
+        public uint GlobalByteOffsetStart { get; set; }
 
         public bool Equals(ImageLayoutInfo other)
         {

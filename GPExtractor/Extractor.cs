@@ -23,13 +23,16 @@ namespace GPExtractor
             CheckItem(layoutInfo);
 
             layoutInfo.HeaderBytes = bytes.Skip((int)offset).Take(ImageHeaderSize).ToArray();
-
+            layoutInfo.GlobalByteOffsetStart = offset;
+            
             if (layoutInfo.newImageOffset > -1)
             {
                 layoutInfo.Bytes = bytes
                     .Skip((int) offset)
                     .Skip(ImageHeaderSize)
-                    .Take(layoutInfo.newImageOffset - 1).ToArray();
+                    .Take(layoutInfo.newImageOffset - 1 - ImageHeaderSize).ToArray();
+
+                layoutInfo.GlobalByteOffsetEnd = offset + layoutInfo.newImageOffset - 1;
             }
             else
             {
@@ -37,6 +40,8 @@ namespace GPExtractor
                     .Skip((int) offset)
                     .Skip(ImageHeaderSize)
                     .ToArray();
+
+                layoutInfo.GlobalByteOffsetEnd = bytes.Length - 1;
             }
 
             return layoutInfo;
@@ -73,6 +78,7 @@ namespace GPExtractor
                     offset_ = offset;
                 }
 
+                //Handle more than two images
                 if (layoutInfo.newImageOffset > -1)
                 {
                     var newImageLayoutInfo = ReadImageLayoutInfo(bytes, (uint)(offset + layoutInfo.newImageOffset));

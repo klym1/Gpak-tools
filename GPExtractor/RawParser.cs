@@ -9,13 +9,13 @@ namespace GPExtractor
 {
     public class RawParser
     {
-        public Collection<RawColorBlock> GetRawColorBlocks(byte[] imageBytes, int initialOffset)
+        public Collection<RawColorBlock> GetRawColorBlocks(byte[] imageBytes, int initialOffset, int globalOffset)
         {
             var offset = initialOffset + 1; // skip CD bytes
-
+            globalOffset++;
             var tempByteCollection = new Collection<RawColorBlock>();
 
-            while (offset < imageBytes.Length - 1)
+            while (offset < imageBytes.Length)
             {
                 var blockStartByte = imageBytes[offset];
 
@@ -24,7 +24,7 @@ namespace GPExtractor
 
                 if (blockType != 0xf)
                 {
-                    throw new Exception("123");
+                    //break;
                 }
 
                 if (blockLength < 15) // last block
@@ -35,12 +35,14 @@ namespace GPExtractor
                 }
 
                 offset++;
+                globalOffset++;
 
                 for (var i = 0; i < blockLength; i += 2)
                 {
                     var block = new RawColorBlock(imageBytes[offset], imageBytes[offset + 1]);
                     tempByteCollection.Add(block);
                     offset += 2;
+                    globalOffset += 2;
                 }
             }
 
@@ -55,7 +57,7 @@ namespace GPExtractor
             offset = 0;
 
             //todo Improve condition
-            while (imageBytes[offset] != 0xCD)
+            while (offset < imageBytes.Length &&  imageBytes[offset] != 0xCD )
             {
                 int blockType = imageBytes[offset];
 
@@ -98,7 +100,7 @@ namespace GPExtractor
                 offset += bytesInBlock;
             }
 
-            return rawShapeBlocksGroups.ToArray();
+            return rawShapeBlocksGroups.MergeBlocks().ToArray();
         }
 
         public Collection<Color> GetColorCollectionFromPalleteFile(byte[] paletteBytes)

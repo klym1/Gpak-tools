@@ -17,7 +17,7 @@ namespace WindowsFormsTestClient
     {
         private void Do()
         {
-            var extractResult = new Extractor().ExtractFromGp(@"c:\GpArch\gp\test18.gp");
+            var extractResult = new Extractor().ExtractFromGp(@"c:\GpArch\gp\test8.gp");
 
             var bitMap = new Bitmap(600, 600);
 
@@ -47,7 +47,7 @@ namespace WindowsFormsTestClient
 
             var imageGenerator = new ImageGenerator();
 
-            foreach (var layout in extractResult.LayoutCollection.Take(1))
+            foreach (var layout in extractResult.LayoutCollection.Take(2))
             {
                 int offset = 0;
 
@@ -59,8 +59,8 @@ namespace WindowsFormsTestClient
                     return rawFirstPartBlocks.ConvertToAbsoluteCoordinatesBlocks();
 
                 }, "firstPartBlocks");
-                
-                var secondPartBlocks = Helper.WithMeasurement(() => rawParser.GetRawColorBlocks(layout1.Bytes, offset), "secondPartBlocks");
+
+                var secondPartBlocks = Helper.WithMeasurement(() => rawParser.GetRawColorBlocks(layout1.Bytes, offset, (int)layout1.GlobalByteOffsetStart+offset+layout1.HeaderBytes.Length), "secondPartBlocks");
 
                 Helper.WithMeasurement(() => imageGenerator.RenderCounterBlocksOnBitmap(imageView, firstPartBlocks, secondPartBlocks, layout1, imagePaletteColors), "RenderCounterBlocksOnBitmap");
                 

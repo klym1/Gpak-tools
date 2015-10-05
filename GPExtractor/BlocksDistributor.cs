@@ -18,6 +18,8 @@ namespace Types
 
         public Collection<AbsoluteBlockContainer> GetDistributedCounterPartBlocksInternal(List<AbsoluteBlock> piactureElements, Collection<RawColorBlock> secondPartBlocks)
         {
+            if (secondPartBlocks.Count == 0) return new Collection<AbsoluteBlockContainer>();
+
             _enumerator = secondPartBlocks.ToList().GetEnumerator();
             _blockEnumerator = piactureElements.ToList().GetEnumerator();
 
@@ -102,7 +104,7 @@ namespace Types
             var all = blockContainerCollection.All(it => it.CounterBlockContainers.Sum(o => o.Width) == it.Block.Length);
             if (!all)
             {
-                throw new Exception("23423");
+                //throw new Exception("23423");
             }
         }
 
