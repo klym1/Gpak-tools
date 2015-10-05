@@ -33,10 +33,20 @@ namespace WindowsFormsTestClient
 
             var imagePaletteColors = OffsetsToColors(extractResult.PaletteBytes, colorCollection);
 
+            RenderPalette(imagePaletteColors);
+
             Helper.WithMeasurement(
                 () => Run(extractResult, rawParser, renderer, imagePaletteColors), 
                 name : "Run", 
                 onFinish: elapsed => label1.Text = String.Format("{0:D}", elapsed.Milliseconds));
+        }
+
+        private void RenderPalette(List<Color> imagePaletteColors)
+        {
+            var paletteBitMap = new Bitmap(500, 500);
+            IRenderer paletteRenderer = new BitmapRenderer(paletteBitMap);
+            paletteRenderer.RenderPalette(imagePaletteColors, 200, 4);
+            pictureBox3.Image = paletteBitMap;
         }
 
         private void Run(ExtractorResult extractResult, RawParser rawParser, IRenderer renderer, List<Color> imagePaletteColors)
