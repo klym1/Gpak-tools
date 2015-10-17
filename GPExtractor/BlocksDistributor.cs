@@ -62,7 +62,11 @@ namespace Types
 
         private bool TryToAppendCounterBlock(AbsoluteBlockContainer absoluteBlockContainer, RawColorBlock rawColorBlock, int blockSizeNeeded, out int lenthAdded)
         {
-            var stripePadding = blockSizeNeeded < GetBlockLengthNeeded(rawColorBlock) ? (GetBlockLengthNeeded(rawColorBlock) - blockSizeNeeded) : 0; ;
+            var blockLengthNeeded = GetBlockLengthNeeded(rawColorBlock);
+
+            var stripePadding = blockSizeNeeded < blockLengthNeeded 
+                ? (blockLengthNeeded - blockSizeNeeded) 
+                : 0;
 
             if (absoluteBlockContainer.CanAddFullBlock(blockSizeNeeded))
             {
@@ -73,7 +77,11 @@ namespace Types
 
             var freeSpace = absoluteBlockContainer.FreeSpaceLeft;
 
-            absoluteBlockContainer.CounterBlockContainers.Add(new RawColorBlockContainer(rawColorBlock, freeSpace, absoluteBlockContainer.TotalSpaceOccupied, stripePadding));
+            if (freeSpace > 0)
+            {
+                absoluteBlockContainer.CounterBlockContainers.Add(new RawColorBlockContainer(rawColorBlock, freeSpace, absoluteBlockContainer.TotalSpaceOccupied, stripePadding));
+            }
+
             lenthAdded = freeSpace;
             return false;
         }
@@ -95,6 +103,11 @@ namespace Types
 
         private int GetBlockLengthNeeded(RawColorBlock rawColorBlock)
         {
+            if (rawColorBlock.type == RawColorBlockType.SinglePixel)
+            {
+                return 1;
+            }
+
             var type = rawColorBlock.ThirdOctet;
             return type + 3;
         }

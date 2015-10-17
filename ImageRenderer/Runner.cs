@@ -11,7 +11,7 @@ namespace ImageRenderer
 {
     public class Runner
     {
-        public void Run(ExtractorResult extractResult, RawParser rawParser, IRenderer renderer, List<Color> imagePaletteColors)
+        public void Run(ExtractorResult extractResult, RawParser rawParser, IRenderer renderer, List<Color> imagePaletteColors, List<Color> generalPaletteColors)
         {
             var imageView = new ImageView(600, 600);
 
@@ -34,7 +34,7 @@ namespace ImageRenderer
 
                 var secondPartBlocks = Helper.WithMeasurement(() => rawParser.GetRawColorBlocks(layout1.Bytes, offset, (int)layout1.GlobalByteOffsetStart + offset + layout1.HeaderBytes.Length), "secondPartBlocks");
 
-                Helper.WithMeasurement(() => imageGenerator.RenderCounterBlocksOnBitmap(imageView, firstPartBlocks, secondPartBlocks, layout1, imagePaletteColors), "RenderCounterBlocksOnBitmap");
+                Helper.WithMeasurement(() => imageGenerator.RenderCounterBlocksOnBitmap(imageView, firstPartBlocks, secondPartBlocks, layout1, imagePaletteColors, generalPaletteColors), "RenderCounterBlocksOnBitmap");
 
                 renderer.RenderImage(imageView);
             }

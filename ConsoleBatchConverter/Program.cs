@@ -15,8 +15,8 @@ namespace ConsoleBatchConverter
     {
         static void Main(string[] args)
         {
-            var gpDirectory = @"C:\GpArch\GP\CorrectRendering";
-            var pngDirectory = @"C:\GpArch\png";
+            const string gpDirectory = @"C:\GpArch\GP";
+            const string pngDirectory = @"C:\GpArch\png";
 
             if (!Directory.Exists(pngDirectory))
             {
@@ -27,7 +27,14 @@ namespace ConsoleBatchConverter
 
             foreach (var gpFile in gpFiles)
             {
-                SaveAsPng(gpFile, pngDirectory);
+                try
+                {
+                    SaveAsPng(gpFile, pngDirectory);
+                }
+                catch (Exception)
+                {
+                    Console.WriteLine(gpFile);
+                }
             }
         }
 
@@ -47,15 +54,13 @@ namespace ConsoleBatchConverter
 
             var imagePaletteColors = ImageGenerator.OffsetsToColors(extractResult.PaletteBytes, colorCollection);
             
-            new Runner().Run(extractResult, rawParser, renderer, imagePaletteColors);
+            new Runner().Run(extractResult, rawParser, renderer, imagePaletteColors, colorCollection.ToList());
 
-            byte[] result = null;
-            using (MemoryStream stream = new MemoryStream())
+            using (var stream = new MemoryStream())
             {
                 bitMap.Save(stream, ImageFormat.Png);
                 File.WriteAllBytes(Path.Combine(pngDirectory, Path.GetFileNameWithoutExtension(gpFile)+".png"),stream.ToArray());
             }
-
         }
     }
 }

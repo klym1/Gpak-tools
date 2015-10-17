@@ -8,8 +8,8 @@ namespace Types
 
     public class RawColorBlock
     {
-        private readonly byte _one;
-        private readonly byte _two;
+        public byte One { get; private set; }
+        public byte Two { get; private set; }
 
         public int Offset { get; private set; }
         public byte ThirdOctet { get; private set; }
@@ -17,10 +17,16 @@ namespace Types
 
         public RawColorBlock(RawColorBlockType typee, byte one, byte two)
         {
-            _one = one;
-            _two = two;
+            One = one;
+            Two = two;
             ThirdOctet = (byte) ((two) >> 4);
             Offset = (one | ((two) & 0x0f) << 8);
+            type = typee;
+        }
+
+        public RawColorBlock(RawColorBlockType typee, byte one)
+        {
+            One = one;
             type = typee;
         }
     }

@@ -23,7 +23,7 @@ namespace GPExtractor
 
                 offset++;
                 globalOffset++;
-                
+
                 foreach (var bit in Helper.IterateBits(blockStartByte))
                 {
                     if (bit == 0)
@@ -35,8 +35,14 @@ namespace GPExtractor
                     else
                     {
                         ProcessMultipixelBlock(imageBytes, offset, tempByteCollection);
-                        offset+=2;
-                        globalOffset+=2;
+                        offset += 2;
+                        globalOffset += 2;
+                    }
+
+                    //last block might not be full (less than 8 elems)
+                    if (offset == imageBytes.Length)
+                    {
+                        break;
                     }
                 }
             }
@@ -54,8 +60,8 @@ namespace GPExtractor
         private void ProcessSinglepixelBlock(byte[] imageBytes, int offset,
            Collection<RawColorBlock> tempByteCollection)
         {
-           // var @byte = imageBytes[offset];
-            var block = new RawColorBlock(RawColorBlockType.SinglePixel, 0x30, 0);
+            var @byte = imageBytes[offset];
+            var block = new RawColorBlock(RawColorBlockType.SinglePixel, @byte);
             tempByteCollection.Add(block);   
         }
 

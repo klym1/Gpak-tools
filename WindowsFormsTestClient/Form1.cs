@@ -17,7 +17,7 @@ namespace WindowsFormsTestClient
     {
         private void Do()
         {
-            var extractResult = new Extractor().ExtractFromGp(@"c:\GpArch\gp\test8_1.gp");
+            var extractResult = new Extractor().ExtractFromGp(@"c:\GpArch\gp\test7_7.gp");
 
             var bitMap = new Bitmap(600, 600);
 
@@ -37,7 +37,7 @@ namespace WindowsFormsTestClient
             RenderGeneralPalette(colorCollection.ToList());
 
             Helper.WithMeasurement(
-                () => new Runner().Run(extractResult, rawParser, renderer, imagePaletteColors), 
+                () => new Runner().Run(extractResult, rawParser, renderer, imagePaletteColors, colorCollection.ToList()), 
                 name : "Run", 
                 onFinish: elapsed => label1.Text = String.Format("{0:D}", elapsed.Milliseconds));
         }
