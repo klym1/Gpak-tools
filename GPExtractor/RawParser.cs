@@ -73,7 +73,7 @@ namespace GPExtractor
             offset = 0;
 
             //todo Improve condition
-            while (offset < imageBytes.Length &&  imageBytes[offset] != 0xCD )
+            while (offset < imageBytes.Length &&  imageBytes[offset] != 0xCD && imageBytes[offset] != 0x16)
             {
                 int blockType = imageBytes[offset];
 
@@ -94,6 +94,39 @@ namespace GPExtractor
                     continue;
                 }
 
+                if (blockType == 0xC1)
+                {
+                    //C1 24 => offset 14, width 2
+                    var nextByte = imageBytes[offset + 1];
+                    var a = (nextByte >> 4);
+                    var b = ((blockType & 0x0f) << 4) | (0x0f & nextByte);
+
+                    rawShapeBlocksGroups.Add(new RawShapeBlocksGroup(new List<RawShapeBlock>
+                    {
+                        new RawShapeBlock(b,a)
+                    }, rowIndex++));
+
+                    offset += 2;
+                    continue;
+                }
+
+                if (blockType == 0xA1)
+                {
+                    //A1 60 => offset 0, width 22 (0x16)
+                    var nextByte = imageBytes[offset + 1];
+
+                    var a = (nextByte >> 4) | (1 << 4);
+                    var b = (0x0f & nextByte);
+
+                    rawShapeBlocksGroups.Add(new RawShapeBlocksGroup(new List<RawShapeBlock>
+                    {
+                        new RawShapeBlock(b,a)
+                    }, rowIndex++));
+
+                    offset += 2;
+                    continue;
+                }
+                
                 if (blockType > 20)
                 {
                     throw new Exception("wrong block type");
