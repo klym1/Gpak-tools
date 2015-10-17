@@ -19,34 +19,13 @@ namespace GPExtractor
             {
                 var blockStartByte = imageBytes[offset];
 
-                var blockLength = blockStartByte & 0x0f;
-                var blockType = (blockStartByte >> 4);
-
-                if (blockType != 0xf)
+                if (!IsValidRawColorBlockBeginning(blockStartByte))
                 {
-                    //break;
+                    break;
                 }
 
-                if (blockLength != 0xf)
-                {
-                    
-                }
-
-                if (blockLength == 0x08) // end
-                {
-                    //0xA
-                    blockLength = imageBytes.Length - offset - 1;
-                }
-
-                if (blockLength == 0 && blockType == 0xE)
-                {
-                    blockLength = 8;
-                    //break;
-                }
+                var blockLength = _blockLengthsDictionary[blockStartByte] * 2; 
                 
-                    
-                
-
                 offset++;
                 globalOffset++;
 
@@ -62,6 +41,25 @@ namespace GPExtractor
             return tempByteCollection;
         }
 
+        // 0xFF = 1111 1111 = 8
+        // 0xF8 = 1111 1000 = 5
+        private readonly Dictionary<byte, int> _blockLengthsDictionary = new Dictionary<byte, int>
+        {
+            {0x80, 1},
+            {0xC0, 2},
+            {0xE0, 3},
+            {0xF0, 4},
+            {0xF8, 5},
+            {0xFC, 6},
+            {0xFE, 7},
+            {0xFF, 8}
+        };
+
+        private bool IsValidRawColorBlockBeginning(byte blockStartByte)
+        {
+            return _blockLengthsDictionary.ContainsKey(blockStartByte);
+        }
+        
         public RawShapeBlocksGroup[] ParseRawBlockGroups(byte[] imageBytes, out int offset)
         {
             var rawShapeBlocksGroups = new Collection<RawShapeBlocksGroup>();
