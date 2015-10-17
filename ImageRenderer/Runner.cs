@@ -13,7 +13,7 @@ namespace ImageRenderer
     {
         public void Run(ExtractorResult extractResult, RawParser rawParser, IRenderer renderer, List<Color> imagePaletteColors, List<Color> generalPaletteColors)
         {
-            var imageView = new ImageView(600, 600);
+            var imageView = new ImageView(700, 700);
 
             Helper.WithMeasurement(renderer.SetupCanvas, name: "SetupCanvas");
 
