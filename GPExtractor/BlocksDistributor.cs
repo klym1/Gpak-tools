@@ -104,7 +104,7 @@ namespace Types
             var all = blockContainerCollection.All(it => it.CounterBlockContainers.Sum(o => o.Width) == it.Block.Length);
             if (!all)
             {
-                //throw new Exception("23423");
+                throw new Exception("23423");
             }
         }
 

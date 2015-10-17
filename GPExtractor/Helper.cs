@@ -1,10 +1,26 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 
 namespace GPExtractor
 {
     public static class Helper
     {
+        private static IEnumerable<int> IterateBitsLeftToRight(byte value)
+        {
+            for (int i = 0; i < 8; i++)
+            {
+                yield return ((value >> i) & 0x1);
+            }
+        }
+
+        public static IEnumerable<int> IterateBits(byte value)
+        {
+            return IterateBitsLeftToRight(value).Reverse();
+        }
+
         public static void DumpArray(byte [] bytes, int offset = 0, int count = 0)
         {
             var str = String.Empty;

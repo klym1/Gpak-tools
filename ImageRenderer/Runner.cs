@@ -19,7 +19,7 @@ namespace ImageRenderer
 
             var imageGenerator = new ImageGenerator();
 
-            foreach (var layout in extractResult.LayoutCollection.Take(2))
+            foreach (var layout in extractResult.LayoutCollection)
             {
                 int offset = 0;
 

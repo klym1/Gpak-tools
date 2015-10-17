@@ -1,8 +1,10 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Drawing;
 using System.Linq;
+using System.Threading;
 using Types;
 
 namespace GPExtractor
@@ -19,48 +21,45 @@ namespace GPExtractor
             {
                 var blockStartByte = imageBytes[offset];
 
-                if (!IsValidRawColorBlockBeginning(blockStartByte))
-                {
-                    break;
-                }
-
-                var blockLength = _blockLengthsDictionary[blockStartByte] * 2; 
-                
                 offset++;
                 globalOffset++;
-
-                for (var i = 0; i < blockLength; i += 2)
+                
+                foreach (var bit in Helper.IterateBits(blockStartByte))
                 {
-                    var block = new RawColorBlock(imageBytes[offset], imageBytes[offset + 1]);
-                    tempByteCollection.Add(block);
-                    offset += 2;
-                    globalOffset += 2;
+                    if (bit == 0)
+                    {
+                        ProcessSinglepixelBlock(imageBytes, offset, tempByteCollection);
+                        offset++;
+                        globalOffset++;
+                    }
+                    else
+                    {
+                        ProcessMultipixelBlock(imageBytes, offset, tempByteCollection);
+                        offset+=2;
+                        globalOffset+=2;
+                    }
                 }
             }
 
             return tempByteCollection;
         }
 
-        // 0xFF = 1111 1111 = 8
-        // 0xF8 = 1111 1000 = 5
-        private readonly Dictionary<byte, int> _blockLengthsDictionary = new Dictionary<byte, int>
+        private void ProcessMultipixelBlock(byte[] imageBytes, int offset,
+            Collection<RawColorBlock> tempByteCollection)
         {
-            {0x80, 1},
-            {0xC0, 2},
-            {0xE0, 3},
-            {0xF0, 4},
-            {0xF8, 5},
-            {0xFC, 6},
-            {0xFE, 7},
-            {0xFF, 8}
-        };
-
-        private bool IsValidRawColorBlockBeginning(byte blockStartByte)
-        {
-            return _blockLengthsDictionary.ContainsKey(blockStartByte);
+            var block = new RawColorBlock(RawColorBlockType.MultiPiexl, imageBytes[offset], imageBytes[offset + 1]);
+                tempByteCollection.Add(block); 
         }
-        
-        public RawShapeBlocksGroup[] ParseRawBlockGroups(byte[] imageBytes, out int offset)
+
+        private void ProcessSinglepixelBlock(byte[] imageBytes, int offset,
+           Collection<RawColorBlock> tempByteCollection)
+        {
+           // var @byte = imageBytes[offset];
+            var block = new RawColorBlock(RawColorBlockType.SinglePixel, 0x30, 0);
+            tempByteCollection.Add(block);   
+        }
+
+       public RawShapeBlocksGroup[] ParseRawBlockGroups(byte[] imageBytes, out int offset)
         {
             var rawShapeBlocksGroups = new Collection<RawShapeBlocksGroup>();
 

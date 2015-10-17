@@ -13,7 +13,6 @@ namespace GPExtractor
             var blocksDistributor = new BlocksDistributor();
 
             var blockContainerCollection = blocksDistributor.GetDistributedCounterPartBlocks(piactureElements, secondPartBlocks);
-            var i = 0;
 
             foreach (var blockContainer in blockContainerCollection)
             {
@@ -23,13 +22,6 @@ namespace GPExtractor
                                  .Take(counterBlockContainer.Width)
                                  .ToList();
                     
-                    var redColorSlice =
-                        Enumerable.Range(1, counterBlockContainer.Width).Select(it => i % 2 == 0 ? Color.Red : Color.Green).ToList();
-
-                    i++;
-
-                    
-
                     imageView.DrawHorizontalColorLine(slice,
                         layout.offsetX + blockContainer.Block.OffsetX + counterBlockContainer.Offset,
                         layout.offsetY + blockContainer.Block.OffsetY);
