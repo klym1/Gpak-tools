@@ -32,18 +32,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Deployment" />
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.Xml" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -79,17 +67,22 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\GPExtractor\GPExtractor.csproj">
-      <Project>{1dfbc20e-cea9-4831-a923-4c651bc63e0f}</Project>
+      <Project>{1DFBC20E-CEA9-4831-A923-4C651BC63E0F}</Project>
       <Name>GPExtractor</Name>
     </ProjectReference>
     <ProjectReference Include="..\ImageRenderer\ImageRenderer.csproj">
-      <Project>{cf569618-3b66-48c0-b040-29bd57203c69}</Project>
+      <Project>{CF569618-3B66-48C0-B040-29BD57203C69}</Project>
       <Name>ImageRenderer</Name>
     </ProjectReference>
     <ProjectReference Include="..\Types\Types.csproj">
-      <Project>{a1778edf-7b59-41c6-a961-a00f09356c44}</Project>
+      <Project>{A1778EDF-7B59-41C6-A961-A00F09356C44}</Project>
       <Name>Types</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

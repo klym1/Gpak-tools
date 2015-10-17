@@ -27,12 +27,25 @@ namespace GPExtractor
                     //break;
                 }
 
-                if (blockLength < 15) // last block
+                if (blockLength != 0xf)
                 {
-                    var p = imageBytes.Length - offset - 1;
-
-                    blockLength = p > 15 ? 15 : p;
+                    
                 }
+
+                if (blockLength == 0x08) // end
+                {
+                    //0xA
+                    blockLength = imageBytes.Length - offset - 1;
+                }
+
+                if (blockLength == 0 && blockType == 0xE)
+                {
+                    blockLength = 8;
+                    //break;
+                }
+                
+                    
+                
 
                 offset++;
                 globalOffset++;

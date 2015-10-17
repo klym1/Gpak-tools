@@ -17,7 +17,7 @@ namespace WindowsFormsTestClient
     {
         private void Do()
         {
-            var extractResult = new Extractor().ExtractFromGp(@"c:\GpArch\gp\test8.gp");
+            var extractResult = new Extractor().ExtractFromGp(@"c:\GpArch\gp\test17.gp");
 
             var bitMap = new Bitmap(600, 600);
 
@@ -31,58 +31,33 @@ namespace WindowsFormsTestClient
 
             var colorCollection = rawParser.GetColorCollectionFromPalleteFile(paletteBytes);
 
-            var imagePaletteColors = OffsetsToColors(extractResult.PaletteBytes, colorCollection);
+            var imagePaletteColors = ImageGenerator.OffsetsToColors(extractResult.PaletteBytes, colorCollection);
 
             RenderPalette(imagePaletteColors);
+            RenderGeneralPalette(colorCollection.ToList());
 
             Helper.WithMeasurement(
-                () => Run(extractResult, rawParser, renderer, imagePaletteColors), 
+                () => new Runner().Run(extractResult, rawParser, renderer, imagePaletteColors), 
                 name : "Run", 
                 onFinish: elapsed => label1.Text = String.Format("{0:D}", elapsed.Milliseconds));
+        }
+
+        private void RenderGeneralPalette(List<Color> imagePaletteColors)
+        {
+            var paletteBitMap = new Bitmap(500, 500);
+            IRenderer paletteRenderer = new BitmapRenderer(paletteBitMap);
+            paletteRenderer.RenderPalette(imagePaletteColors, 200, 4);
+            pictureBox1.Image = paletteBitMap;
         }
 
         private void RenderPalette(List<Color> imagePaletteColors)
         {
             var paletteBitMap = new Bitmap(500, 500);
             IRenderer paletteRenderer = new BitmapRenderer(paletteBitMap);
-            paletteRenderer.RenderPalette(imagePaletteColors, 200, 4);
+            paletteRenderer.RenderPalette(imagePaletteColors, 310, 1);
             pictureBox3.Image = paletteBitMap;
         }
-
-        private void Run(ExtractorResult extractResult, RawParser rawParser, IRenderer renderer, List<Color> imagePaletteColors)
-        {
-            var imageView = new ImageView(600, 600);
-
-            Helper.WithMeasurement(renderer.SetupCanvas, name: "SetupCanvas");
-
-            var imageGenerator = new ImageGenerator();
-
-            foreach (var layout in extractResult.LayoutCollection.Take(2))
-            {
-                int offset = 0;
-
-                ImageLayoutInfo layout1 = layout;
-                
-                var firstPartBlocks = Helper.WithMeasurement(() =>
-                {
-                    var rawFirstPartBlocks = rawParser.ParseRawBlockGroups(layout1.Bytes, out offset);
-                    return rawFirstPartBlocks.ConvertToAbsoluteCoordinatesBlocks();
-
-                }, "firstPartBlocks");
-
-                var secondPartBlocks = Helper.WithMeasurement(() => rawParser.GetRawColorBlocks(layout1.Bytes, offset, (int)layout1.GlobalByteOffsetStart+offset+layout1.HeaderBytes.Length), "secondPartBlocks");
-
-                Helper.WithMeasurement(() => imageGenerator.RenderCounterBlocksOnBitmap(imageView, firstPartBlocks, secondPartBlocks, layout1, imagePaletteColors), "RenderCounterBlocksOnBitmap");
-                
-                renderer.RenderImage(imageView);
-            }
-        }
         
-        private List<Color> OffsetsToColors(byte[] imagePaletteOffsets, Collection<Color> colorCollection)
-        {
-            return imagePaletteOffsets.Select(offset => colorCollection[offset]).ToList();
-        }
-
         public Form1()
         {
             InitializeComponent();
