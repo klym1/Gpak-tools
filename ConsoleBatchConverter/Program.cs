@@ -42,9 +42,7 @@ namespace ConsoleBatchConverter
         {
             var extractResult = new Extractor().ExtractFromGp(gpFile);
 
-            var bitMap = new Bitmap(600, 600);
-
-            IRenderer renderer = new BitmapRenderer(bitMap);
+            IRenderer renderer = new BitmapRenderer();
             
             var paletteBytes = File.ReadAllBytes(@"..\..\..\palette\0\agew_1.pal");
 
@@ -53,13 +51,15 @@ namespace ConsoleBatchConverter
             var colorCollection = rawParser.GetColorCollectionFromPalleteFile(paletteBytes);
 
             var imagePaletteColors = ImageGenerator.OffsetsToColors(extractResult.PaletteBytes, colorCollection);
-            
-            new Runner().Run(extractResult, rawParser, renderer, imagePaletteColors, colorCollection.ToList());
 
-            using (var stream = new MemoryStream())
+            using (var bitMap = new Runner().Run(extractResult, rawParser, renderer, imagePaletteColors, colorCollection.ToList()))
             {
-                bitMap.Save(stream, ImageFormat.Png);
-                File.WriteAllBytes(Path.Combine(pngDirectory, Path.GetFileNameWithoutExtension(gpFile)+".png"),stream.ToArray());
+                using (var stream = new MemoryStream())
+                {
+                    bitMap.Save(stream, ImageFormat.Png);
+                    File.WriteAllBytes(Path.Combine(pngDirectory, Path.GetFileNameWithoutExtension(gpFile) + ".png"),
+                        stream.ToArray());
+                }
             }
         }
     }

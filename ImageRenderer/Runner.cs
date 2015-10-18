@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using GPExtractor;
 using Types;
 
@@ -11,11 +8,22 @@ namespace ImageRenderer
 {
     public class Runner
     {
-        public void Run(ExtractorResult extractResult, RawParser rawParser, IRenderer renderer, List<Color> imagePaletteColors, List<Color> generalPaletteColors)
+        public Bitmap Run(ExtractorResult extractResult, RawParser rawParser, IRenderer renderer, List<Color> imagePaletteColors, List<Color> generalPaletteColors)
         {
-            Helper.WithMeasurement(renderer.SetupCanvas, name: "SetupCanvas");
-
             var imageGenerator = new ImageGenerator();
+
+            var largestWidth = extractResult.LayoutCollection
+                .Select(it => it.Width + it.offsetX)
+                .OrderByDescending(it => it)
+                .First();
+
+            var largestHeight = extractResult.LayoutCollection
+                .Select(it => it.Height + it.offsetY)
+                .OrderByDescending(it => it)
+                .First();
+
+            var bitMap = new Bitmap(largestWidth, largestHeight);
+            renderer.SetupCanvas(bitMap);
 
             foreach (var layout in extractResult.LayoutCollection)
             {
@@ -23,7 +31,7 @@ namespace ImageRenderer
 
                 ImageLayoutInfo layout1 = layout;
 
-                var imageView = new ImageView(layout1.Width + layout1.offsetX,layout1.Height + layout1.offsetY);
+                var imageView = new ImageView(layout1.Width + layout1.offsetX, layout1.Height + layout1.offsetY);
 
                 var firstPartBlocks = Helper.WithMeasurement(() =>
                 {
@@ -40,8 +48,10 @@ namespace ImageRenderer
                     imageGenerator.RenderCounterBlocksOnBitmap(imageView, firstPartBlocks, secondPartBlocks, layout1, imagePaletteColors, generalPaletteColors);
                 }, "RenderCounterBlocksOnBitmap");
 
-                renderer.RenderImage(imageView);
+                renderer.RenderImage(bitMap, imageView);
             }
+
+            return bitMap;
         }
     }
 }

@@ -17,14 +17,10 @@ namespace WindowsFormsTestClient
     {
         private void Do()
         {
-            var extractResult = new Extractor().ExtractFromGp(@"c:\GpArch\gp\test8.gp");
+            var extractResult = new Extractor().ExtractFromGp(@"c:\GpArch\gp\test8_1.gp");
 
-            var bitMap = new Bitmap(600, 600);
-
-            IRenderer renderer = new BitmapRenderer(bitMap);
+            IRenderer renderer = new BitmapRenderer();
             
-            pictureBox2.Image = bitMap;
-
             var paletteBytes = File.ReadAllBytes(@"..\..\..\palette\0\agew_1.pal");
 
             var rawParser = new RawParser();
@@ -36,7 +32,7 @@ namespace WindowsFormsTestClient
             RenderPalette(imagePaletteColors);
             RenderGeneralPalette(colorCollection.ToList());
 
-            Helper.WithMeasurement(
+            pictureBox2.Image = Helper.WithMeasurement(
                 () => new Runner().Run(extractResult, rawParser, renderer, imagePaletteColors, colorCollection.ToList()), 
                 name : "Run", 
                 onFinish: elapsed => label1.Text = String.Format("{0:D}", elapsed.Milliseconds));
@@ -45,16 +41,16 @@ namespace WindowsFormsTestClient
         private void RenderGeneralPalette(List<Color> imagePaletteColors)
         {
             var paletteBitMap = new Bitmap(500, 500);
-            IRenderer paletteRenderer = new BitmapRenderer(paletteBitMap);
-            paletteRenderer.RenderPalette(imagePaletteColors, 200, 4);
+            IRenderer paletteRenderer = new BitmapRenderer();
+            paletteRenderer.RenderPalette(paletteBitMap, imagePaletteColors, 200, 4);
             pictureBox1.Image = paletteBitMap;
         }
 
         private void RenderPalette(List<Color> imagePaletteColors)
         {
             var paletteBitMap = new Bitmap(500, 500);
-            IRenderer paletteRenderer = new BitmapRenderer(paletteBitMap);
-            paletteRenderer.RenderPalette(imagePaletteColors, 200, 4);
+            IRenderer paletteRenderer = new BitmapRenderer();
+            paletteRenderer.RenderPalette(paletteBitMap, imagePaletteColors, 200, 4);
             pictureBox3.Image = paletteBitMap;
         }
         

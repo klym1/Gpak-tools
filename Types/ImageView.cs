@@ -9,17 +9,23 @@ namespace Types
 
         public int Width
         {
-            get { return Pixels.GetLength(1); }
+            get { return Pixels.GetLength(0); }
         }
 
         public int Height
         {
-            get { return Pixels.GetLength(0); }
+            get { return Pixels.GetLength(1); }
         }
 
         public ImageView(int width, int height)
         {
             Pixels = new Color[width,height];
+
+            for (int i = 0; i < width; i++)
+                for (int j = 0; j < height; j++)
+                {
+                    Pixels[i, j] = Color.FromArgb(0, 0, 0, 0);
+                }
         }
     }
 

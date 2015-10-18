@@ -1,19 +1,13 @@
 ﻿using System.Collections.Generic;
 using System.Drawing;
+using System.Windows.Forms.VisualStyles;
 using Types;
 
 namespace ImageRenderer
 {
     public class BitmapRenderer : IRenderer
     {
-        private readonly Bitmap _bitmap;
-
-        public BitmapRenderer(Bitmap bitmap)
-        {
-            this._bitmap = bitmap;
-        }
-
-        public void RenderPalette(ICollection<Color> colorCollection, int width, int pixelSize)
+        public void RenderPalette(Bitmap bitmap, ICollection<Color> colorCollection, int width, int pixelSize)
         {
             var z = 0;
             var y = 0;
@@ -22,7 +16,7 @@ namespace ImageRenderer
             {
                 var brush = new SolidBrush(color);
 
-                using (var graphics = Graphics.FromImage(_bitmap))
+                using (var graphics = Graphics.FromImage(bitmap))
                 {
                     graphics.FillRectangle(brush, new Rectangle(new Point(z, y), new Size(pixelSize, pixelSize)));
                 }
@@ -37,25 +31,27 @@ namespace ImageRenderer
             }
         }
 
-        public void SetupCanvas()
+        public void SetupCanvas(Bitmap bitmap)
         {
-            using (var graphics = Graphics.FromImage(_bitmap))
+            using (var graphics = Graphics.FromImage(bitmap))
             {
                 graphics.FillRectangle(new SolidBrush(Color.White),
-                    new Rectangle(0, 0, _bitmap.Width, _bitmap.Height));
+                    new Rectangle(0, 0, bitmap.Width, bitmap.Height));
             }
         }
 
-        public void RenderImage(ImageView imageView)
+        public void RenderImage(Bitmap bitmap, ImageView imageView)
         {
-            var lockedBitmap = new LockBitmap(_bitmap);
-
+            var lockedBitmap = new LockBitmap(bitmap);
             lockedBitmap.LockBits();
 
             for (int i = 0; i < imageView.Height; i++)
                 for (int j = 0; j < imageView.Width; j++)
                 {
-                    lockedBitmap.SetPixel(i, j, imageView.Pixels[i, j]);
+                    if (imageView.Pixels[j, i] != Color.FromArgb(0, 0, 0, 0))
+                    {
+                        lockedBitmap.SetPixel(j, i, imageView.Pixels[j, i]);
+                    }
                 }
 
             lockedBitmap.UnlockBits();
