@@ -73,13 +73,30 @@ namespace GPExtractor
             offset = 0;
 
             //todo Improve condition
-            while (offset < imageBytes.Length 
-                && imageBytes[offset] != 0xCD
-                && imageBytes[offset] != 0x16
-              //  && imageBytes[offset] != 0x03
-                )
+            while (offset < imageBytes.Length )
             {
                 int blockType = imageBytes[offset];
+
+                if (imageBytes[offset + 1] == 0xFF)
+                {
+                    // break;
+                }
+
+                if (imageBytes[offset] == 0xCD)
+                {
+                    break;                
+                }
+
+                if (blockType == 0x00)//new row
+                {
+                    rawShapeBlocksGroups.Add(new RawShapeBlocksGroup(new List<RawShapeBlock>
+                    {
+                        new RawShapeBlock(0,0)
+                    }, rowIndex++));
+
+                    offset++;
+                    continue;
+                }
 
                 if (blockType == 0xE1) // magic number. 1-byte coded block. Investigate other similar cases
                 {
@@ -152,12 +169,13 @@ namespace GPExtractor
 
                     offset++;
                     continue;
-                }
+                } 
 
                 if (blockType > 20)
                 {
-                    var nextByte = imageBytes[offset + 1];
-                    throw new Exception("wrong block type");
+                    break;
+                   // Helper.DumpArray(imageBytes, offset - 5);
+                   // throw new Exception("wrong block type");
                 }
 
                 //ordinary processing
