@@ -17,7 +17,7 @@ namespace WindowsFormsTestClient
     {
         private void Do()
         {
-            var extractResult = new Extractor().ExtractFromGp(@"c:\GpArch\gp\test8_1.gp");
+            var extractResult = new Extractor().ExtractFromGp(@"c:\GpArch\gp\AKAHODEZ.gp");
 
             IRenderer renderer = new BitmapRenderer();
             
@@ -42,7 +42,7 @@ namespace WindowsFormsTestClient
         {
             var paletteBitMap = new Bitmap(500, 500);
             IRenderer paletteRenderer = new BitmapRenderer();
-            paletteRenderer.RenderPalette(paletteBitMap, imagePaletteColors, 200, 4);
+            paletteRenderer.RenderPalette(paletteBitMap, imagePaletteColors, 200, 8);
             pictureBox1.Image = paletteBitMap;
         }
 
