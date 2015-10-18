@@ -169,13 +169,35 @@ namespace GPExtractor
 
                     offset++;
                     continue;
-                } 
+                }
 
+                if (blockType == 0xAA)
+                {
+                    //todo
+                    continue;
+                }
+
+                if (blockType >> 4 == 0x2)
+                {
+                    offset++;
+                    offset++;
+                    //todo
+                    continue;
+                }
+
+                if (blockType >> 4 == 0x3)
+                {
+                    offset++;
+                    offset++;
+                    //todo
+                    continue;
+                }
+                
                 if (blockType > 20)
                 {
                     break;
-                   // Helper.DumpArray(imageBytes, offset - 5);
-                   // throw new Exception("wrong block type");
+                    Helper.DumpArray(imageBytes, offset - 5);
+                    throw new Exception("wrong block type");
                 }
 
                 //ordinary processing
