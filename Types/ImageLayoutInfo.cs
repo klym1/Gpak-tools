@@ -30,6 +30,8 @@ namespace Types
         public long GlobalByteOffsetEnd { get; set; }
         public uint GlobalByteOffsetStart { get; set; }
 
+        public ImageLayoutInfo ChildImageLayoutInfo { get; set; }
+
         public bool Equals(ImageLayoutInfo other)
         {
             if (ReferenceEquals(null, other)) return false;
