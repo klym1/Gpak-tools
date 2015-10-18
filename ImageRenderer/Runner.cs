@@ -13,7 +13,7 @@ namespace ImageRenderer
     {
         public void Run(ExtractorResult extractResult, RawParser rawParser, IRenderer renderer, List<Color> imagePaletteColors, List<Color> generalPaletteColors)
         {
-            var imageView = new ImageView(700, 700);
+            var imageView = new ImageView(600, 600);
 
             Helper.WithMeasurement(renderer.SetupCanvas, name: "SetupCanvas");
 
@@ -34,7 +34,11 @@ namespace ImageRenderer
 
                 var secondPartBlocks = Helper.WithMeasurement(() => rawParser.GetRawColorBlocks(layout1.Bytes, offset, (int)layout1.GlobalByteOffsetStart + offset + layout1.HeaderBytes.Length), "secondPartBlocks");
 
-                Helper.WithMeasurement(() => imageGenerator.RenderCounterBlocksOnBitmap(imageView, firstPartBlocks, secondPartBlocks, layout1, imagePaletteColors, generalPaletteColors), "RenderCounterBlocksOnBitmap");
+                Helper.WithMeasurement(() =>
+                {
+                    imageGenerator.RenderShapeBlocks(imageView, firstPartBlocks, layout1);
+                    imageGenerator.RenderCounterBlocksOnBitmap(imageView, firstPartBlocks, secondPartBlocks, layout1, imagePaletteColors, generalPaletteColors);
+                }, "RenderCounterBlocksOnBitmap");
 
                 renderer.RenderImage(imageView);
             }

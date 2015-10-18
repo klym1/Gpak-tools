@@ -42,6 +42,19 @@ namespace GPExtractor
             }
         }
 
+        public void RenderShapeBlocks(ImageView imageView, List<AbsoluteBlock> piactureElements,
+            ImageLayoutInfo layout)
+        {
+            foreach (var block in piactureElements)
+            {
+                var slice = Enumerable.Range(1, block.Length).Select(it => Color.Gray).ToList();
+
+                imageView.DrawHorizontalColorLine(slice,
+                          layout.offsetX + block.OffsetX,
+                          layout.offsetY + block.OffsetY);
+            }
+        }
+
         public static List<Color> OffsetsToColors(byte[] imagePaletteOffsets, Collection<Color> colorCollection)
         {
             return imagePaletteOffsets.Select(offset => colorCollection[offset]).ToList();

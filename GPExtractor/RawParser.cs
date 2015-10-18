@@ -76,7 +76,7 @@ namespace GPExtractor
             while (offset < imageBytes.Length 
                 && imageBytes[offset] != 0xCD
                 && imageBytes[offset] != 0x16
-                && imageBytes[offset] != 0x03
+              //  && imageBytes[offset] != 0x03
                 )
             {
                 int blockType = imageBytes[offset];
