@@ -13,8 +13,6 @@ namespace ImageRenderer
     {
         public void Run(ExtractorResult extractResult, RawParser rawParser, IRenderer renderer, List<Color> imagePaletteColors, List<Color> generalPaletteColors)
         {
-            var imageView = new ImageView(600, 600);
-
             Helper.WithMeasurement(renderer.SetupCanvas, name: "SetupCanvas");
 
             var imageGenerator = new ImageGenerator();
@@ -24,6 +22,8 @@ namespace ImageRenderer
                 int offset = 0;
 
                 ImageLayoutInfo layout1 = layout;
+
+                var imageView = new ImageView(layout1.Width + layout1.offsetX,layout1.Height + layout1.offsetY);
 
                 var firstPartBlocks = Helper.WithMeasurement(() =>
                 {

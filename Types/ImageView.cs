@@ -31,7 +31,7 @@ namespace Types
 
             foreach (var color in colorCollection)
             {
-                bitmap.Pixels[offsetY, initialOffsetX++] = color; 
+                bitmap.Pixels[initialOffsetX++, offsetY] = color; 
             }
         }
     }
