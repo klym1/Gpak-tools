@@ -13,20 +13,6 @@ namespace ImageRenderer
             this._bitmap = bitmap;
         }
 
-        public void RenderBitmap(List<AbsoluteBlock> piactureElements, ImageLayoutInfo layout)
-        {
-            using (var graphics = Graphics.FromImage(_bitmap))
-            {
-                foreach (var block in piactureElements)
-                {
-                    graphics.FillRectangle(new SolidBrush(Color.Gray),
-                        new Rectangle(
-                            new Point(block.OffsetX + layout.offsetX, block.OffsetY + layout.offsetY),
-                            new Size(block.Length, 1)));
-                }
-            }
-        }
-
         public void RenderPalette(ICollection<Color> colorCollection, int width, int pixelSize)
         {
             var z = 0;
@@ -66,10 +52,10 @@ namespace ImageRenderer
 
             lockedBitmap.LockBits();
 
-            for (int i = 0; i < imageView.Width; i++)
-                for (int j = 0; j < imageView.Height; j++)
+            for (int i = 0; i < imageView.Height; i++)
+                for (int j = 0; j < imageView.Width; j++)
                 {
-                    lockedBitmap.SetPixel(j, i, imageView.Pixels[i, j]);
+                    lockedBitmap.SetPixel(i, j, imageView.Pixels[i, j]);
                 }
 
             lockedBitmap.UnlockBits();
