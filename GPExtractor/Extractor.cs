@@ -84,6 +84,8 @@ namespace GPExtractor
                     var newImageLayoutInfo = ReadImageLayoutInfo(bytes, (uint)(offset + layoutInfo.newImageOffset));
 
                     layoutInfo.ChildImageLayoutInfo = newImageLayoutInfo;
+                    layoutInfoCollection.Add(layoutInfo);
+
                 }
           
                 z += 4;
