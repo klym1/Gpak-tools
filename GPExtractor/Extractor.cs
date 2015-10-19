@@ -94,6 +94,9 @@ namespace GPExtractor
 
             var cTable = new Collection<byte>();
 
+            var numberOfBytesForColorPalette = GetNumberOfBytesForColorPallete(ref bytes);
+            CheckPaletteOffset(offset_ - z_, numberOfBytesForColorPalette);
+            
             for (int i = z_; i < offset_; i++)
             {
                 cTable.Add(bytes[i]);    
@@ -106,6 +109,14 @@ namespace GPExtractor
             };
         }
 
+        private void CheckPaletteOffset(long calculatedNumberOfPaletteBytes, int numberOfBytesForColorPalette)
+        {
+            if (calculatedNumberOfPaletteBytes != numberOfBytesForColorPalette)
+            {
+                throw new Exception("Actual number of pallete bytes differs from number of bytes extracted from metadata");
+            }
+        }
+
         private void CheckItem(ImageLayoutInfo layoutInfo)
         {
             if (layoutInfo.EndOfHeader != -1)
@@ -116,7 +127,7 @@ namespace GPExtractor
 
         private int GetNumberOfBytesForColorPallete(ref byte[] bytes)
         {
-            return BitConverter.ToInt16(new byte[] {bytes[0xc], bytes[0xd]}, 0);
+            return BitConverter.ToInt16(new[] {bytes[0xc], bytes[0xd]}, 0);
         }
 
         private int GetNumberOfFiles(ref byte[] bytes)
