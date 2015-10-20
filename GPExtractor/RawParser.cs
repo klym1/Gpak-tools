@@ -65,7 +65,7 @@ namespace GPExtractor
             tempByteCollection.Add(block);   
         }
 
-       public RawShapeBlocksGroup[] ParseRawBlockGroups(byte[] imageBytes, out int offset)
+       public RawShapeBlocksGroup[] ParseRawBlockGroups(byte[] imageBytes, short numberOfRows, out int offset)
         {
             var rawShapeBlocksGroups = new Collection<RawShapeBlocksGroup>();
 
@@ -73,19 +73,11 @@ namespace GPExtractor
             offset = 0;
 
             //todo Improve condition
-            while (offset < imageBytes.Length )
+            while (rawShapeBlocksGroups.Count < numberOfRows)
             {
                 int blockType = imageBytes[offset];
 
-                if (imageBytes[offset + 1] == 0xFF)
-                {
-                    // break;
-                }
-
-                if (imageBytes[offset] == 0xCD)
-                {
-                    break;                
-                }
+                //Console.WriteLine(string.Format("{0:X2}", blockType));
 
                 if (blockType == 0x00)//new row
                 {
@@ -115,6 +107,22 @@ namespace GPExtractor
                     continue;
                 }
 
+                if (blockType == 0xC0)
+                {
+                    //C0 41 31 83 => offset 14, width 2
+                    var nextByte = imageBytes[offset + 1];
+                    var a = (nextByte >> 4);
+                    var b = ((blockType & 0x0f) << 4) | (0x0f & nextByte);
+
+                    rawShapeBlocksGroups.Add(new RawShapeBlocksGroup(new List<RawShapeBlock>
+                    {
+                        new RawShapeBlock(b,a)
+                    }, rowIndex++));
+
+                    offset += 2;
+                    continue;
+                }
+
                 if (blockType == 0xC1)
                 {
                     //C1 24 => offset 14, width 2
@@ -134,6 +142,8 @@ namespace GPExtractor
                 if (blockType == 0xC2)
                 {
                     var numberOfSubBlocks = blockType & 0x0f;
+
+                    //C2 11 15 => [offset 0x11, width 1], [offset 15, width]
 
                     var tempCollection = new List<RawShapeBlock>();
 

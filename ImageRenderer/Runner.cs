@@ -35,7 +35,7 @@ namespace ImageRenderer
 
                 var firstPartBlocks = Helper.WithMeasurement(() =>
                 {
-                    var rawFirstPartBlocks = rawParser.ParseRawBlockGroups(layout1.Bytes, out offset);
+                    var rawFirstPartBlocks = rawParser.ParseRawBlockGroups(layout1.Bytes, layout1.NumberOfRows, out offset);
                     return rawFirstPartBlocks.ConvertToAbsoluteCoordinatesBlocks();
 
                 }, "firstPartBlocks");
