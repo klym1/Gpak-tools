@@ -17,7 +17,7 @@ namespace GPExtractor
             globalOffset++;
             var tempByteCollection = new Collection<RawColorBlock>();
 
-            while (offset < imageBytes.Length-8)
+            while (offset < imageBytes.Length-15)
             {
                 var blockStartByte = imageBytes[offset];
 
@@ -72,12 +72,13 @@ namespace GPExtractor
             var rowIndex = 0;
             offset = 0;
 
-            //todo Improve condition
+           var collectionOfBlockTypes = new Collection<byte>();
+
             while (rawShapeBlocksGroups.Count < numberOfRows)
             {
                 int blockType = imageBytes[offset];
 
-                //Console.WriteLine("{0:X2}", blockType);
+                collectionOfBlockTypes.Add((byte)blockType);
 
                 if (blockType == 0x00)//new row
                 {
@@ -225,7 +226,22 @@ namespace GPExtractor
                 offset += bytesInBlock;
             }
 
+            var blockStatistics = collectionOfBlockTypes.OrderBy(it => it).GroupBy(it => it).ToDictionary(it => it.Key, it => it.Count());
+
+            PrintBlocksSTatistics(blockStatistics);
+
             return rawShapeBlocksGroups.MergeBlocks().ToArray();
+        }
+
+        private void PrintBlocksSTatistics(Dictionary<byte, int> blockStatistics)
+        {
+            Console.WriteLine("\nStatistics:");
+            Console.WriteLine("____________________");
+
+            foreach (var blockStatistic in blockStatistics)
+            {
+                Console.WriteLine("{0:X2} - {1}", blockStatistic.Key, blockStatistic.Value);
+            }
         }
 
         public Collection<Color> GetColorCollectionFromPalleteFile(byte[] paletteBytes)

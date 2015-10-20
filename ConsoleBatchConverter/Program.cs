@@ -33,8 +33,7 @@ namespace ConsoleBatchConverter
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine(ex.ToString());
-                    Console.WriteLine(gpFile);
+                    Console.WriteLine("Error in: " + gpFile);
                 }
             }
 
