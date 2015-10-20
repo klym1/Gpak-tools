@@ -25,7 +25,7 @@ namespace ImageRenderer
             var bitMap = new Bitmap(largestWidth, largestHeight);
             renderer.SetupCanvas(bitMap);
 
-            foreach (var layout in extractResult.LayoutCollection)
+            foreach (var layout in extractResult.LayoutCollection.Skip(0).Take(14))
             {
                 int offset = 0;
 

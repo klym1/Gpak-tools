@@ -17,7 +17,7 @@ namespace GPExtractor
             globalOffset++;
             var tempByteCollection = new Collection<RawColorBlock>();
 
-            while (offset < imageBytes.Length)
+            while (offset < imageBytes.Length-8)
             {
                 var blockStartByte = imageBytes[offset];
 
@@ -77,7 +77,7 @@ namespace GPExtractor
             {
                 int blockType = imageBytes[offset];
 
-                //Console.WriteLine(string.Format("{0:X2}", blockType));
+                //Console.WriteLine("{0:X2}", blockType);
 
                 if (blockType == 0x00)//new row
                 {
@@ -202,33 +202,10 @@ namespace GPExtractor
                     continue;
                 }
 
-                if (blockType == 0xAA)
+                if (blockType > 40)
                 {
-                    //todo
-                    continue;
-                }
-
-                if (blockType >> 4 == 0x2)
-                {
-                    offset++;
-                    offset++;
-                    //todo
-                    continue;
-                }
-
-                if (blockType >> 4 == 0x3)
-                {
-                    offset++;
-                    offset++;
-                    //todo
-                    continue;
-                }
-                
-                if (blockType > 20)
-                {
-                    break;
-                    Helper.DumpArray(imageBytes, offset - 5);
-                    throw new Exception("wrong block type");
+                    Helper.DumpArray(imageBytes, offset - 5, 128);
+                    throw new Exception("wrong block type. Dump:\n ");
                 }
 
                 //ordinary processing

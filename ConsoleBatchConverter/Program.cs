@@ -31,11 +31,14 @@ namespace ConsoleBatchConverter
                 {
                     SaveAsPng(gpFile, pngDirectory);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
+                    Console.WriteLine(ex.ToString());
                     Console.WriteLine(gpFile);
                 }
             }
+
+            Console.ReadKey();
         }
 
         private static void SaveAsPng(string gpFile, string pngDirectory)

@@ -17,7 +17,7 @@ namespace WindowsFormsTestClient
     {
         private void Do()
         {
-            var extractResult = new Extractor().ExtractFromGp(@"c:\GpArch\gp\test33.gp");
+            var extractResult = new Extractor().ExtractFromGp(@"c:\GpArch\gp\hh.gp");
 
             IRenderer renderer = new BitmapRenderer();
             
