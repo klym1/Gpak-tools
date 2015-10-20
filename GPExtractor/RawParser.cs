@@ -131,6 +131,27 @@ namespace GPExtractor
                     continue;
                 }
 
+                if (blockType == 0xC2)
+                {
+                    var numberOfSubBlocks = blockType & 0x0f;
+
+                    var tempCollection = new List<RawShapeBlock>();
+
+                    for (int i = 0; i < numberOfSubBlocks; i++)
+                    {
+                        var nextByte = imageBytes[offset + 1];
+                        //var b = ((blockType & 0x0f) << 4) | (0x0f & nextByte);
+
+                        tempCollection.Add(new RawShapeBlock(nextByte, 1));
+
+                        offset++;
+                    }
+                    offset++;
+                    rawShapeBlocksGroups.Add(new RawShapeBlocksGroup(tempCollection, rowIndex++));
+
+                    continue;
+                }
+
                 if (blockType == 0xA1)
                 {
                     //A1 60 => offset 0, width 22 (0x16)
