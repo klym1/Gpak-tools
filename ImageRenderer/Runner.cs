@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Drawing;
 using System.Linq;
 using GPExtractor;
@@ -6,18 +7,22 @@ using Types;
 
 namespace ImageRenderer
 {
+    
+
     public class Runner
     {
-        public Bitmap Run(ExtractorResult extractResult, RawParser rawParser, IRenderer renderer, List<Color> imagePaletteColors, List<Color> generalPaletteColors)
+        public Bitmap Run(IList<ImageLayout> extractResult, int imageNumber, RawParser rawParser, IRenderer renderer, List<Color> imagePaletteColors, List<Color> generalPaletteColors)
         {
             var imageGenerator = new ImageGenerator();
 
-            var largestWidth = extractResult.LayoutCollection
+            var partialLayouts = extractResult[imageNumber].PartialLayouts;
+
+            var largestWidth = partialLayouts
                 .Select(it => it.Width + it.offsetX)
                 .OrderByDescending(it => it)
                 .First();
 
-            var largestHeight = extractResult.LayoutCollection
+            var largestHeight = partialLayouts
                 .Select(it => it.Height + it.offsetY)
                 .OrderByDescending(it => it)
                 .First();
@@ -25,7 +30,8 @@ namespace ImageRenderer
             var bitMap = new Bitmap(largestWidth, largestHeight);
             renderer.SetupCanvas(bitMap);
 
-            foreach (var layout in extractResult.LayoutCollection.Skip(0).Take(14))
+            
+            foreach (var layout in partialLayouts)
             {
                 int offset = 0;
 

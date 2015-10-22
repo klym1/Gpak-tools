@@ -17,7 +17,8 @@ namespace WindowsFormsTestClient
     {
         private void Do()
         {
-            var extractResult = new Extractor().ExtractFromGp(@"c:\GpArch\gp\123\GREB.gp");
+            var extractResult = new Extractor().GetImagesFromOutput(@"c:\GpArch\gp\hh.gp");
+            var imagePaletteBytes = new Extractor().GetPaletteBytes(@"c:\GpArch\gp\hh.gp");
 
             IRenderer renderer = new BitmapRenderer();
             
@@ -27,13 +28,13 @@ namespace WindowsFormsTestClient
 
             var colorCollection = rawParser.GetColorCollectionFromPalleteFile(paletteBytes);
 
-            var imagePaletteColors = ImageGenerator.OffsetsToColors(extractResult.PaletteBytes, colorCollection);
+            var imagePaletteColors = ImageGenerator.OffsetsToColors(imagePaletteBytes, colorCollection);
 
             RenderPalette(imagePaletteColors);
             RenderGeneralPalette(colorCollection.ToList());
 
             pictureBox2.Image = Helper.WithMeasurement(
-                () => new Runner().Run(extractResult, rawParser, renderer, imagePaletteColors, colorCollection.ToList()), 
+                () => new Runner().Run(extractResult, 1, rawParser, renderer, imagePaletteColors, colorCollection.ToList()), 
                 name : "Run", 
                 onFinish: elapsed => label1.Text = String.Format("{0:D}", elapsed.Milliseconds));
         }

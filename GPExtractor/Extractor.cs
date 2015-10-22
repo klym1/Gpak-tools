@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
@@ -47,7 +48,7 @@ namespace GPExtractor
             return layoutInfo;
         }
 
-        public ExtractorResult ExtractFromGp(string path)
+        private ExtractorResult ExtractFromGp(string path)
         {
             var fullPath = Path.GetFullPath(path);
 
@@ -64,8 +65,7 @@ namespace GPExtractor
             var layoutInfoCollection = new Collection<ImageLayoutInfo>();
 
             int z = 0xE;
-            int z_ = 0;
-            uint offset_ = 0;
+
             for (int i = 0; i < numberOfFiles; i++)
             {
                 var offset = BitConverter.ToUInt32(new[] { bytes[z], bytes[z + 1], bytes[z + 2], bytes[z+3] }, 0);
@@ -73,10 +73,6 @@ namespace GPExtractor
                 var layoutInfo = ReadImageLayoutInfo(bytes, offset);
                 layoutInfoCollection.Add(layoutInfo);
 
-                if (i == 0)
-                {
-                    offset_ = offset;
-                }
 
                 //Handle more than two images
                 if (layoutInfo.newImageOffset > -1)
@@ -89,33 +85,35 @@ namespace GPExtractor
                 }
           
                 z += 4;
-                z_ = z;
-            }
-
-            var cTable = new Collection<byte>();
-
-            var numberOfBytesForColorPalette = GetNumberOfBytesForColorPallete(ref bytes);
-            CheckPaletteOffset(offset_ - z_, numberOfBytesForColorPalette);
-            
-            for (int i = z_; i < offset_; i++)
-            {
-                cTable.Add(bytes[i]);    
             }
 
             return new ExtractorResult
             {
-                PaletteBytes = cTable.ToArray(),
                 LayoutCollection = layoutInfoCollection
             };
         }
 
-        private void CheckPaletteOffset(long calculatedNumberOfPaletteBytes, int numberOfBytesForColorPalette)
+        public IList<ImageLayout> GetImagesFromOutput(string path)
         {
-            if (calculatedNumberOfPaletteBytes != numberOfBytesForColorPalette)
+            var extractResult = ExtractFromGp(path);
+
+            var imageLayoutCollection = new Collection<ImageLayout>();
+            var currentImageLayout = new ImageLayout();
+
+            foreach (var imageLayoutInfo in extractResult.LayoutCollection)
             {
-                throw new Exception("Actual number of pallete bytes differs from number of bytes extracted from metadata");
+                currentImageLayout.PartialLayouts.Add(imageLayoutInfo);
+
+                if (imageLayoutInfo.ChildImageLayoutInfo == null)
+                {
+                    imageLayoutCollection.Add(currentImageLayout);
+                    currentImageLayout = new ImageLayout();
+
+                }
             }
-        }
+
+            return imageLayoutCollection;
+        } 
 
         private void CheckItem(ImageLayoutInfo layoutInfo)
         {
@@ -141,6 +139,42 @@ namespace GPExtractor
             {
                 throw new Exception("File has wrong structure");
             }
+        }
+
+        public byte[] GetPaletteBytes(string path)
+        {
+            var fullPath = Path.GetFullPath(path);
+
+            if (!File.Exists(fullPath))
+            {
+                throw new FileNotFoundException(path);
+            }
+
+            var bytes = File.ReadAllBytes(fullPath);
+
+            var cTable = new Collection<byte>();
+
+            var numberOfBytesForColorPalette = GetNumberOfBytesForColorPallete(ref bytes);
+            // CheckPaletteOffset(offset_ - z_, numberOfBytesForColorPalette);
+
+            var palletteBytesOffsetStart = BitConverter.ToUInt16(new[] { bytes[8], bytes[9] }, 0);
+
+            for (int i = palletteBytesOffsetStart; i < numberOfBytesForColorPalette; i++)
+            {
+                cTable.Add(bytes[i]);
+            }
+
+            return cTable.ToArray();
+        }
+    }
+
+    public class ImageLayout
+    {
+        public ICollection<ImageLayoutInfo> PartialLayouts { get; set; }
+
+        public ImageLayout()
+        {
+            PartialLayouts = new List<ImageLayoutInfo>();
         }
     }
 }

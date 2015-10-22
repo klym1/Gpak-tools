@@ -54,7 +54,7 @@ namespace ConsoleBatchConverter
 
             var imagePaletteColors = ImageGenerator.OffsetsToColors(extractResult.PaletteBytes, colorCollection);
 
-            using (var bitMap = new Runner().Run(extractResult, rawParser, renderer, imagePaletteColors, colorCollection.ToList()))
+            using (var bitMap = new Runner().Run(extractResult, TODO, rawParser, renderer, imagePaletteColors, colorCollection.ToList()))
             {
                 using (var stream = new MemoryStream())
                 {
