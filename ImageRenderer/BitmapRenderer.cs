@@ -35,7 +35,7 @@ namespace ImageRenderer
         {
             using (var graphics = Graphics.FromImage(bitmap))
             {
-                graphics.FillRectangle(new SolidBrush(Color.White),
+                graphics.FillRectangle(new SolidBrush(Color.FromArgb(255, 0x80, 0x80, 0x80)),
                     new Rectangle(0, 0, bitmap.Width, bitmap.Height));
             }
         }

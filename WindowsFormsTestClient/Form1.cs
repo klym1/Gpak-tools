@@ -18,8 +18,10 @@ namespace WindowsFormsTestClient
     {
         private void Do()
         {
-            var extractResult = new Extractor().GetImagesFromOutput(@"c:\GpArch\gp\hh.gp");
-            var imagePaletteBytes = new Extractor().GetPaletteBytes(@"c:\GpArch\gp\hh.gp");
+            var filePath = @"c:\GpArch\gp\AKAAU.gp";
+
+            var extractResult = new Extractor().GetImagesFromOutput(filePath);
+            var imagePaletteBytes = new Extractor().GetPaletteBytes(filePath);
 
             IRenderer renderer = new BitmapRenderer();
             
@@ -38,19 +40,39 @@ namespace WindowsFormsTestClient
 
             listBox1.DataSource = itemsForListBox;
 
-            DrawImage(extractResult, 0, rawParser, renderer, imagePaletteColors, colorCollection);
+            var bitmapList = DrawImage(extractResult, extractResult.Count, rawParser, renderer, imagePaletteColors, colorCollection);
 
             listBox1.SelectedIndexChanged += (sender, args) =>
             {
-                DrawImage(extractResult, (sender as ListBox).SelectedIndex, rawParser, renderer, imagePaletteColors, colorCollection);
+                pictureBox2.Image = bitmapList[(sender as ListBox).SelectedIndex];
             };
         }
 
-        private void DrawImage(IList<ImageLayout> extractResult, int index, RawParser rawParser, IRenderer renderer, List<Color> imagePaletteColors,
+        private IList<Bitmap> DrawImage(IList<ImageLayout> extractResult, int numberOfImages, RawParser rawParser, IRenderer renderer, List<Color> imagePaletteColors,
             Collection<Color> colorCollection)
         {
-            pictureBox2.Image = Helper.WithMeasurement(
-                () => new Runner().Run(extractResult, index, rawParser, renderer, imagePaletteColors, colorCollection.ToList()),
+            return Helper.WithMeasurement(
+                () =>
+                {
+                    var bitMapCollection = new Collection<Bitmap>();
+
+                    for (int i = 0; i < numberOfImages; i++)
+                    {
+                        try
+                        {
+                            var bitMap = new Runner().Run(extractResult, i, rawParser, renderer, imagePaletteColors, colorCollection.ToList());
+
+                            bitMapCollection.Add(bitMap);
+                        }
+                        catch (Exception)
+                        {
+                            
+                        }
+                    }
+
+                    return bitMapCollection;
+
+                },
                 name: "Run",
                 onFinish: elapsed => label1.Text = String.Format("{0:D}", elapsed.Milliseconds));
         }
