@@ -155,10 +155,34 @@ namespace GPExtractor
 
             var palletteBytesOffsetStart = BitConverter.ToUInt16(new[] { bytes[8], bytes[9] }, 0);
 
-            for (int i = palletteBytesOffsetStart; i < numberOfBytesForColorPalette; i++)
+            var numberOfFiles = GetNumberOfFiles(ref bytes);
+            var layoutInfoCollection = new Collection<ImageLayoutInfo>();
+
+            int z = 0xE;
+            int z_ = 0;
+            uint offset_ = 0;
+            for (int i = 0; i < numberOfFiles; i++)
+            {
+                var offset = BitConverter.ToUInt32(new[] { bytes[z], bytes[z + 1], bytes[z + 2], bytes[z + 3] }, 0);
+
+                if (i == 0)
+                {
+                    offset_ = offset;
+                }
+
+                z += 4;
+                z_ = z;
+            }
+
+            for (int i = z_; i < offset_; i++)
             {
                 cTable.Add(bytes[i]);
             }
+
+//            for (int i = palletteBytesOffsetStart; i < numberOfBytesForColorPalette; i++)
+//            {
+//                cTable.Add(bytes[i]);
+//            }
 
             return cTable.ToArray();
         }
