@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Threading;
@@ -17,9 +18,11 @@ namespace GPExtractor
             globalOffset++;
             var tempByteCollection = new Collection<RawColorBlock>();
 
-            while (offset < imageBytes.Length-15)
+            while (offset < imageBytes.Length)
             {
                 var blockStartByte = imageBytes[offset];
+
+                //Debug.WriteLine("{0:X2}", blockStartByte);
 
                 offset++;
                 globalOffset++;

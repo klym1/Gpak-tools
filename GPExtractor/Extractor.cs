@@ -48,7 +48,7 @@ namespace GPExtractor
             return layoutInfo;
         }
 
-        private Collection<ImageLayoutInfo> ExtractFromGp(string path)
+        public IList<ImageLayout> GetImagesFromOutput(string path)
         {
             var fullPath = Path.GetFullPath(path);
 
@@ -66,6 +66,8 @@ namespace GPExtractor
 
             int z = 0xE;
 
+            var imageLayoutCollection = new Collection<ImageLayout>();
+
             for (int i = 0; i < numberOfFiles; i++)
             {
                 var offset = BitConverter.ToUInt32(new[] { bytes[z], bytes[z + 1], bytes[z + 2], bytes[z+3] }, 0);
@@ -78,38 +80,31 @@ namespace GPExtractor
                 {
                     var newImageLayoutInfo = ReadImageLayoutInfo(bytes, (uint)(offset + layoutInfo.newImageOffset));
 
-                    layoutInfo.ChildImageLayoutInfo = newImageLayoutInfo;
                     layoutInfoCollection.Add(newImageLayoutInfo);
 
+                    if (newImageLayoutInfo.newImageOffset > -1)
+                    {
+                        var newImageLayoutInfo2 = ReadImageLayoutInfo(bytes, (uint)(offset + newImageLayoutInfo.newImageOffset));
+
+                        layoutInfoCollection.Add(newImageLayoutInfo2);
+
+                        if (newImageLayoutInfo2.newImageOffset > -1)
+                        {
+                            var g = 8;
+                        }
+                        
+                    }
+
                 }
-          
+
+                imageLayoutCollection.Add(new ImageLayout() { PartialLayouts = layoutInfoCollection });
+                layoutInfoCollection = new Collection<ImageLayoutInfo>();
+
                 z += 4;
             }
 
-            return layoutInfoCollection;
-        }
-
-        public IList<ImageLayout> GetImagesFromOutput(string path)
-        {
-            var extractResult = ExtractFromGp(path);
-
-            var imageLayoutCollection = new Collection<ImageLayout>();
-            var currentImageLayout = new ImageLayout();
-
-            foreach (var imageLayoutInfo in extractResult)
-            {
-                currentImageLayout.PartialLayouts.Add(imageLayoutInfo);
-
-                if (imageLayoutInfo.ChildImageLayoutInfo == null)
-                {
-                    imageLayoutCollection.Add(currentImageLayout);
-                    currentImageLayout = new ImageLayout();
-
-                }
-            }
-
             return imageLayoutCollection;
-        } 
+        }
 
         private void CheckItem(ImageLayoutInfo layoutInfo)
         {

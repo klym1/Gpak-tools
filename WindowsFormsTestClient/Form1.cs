@@ -18,10 +18,11 @@ namespace WindowsFormsTestClient
     {
         private void Do()
         {
-            var filePath = @"c:\GpArch\gp\AKAAU.gp";
+            var filePath = @"c:\GpArch\gp\hh.gp";
 
-            var extractResult = new Extractor().GetImagesFromOutput(filePath);
             var imagePaletteBytes = new Extractor().GetPaletteBytes(filePath);
+            var extractResult = new Extractor().GetImagesFromOutput(filePath).ToList();
+            
 
             IRenderer renderer = new BitmapRenderer();
             
@@ -33,19 +34,23 @@ namespace WindowsFormsTestClient
 
             var imagePaletteColors = ImageGenerator.OffsetsToColors(imagePaletteBytes, colorCollection);
 
-            RenderPalette(imagePaletteColors);
-            RenderGeneralPalette(colorCollection.ToList());
-
-            var itemsForListBox = Enumerable.Range(0, extractResult.Count).Select(it => it.ToString()).ToList();
-
-            listBox1.DataSource = itemsForListBox;
+            //RenderPalette(imagePaletteColors);
+            //RenderGeneralPalette(colorCollection.ToList());
 
             var bitmapList = DrawImage(extractResult, extractResult.Count, rawParser, renderer, imagePaletteColors, colorCollection);
 
+            var itemsForListBox = Enumerable.Range(0, bitmapList.Count).Select(it => it.ToString()).ToList();
+
+            listBox1.DataSource = itemsForListBox;
+
             listBox1.SelectedIndexChanged += (sender, args) =>
             {
+                if ((sender as ListBox).SelectedIndex > -1)
                 pictureBox2.Image = bitmapList[(sender as ListBox).SelectedIndex];
             };
+
+            listBox1.ClearSelected();
+            listBox1.SelectedIndex = 0;
         }
 
         private IList<Bitmap> DrawImage(IList<ImageLayout> extractResult, int numberOfImages, RawParser rawParser, IRenderer renderer, List<Color> imagePaletteColors,

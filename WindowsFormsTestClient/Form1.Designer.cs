@@ -84,15 +84,6 @@
             // listBox1
             // 
             this.listBox1.FormattingEnabled = true;
-            this.listBox1.Items.AddRange(new object[] {
-            "3123",
-            "123123",
-            "123",
-            "13",
-            "1",
-            "3",
-            "13",
-            "1"});
             this.listBox1.Location = new System.Drawing.Point(627, 12);
             this.listBox1.Name = "listBox1";
             this.listBox1.Size = new System.Drawing.Size(126, 199);
@@ -102,7 +93,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1440, 608);
+            this.ClientSize = new System.Drawing.Size(763, 608);
             this.Controls.Add(this.listBox1);
             this.Controls.Add(this.pictureBox1);
             this.Controls.Add(this.label2);
