@@ -47,7 +47,7 @@ namespace GPExtractor
         {
             foreach (var block in piactureElements)
             {
-                var slice = Enumerable.Range(1, block.Length).Select(it => Color.Gray).ToList();
+                var slice = Enumerable.Range(1, block.Length).Select(it => Color.FromArgb(0x99,0,0,0)).ToList();
 
                 imageView.DrawHorizontalColorLine(slice,
                           layout.offsetX + block.OffsetX,
