@@ -10,6 +10,7 @@ using System.Windows.Forms;
 using GPExtractor;
 using ImageRenderer;
 using Types;
+using ImageLayout = GPExtractor.ImageLayout;
 
 namespace WindowsFormsTestClient
 {
@@ -33,9 +34,24 @@ namespace WindowsFormsTestClient
             RenderPalette(imagePaletteColors);
             RenderGeneralPalette(colorCollection.ToList());
 
+            var itemsForListBox = Enumerable.Range(0, extractResult.Count).Select(it => it.ToString()).ToList();
+
+            listBox1.DataSource = itemsForListBox;
+
+            DrawImage(extractResult, 0, rawParser, renderer, imagePaletteColors, colorCollection);
+
+            listBox1.SelectedIndexChanged += (sender, args) =>
+            {
+                DrawImage(extractResult, (sender as ListBox).SelectedIndex, rawParser, renderer, imagePaletteColors, colorCollection);
+            };
+        }
+
+        private void DrawImage(IList<ImageLayout> extractResult, int index, RawParser rawParser, IRenderer renderer, List<Color> imagePaletteColors,
+            Collection<Color> colorCollection)
+        {
             pictureBox2.Image = Helper.WithMeasurement(
-                () => new Runner().Run(extractResult, 1, rawParser, renderer, imagePaletteColors, colorCollection.ToList()), 
-                name : "Run", 
+                () => new Runner().Run(extractResult, index, rawParser, renderer, imagePaletteColors, colorCollection.ToList()),
+                name: "Run",
                 onFinish: elapsed => label1.Text = String.Format("{0:D}", elapsed.Milliseconds));
         }
 

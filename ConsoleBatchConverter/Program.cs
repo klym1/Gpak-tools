@@ -42,7 +42,7 @@ namespace ConsoleBatchConverter
 
         private static void SaveAsPng(string gpFile, string pngDirectory)
         {
-            var extractResult = new Extractor().ExtractFromGp(gpFile);
+            var extractResult = new Extractor().GetImagesFromOutput(gpFile);
 
             IRenderer renderer = new BitmapRenderer();
             

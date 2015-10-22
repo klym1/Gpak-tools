@@ -48,7 +48,7 @@ namespace GPExtractor
             return layoutInfo;
         }
 
-        private ExtractorResult ExtractFromGp(string path)
+        private Collection<ImageLayoutInfo> ExtractFromGp(string path)
         {
             var fullPath = Path.GetFullPath(path);
 
@@ -73,7 +73,6 @@ namespace GPExtractor
                 var layoutInfo = ReadImageLayoutInfo(bytes, offset);
                 layoutInfoCollection.Add(layoutInfo);
 
-
                 //Handle more than two images
                 if (layoutInfo.newImageOffset > -1)
                 {
@@ -87,10 +86,7 @@ namespace GPExtractor
                 z += 4;
             }
 
-            return new ExtractorResult
-            {
-                LayoutCollection = layoutInfoCollection
-            };
+            return layoutInfoCollection;
         }
 
         public IList<ImageLayout> GetImagesFromOutput(string path)
@@ -100,7 +96,7 @@ namespace GPExtractor
             var imageLayoutCollection = new Collection<ImageLayout>();
             var currentImageLayout = new ImageLayout();
 
-            foreach (var imageLayoutInfo in extractResult.LayoutCollection)
+            foreach (var imageLayoutInfo in extractResult)
             {
                 currentImageLayout.PartialLayouts.Add(imageLayoutInfo);
 
