@@ -13,7 +13,8 @@ namespace GPExtractor
         {
             var blocksDistributor = new BlocksDistributor();
 
-            var blockContainerCollection = blocksDistributor.GetDistributedCounterPartBlocks(piactureElements, secondPartBlocks);
+           var blockContainerCollection = Helper.WithMeasurement(() =>
+             blocksDistributor.GetDistributedCounterPartBlocks(piactureElements, secondPartBlocks), "GetDistributedCounterPartBlocks");
 
             foreach (var blockContainer in blockContainerCollection)
             {
@@ -23,7 +24,8 @@ namespace GPExtractor
                     {
                         var slice = new Color[counterBlockContainer.Width];
 
-                        Array.Copy(imagePaletteArray, 
+                        Array.Copy(
+                            sourceArray: imagePaletteArray,
                             sourceIndex: counterBlockContainer.RawColorBlock.Offset + counterBlockContainer.StripePadding,
                             destinationArray: slice,
                             destinationIndex: 0,
@@ -52,7 +54,7 @@ namespace GPExtractor
         {
             foreach (var block in piactureElements)
             {
-                var slice = Enumerable.Range(1, block.Length).Select(it => Color.FromArgb(0x99,0,0,0)).ToList();
+                var slice = Enumerable.Range(1, block.Length).Select(it => Color.FromArgb(0x99, 0, 0, 0)).ToArray();
 
                 imageView.DrawHorizontalColorLine(slice,
                           layout.offsetX + block.OffsetX,

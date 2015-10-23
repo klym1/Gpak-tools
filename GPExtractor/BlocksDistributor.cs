@@ -70,7 +70,7 @@ namespace Types
 
             if (absoluteBlockContainer.CanAddFullBlock(blockSizeNeeded))
             {
-                absoluteBlockContainer.CounterBlockContainers.Add(new RawColorBlockContainer(rawColorBlock, blockSizeNeeded, absoluteBlockContainer.TotalSpaceOccupied, stripePadding));
+                absoluteBlockContainer.Add(new RawColorBlockContainer(rawColorBlock, blockSizeNeeded, absoluteBlockContainer.TotalSpaceOccupied, stripePadding));
                 lenthAdded = blockSizeNeeded;
                 return true;
             }
@@ -79,7 +79,7 @@ namespace Types
 
             if (freeSpace > 0)
             {
-                absoluteBlockContainer.CounterBlockContainers.Add(new RawColorBlockContainer(rawColorBlock, freeSpace, absoluteBlockContainer.TotalSpaceOccupied, stripePadding));
+                absoluteBlockContainer.Add(new RawColorBlockContainer(rawColorBlock, freeSpace, absoluteBlockContainer.TotalSpaceOccupied, stripePadding));
             }
 
             lenthAdded = freeSpace;
@@ -114,7 +114,7 @@ namespace Types
 
         private void VerifyBlockContainerCollection(Collection<AbsoluteBlockContainer> blockContainerCollection)
         {
-            var all = blockContainerCollection.All(it => it.CounterBlockContainers.Sum(o => o.Width) == it.Block.Length);
+            var all = blockContainerCollection.All(it => it.TotalSpaceOccupied == it.Block.Length);
             if (!all)
             {
                 throw new Exception("23423");

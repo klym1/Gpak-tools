@@ -73,7 +73,7 @@ namespace WindowsFormsTestClient
                             {
 
                             }
-                        }, "Image", onFinish: elapsed => richTextBox1.Text += String.Format("[{0}] - {1:g}\n", i, elapsed));
+                        }, "Image", onFinish: elapsed => richTextBox1.Text += String.Format("[{0,4}] - {1:g}\n", i, elapsed));
                     }
 
                     return bitMapCollection;
