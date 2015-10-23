@@ -3,7 +3,8 @@ namespace Types
     public enum RawColorBlockType
     {
         SinglePixel,
-        TwoPixel
+        TwoPixel,
+        FourPixel
     }
 
     public class RawColorBlock

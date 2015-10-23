@@ -15,19 +15,36 @@ namespace GPExtractor
             PrecalculatedValues.CalculateSecondPartBlockBits();
         }
 
-        public Collection<RawColorBlock> GetRawColorBlocks(byte[] imageBytes, int initialOffset, int globalOffset)
+        public Collection<RawColorBlock> GetRawColorBlocks(byte[] imageBytes, int initialOffset, int globalOffset, bool nationColorPart)
         {
             var offset = initialOffset + 1; // skip CD bytes
             globalOffset++;
             var tempByteCollection = new Collection<RawColorBlock>();
 
-            while (offset < imageBytes.Length-15)
+            while (offset < imageBytes.Length-2)
             {
                 var blockStartByte = imageBytes[offset];
+
+                if (nationColorPart)
+                {
+                    var block = ProcessFourPixelBlock(imageBytes, offset);
+                    tempByteCollection.Add(block);
+
+                    //last block might not be full (less than 8 elems)
+                    if (offset > imageBytes.Length - 1)
+                    {
+                        break;
+                    }
+
+                    offset++;
+                    globalOffset++;
+                    continue;
+                }
 
                 offset++;
                 globalOffset++;
 
+                
                 foreach (var bit in PrecalculatedValues.SecondPartBlockBits[blockStartByte])
                 {
                     RawColorBlock block;
@@ -67,6 +84,12 @@ namespace GPExtractor
         {
             var @byte = imageBytes[offset];
             return new RawColorBlock(RawColorBlockType.SinglePixel, @byte);
+        }
+
+        private RawColorBlock ProcessFourPixelBlock(byte[] imageBytes, int offset)
+        {
+            var @byte = imageBytes[offset];
+            return new RawColorBlock(RawColorBlockType.FourPixel, @byte);
         }
 
        public RawShapeBlocksGroup[] ParseRawBlockGroups(byte[] imageBytes, short numberOfRows, out int offset)

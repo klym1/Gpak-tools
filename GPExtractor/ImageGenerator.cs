@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Types;
@@ -21,18 +22,35 @@ namespace GPExtractor
             {
                 foreach (var counterBlockContainer in blockContainer.CounterBlockContainers)
                 {
+                    var sourceOffset = counterBlockContainer.RawColorBlock.Offset +
+                                          counterBlockContainer.StripePadding;
+
                     if (counterBlockContainer.RawColorBlock.type == RawColorBlockType.TwoPixel)
                     {
                         var offsetX = layout.offsetX + blockContainer.Block.OffsetX + counterBlockContainer.Offset;
                         var offsetY = layout.offsetY + blockContainer.Block.OffsetY;
                         var destinationOffset = offsetY * imageView.Width + offsetX;
-
-                        var sourceOffset = counterBlockContainer.RawColorBlock.Offset +
-                                           counterBlockContainer.StripePadding;
-
+                        
                         Array.Copy(
                             sourceArray: imagePaletteArray,
                             sourceIndex: sourceOffset,
+                            destinationArray: imageView.Pixels,
+                            destinationIndex: destinationOffset,
+                            length: counterBlockContainer.Width);
+
+                    } else if (counterBlockContainer.RawColorBlock.type == RawColorBlockType.FourPixel)
+                    {
+
+                        var offsetX = layout.offsetX + blockContainer.Block.OffsetX + counterBlockContainer.Offset;
+                        var offsetY = layout.offsetY + blockContainer.Block.OffsetY;
+                        var destinationOffset = offsetY * imageView.Width + offsetX;
+                        var color = generalPaletteColors[0xd4];
+
+                        var slice = new[] {color, color, color, color};
+
+                        Array.Copy(
+                            sourceArray: slice,
+                            sourceIndex: 0,
                             destinationArray: imageView.Pixels,
                             destinationIndex: destinationOffset,
                             length: counterBlockContainer.Width);
@@ -41,7 +59,7 @@ namespace GPExtractor
                     {
                         var colorIndex = counterBlockContainer.RawColorBlock.One;
                         var color = generalPaletteColors[colorIndex];
-
+                        
                         imageView.DrawColorPixel(color, 
                            layout.offsetX + blockContainer.Block.OffsetX + counterBlockContainer.Offset,
                            layout.offsetY + blockContainer.Block.OffsetY);

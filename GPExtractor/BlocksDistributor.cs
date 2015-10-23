@@ -108,6 +108,11 @@ namespace Types
                 return 1;
             }
 
+            if (rawColorBlock.type == RawColorBlockType.FourPixel)
+            {
+                return 4;
+            }
+
             var type = rawColorBlock.ThirdOctet;
             return type + 3;
         }
@@ -117,7 +122,7 @@ namespace Types
             var all = blockContainerCollection.All(it => it.TotalSpaceOccupied == it.Block.Length);
             if (!all)
             {
-                throw new Exception("23423");
+              //  throw new Exception("23423");
             }
         }
 

@@ -68,7 +68,7 @@ namespace WindowsFormsTestClient
                                 var bitMap = new Runner().Run(extractResult, i, rawParser, renderer, imagePaletteArray, generalPalleteArray);
                                 bitMapCollection.Add(bitMap);
                             }
-                            catch (Exception)
+                            catch (Exception ex)
                             {
 
                             }
