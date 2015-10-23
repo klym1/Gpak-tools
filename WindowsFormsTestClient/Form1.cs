@@ -63,23 +63,29 @@ namespace WindowsFormsTestClient
 
                     for (int i = 0; i < numberOfImages; i++)
                     {
-                        try
-                        {
-                            var bitMap = new Runner().Run(extractResult, i, rawParser, renderer, imagePaletteColors, colorCollection.ToList());
 
-                            bitMapCollection.Add(bitMap);
-                        }
-                        catch (Exception)
+                        Helper.WithMeasurement(() =>
                         {
-                            
-                        }
+
+                            try
+                            {
+                                var bitMap = new Runner().Run(extractResult, i, rawParser, renderer, imagePaletteColors,
+                                    colorCollection.ToList());
+                                bitMapCollection.Add(bitMap);
+                            }
+                            catch (Exception)
+                            {
+
+                            }
+                        }, "Image", onFinish: elapsed => richTextBox1.Text += String.Format("Image {0} loaded in {1:c}\n", i, elapsed));
                     }
 
                     return bitMapCollection;
 
                 },
                 name: "Run",
-                onFinish: elapsed => label1.Text = String.Format("{0:D}", elapsed.Milliseconds));
+                onFinish: elapsed => richTextBox1.Text += String.Format("Finished in {0:c}\n ", elapsed));
+                
         }
 
         private void RenderGeneralPalette(List<Color> imagePaletteColors)
@@ -87,7 +93,7 @@ namespace WindowsFormsTestClient
             var paletteBitMap = new Bitmap(500, 500);
             IRenderer paletteRenderer = new BitmapRenderer();
             paletteRenderer.RenderPalette(paletteBitMap, imagePaletteColors, 200, 8);
-            pictureBox1.Image = paletteBitMap;
+            //pictureBox1.Image = paletteBitMap;
         }
 
         private void RenderPalette(List<Color> imagePaletteColors)
@@ -95,7 +101,7 @@ namespace WindowsFormsTestClient
             var paletteBitMap = new Bitmap(500, 500);
             IRenderer paletteRenderer = new BitmapRenderer();
             paletteRenderer.RenderPalette(paletteBitMap, imagePaletteColors, 200, 4);
-            pictureBox3.Image = paletteBitMap;
+            //pictureBox3.Image = paletteBitMap;
         }
         
         public Form1()
