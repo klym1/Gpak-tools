@@ -40,23 +40,9 @@ namespace GPExtractor
 
         public static void WithMeasurement(Action act, string name = null, Action<TimeSpan> onFinish = null)
         {
-            StopwatchEncloser(act, name, onFinish);
+            StopwatchEncloser(() => { act(); return true; }, name, onFinish);
         }
-
-        private static void StopwatchEncloser(Action act, string name = null, Action<TimeSpan> onFinish = null)
-        {
-            var sw = Stopwatch.StartNew();
-
-            act();
-
-            sw.Stop();
-            if (onFinish != null)
-            {
-                onFinish(sw.Elapsed);
-            }
-            Debug.WriteLine("{0} : {1:D}", name ?? "Default", sw.ElapsedMilliseconds); 
-        }
-
+        
         private static T StopwatchEncloser<T>(Func<T> func, string name = null, Action<TimeSpan> onFinish = null)
         {
             var sw = Stopwatch.StartNew();
@@ -68,7 +54,7 @@ namespace GPExtractor
             {
                 onFinish(sw.Elapsed);
             }
-            Debug.WriteLine("{0} : {1:D}", name ?? "Default", sw.ElapsedMilliseconds);
+            //Debug.WriteLine("{0} : {1:D}", name ?? "Default", sw.ElapsedMilliseconds);
 
             return result;
         }
