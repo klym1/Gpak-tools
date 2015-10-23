@@ -1,32 +1,38 @@
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Types
 {
     public class AbsoluteBlockContainer
     {
         public AbsoluteBlock Block;
-        public List<RawColorBlockContainer> CounterBlockContainers;
+        private readonly List<RawColorBlockContainer> _counterBlockContainers;
 
-        public int TotalSpaceOccupied
+        public List<RawColorBlockContainer> CounterBlockContainers
         {
-            get { return CounterBlockContainers.Sum(it => it.Width); }
+            get { return _counterBlockContainers; }
         }
 
-        public int FreeSpaceLeft
+        public void Add(RawColorBlockContainer blockContainer)
         {
-            get { return Block.Length - TotalSpaceOccupied; }
+            _counterBlockContainers.Add(blockContainer);
+
+            TotalSpaceOccupied += blockContainer.Width;
+            FreeSpaceLeft -= blockContainer.Width;
         }
+
+        public int TotalSpaceOccupied { get; private set; }
+        public int FreeSpaceLeft { get; private set; }
         
         public bool CanAddFullBlock(int lengthNeeded)
         {
-            return Block.Length >= CounterBlockContainers.Sum(it => it.Width) + lengthNeeded; 
+            return Block.Length >= TotalSpaceOccupied + lengthNeeded; 
         }
 
         public AbsoluteBlockContainer(AbsoluteBlock block)
         {
             Block = block;
-            CounterBlockContainers = new List<RawColorBlockContainer>();
+            _counterBlockContainers = new List<RawColorBlockContainer>();
+            FreeSpaceLeft = Block.Length;
         }
     }
 }

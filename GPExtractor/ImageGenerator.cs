@@ -1,40 +1,48 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Types;
 
 namespace GPExtractor
 {
     public class ImageGenerator
     {
-        public void RenderCounterBlocksOnBitmap(ImageView imageView, List<AbsoluteBlock> piactureElements, Collection<RawColorBlock> secondPartBlocks, ImageLayoutInfo layout, List<Color> imagePaletteColors, List<Color> generalPaletteColors)
+        public void RenderCounterBlocksOnBitmap(ImageView imageView, List<AbsoluteBlock> piactureElements, Collection<RawColorBlock> secondPartBlocks, ImageLayoutInfo layout, Color[] imagePaletteArray, Color[] generalPaletteColors)
         {
             var blocksDistributor = new BlocksDistributor();
 
-            var blockContainerCollection = blocksDistributor.GetDistributedCounterPartBlocks(piactureElements, secondPartBlocks);
+           var blockContainerCollection = Helper.WithMeasurement(() =>
+             blocksDistributor.GetDistributedCounterPartBlocks(piactureElements, secondPartBlocks), "GetDistributedCounterPartBlocks");
 
             foreach (var blockContainer in blockContainerCollection)
             {
                 foreach (var counterBlockContainer in blockContainer.CounterBlockContainers)
                 {
-                    if (counterBlockContainer.RawColorBlock.type == RawColorBlockType.MultiPiexl)
+                    if (counterBlockContainer.RawColorBlock.type == RawColorBlockType.TwoPixel)
                     {
-                        var slice = imagePaletteColors.Skip(counterBlockContainer.RawColorBlock.Offset + counterBlockContainer.StripePadding)
-                                .Take(counterBlockContainer.Width)
-                                .ToList();
+                        var offsetX = layout.offsetX + blockContainer.Block.OffsetX + counterBlockContainer.Offset;
+                        var offsetY = layout.offsetY + blockContainer.Block.OffsetY;
+                        var destinationOffset = offsetY * imageView.Width + offsetX;
 
-                        imageView.DrawHorizontalColorLine(slice,
-                            layout.offsetX + blockContainer.Block.OffsetX + counterBlockContainer.Offset,
-                            layout.offsetY + blockContainer.Block.OffsetY);
+                        var sourceOffset = counterBlockContainer.RawColorBlock.Offset +
+                                           counterBlockContainer.StripePadding;
+
+                        Array.Copy(
+                            sourceArray: imagePaletteArray,
+                            sourceIndex: sourceOffset,
+                            destinationArray: imageView.Pixels,
+                            destinationIndex: destinationOffset,
+                            length: counterBlockContainer.Width);
                     }
                     else
                     {
                         var colorIndex = counterBlockContainer.RawColorBlock.One;
-
                         var color = generalPaletteColors[colorIndex];
 
-                        imageView.DrawHorizontalColorLine(new List<Color>{color}, 
+                        imageView.DrawColorPixel(color, 
                            layout.offsetX + blockContainer.Block.OffsetX + counterBlockContainer.Offset,
                            layout.offsetY + blockContainer.Block.OffsetY);
                     }
@@ -42,12 +50,14 @@ namespace GPExtractor
             }
         }
 
+        private readonly Color _shadowColor = Color.FromArgb(0x99, 0, 0, 0);
+
         public void RenderShapeBlocks(ImageView imageView, List<AbsoluteBlock> piactureElements,
             ImageLayoutInfo layout)
         {
             foreach (var block in piactureElements)
             {
-                var slice = Enumerable.Range(1, block.Length).Select(it => Color.FromArgb(0x99,0,0,0)).ToList();
+                var slice = Enumerable.Range(1, block.Length).Select(it => _shadowColor).ToArray();
 
                 imageView.DrawHorizontalColorLine(slice,
                           layout.offsetX + block.OffsetX,
@@ -55,9 +65,9 @@ namespace GPExtractor
             }
         }
 
-        public static List<Color> OffsetsToColors(byte[] imagePaletteOffsets, Collection<Color> colorCollection)
+        public static Color[] OffsetsToColors(byte[] imagePaletteOffsets, Color[] colorCollection)
         {
-            return imagePaletteOffsets.Select(offset => colorCollection[offset]).ToList();
+            return imagePaletteOffsets.Select(offset => colorCollection[offset]).ToArray();
         }
     }
 }

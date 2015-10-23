@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Drawing;
 using System.Linq;
 using GPExtractor;
@@ -7,11 +6,9 @@ using Types;
 
 namespace ImageRenderer
 {
-    
-
     public class Runner
     {
-        public Bitmap Run(IList<ImageLayout> extractResult, int imageNumber, RawParser rawParser, IRenderer renderer, List<Color> imagePaletteColors, List<Color> generalPaletteColors)
+        public Bitmap Run(IList<ImageLayout> extractResult, int imageNumber, RawParser rawParser, IRenderer renderer, Color[] imagePaletteArray, Color[] generalPaletteColors)
         {
             var imageGenerator = new ImageGenerator();
 
@@ -29,7 +26,6 @@ namespace ImageRenderer
 
             var bitMap = new Bitmap(largestWidth, largestHeight);
             renderer.SetupCanvas(bitMap);
-
             
             foreach (var layout in partialLayouts)
             {
@@ -51,10 +47,10 @@ namespace ImageRenderer
                 Helper.WithMeasurement(() =>
                 {
                     imageGenerator.RenderShapeBlocks(imageView, firstPartBlocks, layout1);
-                    imageGenerator.RenderCounterBlocksOnBitmap(imageView, firstPartBlocks, secondPartBlocks, layout1, imagePaletteColors, generalPaletteColors);
+                    imageGenerator.RenderCounterBlocksOnBitmap(imageView, firstPartBlocks, secondPartBlocks, layout1, imagePaletteArray, generalPaletteColors);
                 }, "RenderCounterBlocksOnBitmap");
 
-                renderer.RenderImage(bitMap, imageView);
+                Helper.WithMeasurement(() => renderer.RenderImage(bitMap, imageView), "Render on bitmap");
             }
 
             return bitMap;

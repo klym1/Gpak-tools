@@ -1,17 +1,19 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
-using System.Threading;
 using Types;
 
 namespace GPExtractor
 {
     public class RawParser
     {
+        public RawParser()
+        {
+            PrecalculatedValues.CalculateSecondPartBlockBits();
+        }
+
         public Collection<RawColorBlock> GetRawColorBlocks(byte[] imageBytes, int initialOffset, int globalOffset)
         {
             var offset = initialOffset + 1; // skip CD bytes
@@ -22,25 +24,27 @@ namespace GPExtractor
             {
                 var blockStartByte = imageBytes[offset];
 
-                //Debug.WriteLine("{0:X2}", blockStartByte);
-
                 offset++;
                 globalOffset++;
 
-                foreach (var bit in Helper.IterateBits(blockStartByte))
+                foreach (var bit in PrecalculatedValues.SecondPartBlockBits[blockStartByte])
                 {
+                    RawColorBlock block;
+
                     if (bit == 0)
                     {
-                        ProcessSinglepixelBlock(imageBytes, offset, tempByteCollection);
+                        block = ProcessSinglepixelBlock(imageBytes, offset);
                         offset++;
                         globalOffset++;
                     }
                     else
                     {
-                        ProcessMultipixelBlock(imageBytes, offset, tempByteCollection);
+                        block = ProcessMultipixelBlock(imageBytes, offset);
                         offset += 2;
                         globalOffset += 2;
                     }
+
+                    tempByteCollection.Add(block);
 
                     //last block might not be full (less than 8 elems)
                     if (offset == imageBytes.Length)
@@ -53,32 +57,28 @@ namespace GPExtractor
             return tempByteCollection;
         }
 
-        private void ProcessMultipixelBlock(byte[] imageBytes, int offset,
-            Collection<RawColorBlock> tempByteCollection)
+        private RawColorBlock ProcessMultipixelBlock(byte[] imageBytes, int offset)
         {
-            var block = new RawColorBlock(RawColorBlockType.MultiPiexl, imageBytes[offset], imageBytes[offset + 1]);
-                tempByteCollection.Add(block); 
+            return new RawColorBlock(RawColorBlockType.TwoPixel, imageBytes[offset], imageBytes[offset + 1]);
         }
 
-        private void ProcessSinglepixelBlock(byte[] imageBytes, int offset,
-           Collection<RawColorBlock> tempByteCollection)
+        private RawColorBlock ProcessSinglepixelBlock(byte[] imageBytes, int offset)
         {
             var @byte = imageBytes[offset];
-            var block = new RawColorBlock(RawColorBlockType.SinglePixel, @byte);
-            tempByteCollection.Add(block);   
+            return new RawColorBlock(RawColorBlockType.SinglePixel, @byte);
         }
 
        public RawShapeBlocksGroup[] ParseRawBlockGroups(byte[] imageBytes, short numberOfRows, out int offset)
         {
             var rawShapeBlocksGroups = new Collection<RawShapeBlocksGroup>();
 
-            var rowIndex = 0;
-            offset = 0;
+           int rowIndex = 0;
+           offset = 0;
 
            var collectionOfBlockTypes = new Collection<byte>();
 
-            while (rawShapeBlocksGroups.Count < numberOfRows)
-            {
+           while (rowIndex < numberOfRows)
+           {
                 int blockType = imageBytes[offset];
 
                 collectionOfBlockTypes.Add((byte)blockType);
@@ -247,7 +247,7 @@ namespace GPExtractor
             }
         }
 
-        public Collection<Color> GetColorCollectionFromPalleteFile(byte[] paletteBytes)
+        public Color[] GetColorCollectionFromPalleteFile(byte[] paletteBytes)
         {
             var colorCollection = new Collection<Color>();
 
@@ -256,7 +256,7 @@ namespace GPExtractor
                 colorCollection.Add(Color.FromArgb(255, paletteBytes[i], paletteBytes[i + 1], paletteBytes[i + 2]));
             }
 
-            return colorCollection;
+            return colorCollection.ToArray();
         }
     }
 }

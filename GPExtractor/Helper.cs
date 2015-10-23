@@ -35,60 +35,28 @@ namespace GPExtractor
 
         public static T WithMeasurement<T>(Func<T> func, string name = null, Action<TimeSpan> onFinish = null)
         {
-            using (Stopwatch(name, onFinish))
-            {
-                return func();
-            }
+            return StopwatchEncloser(func, name, onFinish);
         }
 
         public static void WithMeasurement(Action act, string name = null, Action<TimeSpan> onFinish = null)
         {
-            using (Stopwatch(name, onFinish))
-            {
-                act();
-            }
+            StopwatchEncloser(() => { act(); return true; }, name, onFinish);
         }
-
-        private static IDisposable Stopwatch(string name = null, Action<TimeSpan> onFinish = null)
+        
+        private static T StopwatchEncloser<T>(Func<T> func, string name = null, Action<TimeSpan> onFinish = null)
         {
-            var sw = new Stopwatch();
-            var disposable = Disposable.Create(before: sw.Start, after: delegate
+            var sw = Stopwatch.StartNew();
+
+            var result = func();
+
+            sw.Stop();
+            if (onFinish != null)
             {
-                sw.Stop();
-                Debug.WriteLine("{0} : {1:D}", name ?? "Default", sw.ElapsedMilliseconds);
-
-                if (onFinish != null)
-                {
-                    onFinish(sw.Elapsed);
-                }
-            });
-
-            return disposable;
-        }
-    }
-
-    public static class Disposable
-    {
-        private sealed class DisposableResult : IDisposable
-        {
-            private readonly Action _onDispose;
-
-            public DisposableResult(Action onDispose)
-            {
-                this._onDispose = onDispose;
+                onFinish(sw.Elapsed);
             }
+            Debug.WriteLine("{0} : {1:D}", name ?? "Default", sw.ElapsedMilliseconds);
 
-            public void Dispose()
-            {
-                _onDispose();
-            }
-        }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
-        public static IDisposable Create(Action before, Action after)
-        {
-            before();
-            return new DisposableResult(after);
+            return result;
         }
     }
 }

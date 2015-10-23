@@ -34,9 +34,6 @@ namespace WindowsFormsTestClient
 
             var imagePaletteColors = ImageGenerator.OffsetsToColors(imagePaletteBytes, colorCollection);
 
-            //RenderPalette(imagePaletteColors);
-            //RenderGeneralPalette(colorCollection.ToList());
-
             var bitmapList = DrawImage(extractResult, extractResult.Count, rawParser, renderer, imagePaletteColors, colorCollection);
 
             var itemsForListBox = Enumerable.Range(0, bitmapList.Count).Select(it => it.ToString()).ToList();
@@ -53,8 +50,8 @@ namespace WindowsFormsTestClient
             listBox1.SelectedIndex = 0;
         }
 
-        private IList<Bitmap> DrawImage(IList<ImageLayout> extractResult, int numberOfImages, RawParser rawParser, IRenderer renderer, List<Color> imagePaletteColors,
-            Collection<Color> colorCollection)
+        private IList<Bitmap> DrawImage(IList<ImageLayout> extractResult, int numberOfImages, RawParser rawParser, IRenderer renderer, Color[] imagePaletteArray,
+            Color[] generalPalleteArray)
         {
             return Helper.WithMeasurement(
                 () =>
@@ -63,41 +60,29 @@ namespace WindowsFormsTestClient
 
                     for (int i = 0; i < numberOfImages; i++)
                     {
-                        try
-                        {
-                            var bitMap = new Runner().Run(extractResult, i, rawParser, renderer, imagePaletteColors, colorCollection.ToList());
 
-                            bitMapCollection.Add(bitMap);
-                        }
-                        catch (Exception e)
+                        Helper.WithMeasurement(() =>
                         {
-                            Debug.WriteLine(e);
-                        }
+                            try
+                            {
+                                var bitMap = new Runner().Run(extractResult, i, rawParser, renderer, imagePaletteArray, generalPalleteArray);
+                                bitMapCollection.Add(bitMap);
+                            }
+                            catch (Exception)
+                            {
+
+                            }
+                        }, "Image", onFinish: elapsed => richTextBox1.Text += String.Format("[{0,4}] - {1:g}\n", i, elapsed));
                     }
 
                     return bitMapCollection;
 
                 },
                 name: "Run",
-                onFinish: elapsed => label1.Text = String.Format("{0:D}", elapsed.Milliseconds));
+                onFinish: elapsed => richTextBox1.Text += String.Format("Finished in {0:c}\n ", elapsed));
+                
         }
 
-        private void RenderGeneralPalette(List<Color> imagePaletteColors)
-        {
-            var paletteBitMap = new Bitmap(500, 500);
-            IRenderer paletteRenderer = new BitmapRenderer();
-            paletteRenderer.RenderPalette(paletteBitMap, imagePaletteColors, 200, 8);
-            pictureBox1.Image = paletteBitMap;
-        }
-
-        private void RenderPalette(List<Color> imagePaletteColors)
-        {
-            var paletteBitMap = new Bitmap(500, 500);
-            IRenderer paletteRenderer = new BitmapRenderer();
-            paletteRenderer.RenderPalette(paletteBitMap, imagePaletteColors, 200, 4);
-            pictureBox3.Image = paletteBitMap;
-        }
-        
         public Form1()
         {
             InitializeComponent();
