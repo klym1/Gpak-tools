@@ -34,9 +34,6 @@ namespace WindowsFormsTestClient
 
             var imagePaletteColors = ImageGenerator.OffsetsToColors(imagePaletteBytes, colorCollection);
 
-            //RenderPalette(imagePaletteColors);
-            //RenderGeneralPalette(colorCollection.ToList());
-
             var bitmapList = DrawImage(extractResult, extractResult.Count, rawParser, renderer, imagePaletteColors, colorCollection);
 
             var itemsForListBox = Enumerable.Range(0, bitmapList.Count).Select(it => it.ToString()).ToList();
@@ -66,7 +63,6 @@ namespace WindowsFormsTestClient
 
                         Helper.WithMeasurement(() =>
                         {
-
                             try
                             {
                                 var bitMap = new Runner().Run(extractResult, i, rawParser, renderer, imagePaletteColors,
@@ -77,7 +73,7 @@ namespace WindowsFormsTestClient
                             {
 
                             }
-                        }, "Image", onFinish: elapsed => richTextBox1.Text += String.Format("Image {0} loaded in {1:c}\n", i, elapsed));
+                        }, "Image", onFinish: elapsed => richTextBox1.Text += String.Format("[{0}] - {1:g}\n", i, elapsed));
                     }
 
                     return bitMapCollection;
@@ -88,22 +84,6 @@ namespace WindowsFormsTestClient
                 
         }
 
-        private void RenderGeneralPalette(List<Color> imagePaletteColors)
-        {
-            var paletteBitMap = new Bitmap(500, 500);
-            IRenderer paletteRenderer = new BitmapRenderer();
-            paletteRenderer.RenderPalette(paletteBitMap, imagePaletteColors, 200, 8);
-            //pictureBox1.Image = paletteBitMap;
-        }
-
-        private void RenderPalette(List<Color> imagePaletteColors)
-        {
-            var paletteBitMap = new Bitmap(500, 500);
-            IRenderer paletteRenderer = new BitmapRenderer();
-            paletteRenderer.RenderPalette(paletteBitMap, imagePaletteColors, 200, 4);
-            //pictureBox3.Image = paletteBitMap;
-        }
-        
         public Form1()
         {
             InitializeComponent();
