@@ -51,7 +51,7 @@ namespace GPExtractor
         private void ProcessMultipixelBlock(byte[] imageBytes, int offset,
             Collection<RawColorBlock> tempByteCollection)
         {
-            var block = new RawColorBlock(RawColorBlockType.MultiPiexl, imageBytes[offset], imageBytes[offset + 1]);
+            var block = new RawColorBlock(RawColorBlockType.TwoPixel, imageBytes[offset], imageBytes[offset + 1]);
                 tempByteCollection.Add(block); 
         }
 

@@ -3,7 +3,7 @@ namespace Types
     public enum RawColorBlockType
     {
         SinglePixel,
-        MultiPiexl
+        TwoPixel
     }
 
     public class RawColorBlock

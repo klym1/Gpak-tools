@@ -21,7 +21,7 @@ namespace GPExtractor
             {
                 foreach (var counterBlockContainer in blockContainer.CounterBlockContainers)
                 {
-                    if (counterBlockContainer.RawColorBlock.type == RawColorBlockType.MultiPiexl)
+                    if (counterBlockContainer.RawColorBlock.type == RawColorBlockType.TwoPixel)
                     {
                         var offsetX = layout.offsetX + blockContainer.Block.OffsetX + counterBlockContainer.Offset;
                         var offsetY = layout.offsetY + blockContainer.Block.OffsetY;
