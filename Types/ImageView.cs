@@ -1,49 +1,56 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 
 namespace Types
 {
     public class ImageView
     {
-        public Color[,] Pixels { get; set; }
+        private readonly int _width;
+        private readonly int _height;
+
+        public Color[] Pixels { get; set; }
 
         public int Width
         {
-            get { return Pixels.GetLength(0); }
+            get { return _width; }
         }
 
         public int Height
         {
-            get { return Pixels.GetLength(1); }
+            get { return _height; }
         }
 
         public ImageView(int width, int height)
         {
-            Pixels = new Color[width,height];
+            _width = width;
+            _height = height;
 
-            for (int i = 0; i < width; i++)
-                for (int j = 0; j < height; j++)
-                {
-                    Pixels[i, j] = Color.FromArgb(0, 0, 0, 0);
-                }
+            Pixels = new Color[width * height];
+
+            for (int i = 0; i < width*height; i++)
+            {
+                Pixels[i] = Color.FromArgb(0, 0, 0, 0);
+            }     
         }
     }
 
     public static class ImageViewExtensions
     {
-        public static void DrawHorizontalColorLine(this ImageView bitmap, ICollection<Color> colorCollection, int offsetX, int offsetY)
+        public static void DrawHorizontalColorLine(this ImageView bitmap, Color[] colorArray, int offsetX, int offsetY)
         {
-            var initialOffsetX = offsetX;
-
-            foreach (var color in colorCollection)
-            {
-                bitmap.Pixels[initialOffsetX++, offsetY] = color; 
-            }
+            Array.Copy(
+                sourceArray: colorArray,
+                sourceIndex: 0,
+                destinationArray: bitmap.Pixels,
+                destinationIndex: offsetY * bitmap.Width + offsetX,
+                length: colorArray.Length);
         }
 
         public static void DrawColorPixel(this ImageView bitmap, Color pixel, int offsetX, int offsetY)
         {
-            bitmap.Pixels[offsetX, offsetY] = pixel; 
+            var width = bitmap.Width;
+            bitmap.Pixels[offsetY * width + offsetX] = pixel; 
         }
     }
 }

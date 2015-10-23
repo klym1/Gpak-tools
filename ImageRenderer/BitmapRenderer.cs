@@ -21,12 +21,14 @@ namespace ImageRenderer
             var lockedBitmap = new LockBitmap(bitmap);
             lockedBitmap.LockBits();
 
+            var width = imageView.Width;
+
             for (int i = 0; i < imageView.Height; i++)
                 for (int j = 0; j < imageView.Width; j++)
                 {
-                    if (imageView.Pixels[j, i] != Color.FromArgb(0, 0, 0, 0))
+                    if (imageView.Pixels[i * width + j] != Color.FromArgb(0, 0, 0, 0))
                     {
-                        lockedBitmap.SetPixel(j, i, imageView.Pixels[j, i]);
+                        lockedBitmap.SetPixel(j, i, imageView.Pixels[i * width + j]);
                     }
                 }
 
