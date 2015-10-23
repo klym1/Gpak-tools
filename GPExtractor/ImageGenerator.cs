@@ -34,7 +34,7 @@ namespace GPExtractor
 
                         var color = generalPaletteColors[colorIndex];
 
-                        imageView.DrawHorizontalColorLine(new List<Color>{color}, 
+                        imageView.DrawColorPixel(color, 
                            layout.offsetX + blockContainer.Block.OffsetX + counterBlockContainer.Offset,
                            layout.offsetY + blockContainer.Block.OffsetY);
                     }

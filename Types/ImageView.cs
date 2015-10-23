@@ -40,5 +40,10 @@ namespace Types
                 bitmap.Pixels[initialOffsetX++, offsetY] = color; 
             }
         }
+
+        public static void DrawColorPixel(this ImageView bitmap, Color pixel, int offsetX, int offsetY)
+        {
+            bitmap.Pixels[offsetX, offsetY] = pixel; 
+        }
     }
 }
