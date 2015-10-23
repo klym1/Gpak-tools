@@ -50,7 +50,7 @@ namespace WindowsFormsTestClient
             listBox1.SelectedIndex = 0;
         }
 
-        private IList<Bitmap> DrawImage(IList<ImageLayout> extractResult, int numberOfImages, RawParser rawParser, IRenderer renderer, List<Color> imagePaletteColors,
+        private IList<Bitmap> DrawImage(IList<ImageLayout> extractResult, int numberOfImages, RawParser rawParser, IRenderer renderer, Color[] imagePaletteArray,
             Collection<Color> colorCollection)
         {
             return Helper.WithMeasurement(
@@ -65,7 +65,7 @@ namespace WindowsFormsTestClient
                         {
                             try
                             {
-                                var bitMap = new Runner().Run(extractResult, i, rawParser, renderer, imagePaletteColors,
+                                var bitMap = new Runner().Run(extractResult, i, rawParser, renderer, imagePaletteArray,
                                     colorCollection.ToList());
                                 bitMapCollection.Add(bitMap);
                             }

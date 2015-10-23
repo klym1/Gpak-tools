@@ -54,7 +54,7 @@ namespace GPExtractor
             {
                 onFinish(sw.Elapsed);
             }
-            //Debug.WriteLine("{0} : {1:D}", name ?? "Default", sw.ElapsedMilliseconds);
+            Debug.WriteLine("{0} : {1:D}", name ?? "Default", sw.ElapsedMilliseconds);
 
             return result;
         }

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Drawing;
 using System.Linq;
@@ -8,7 +9,7 @@ namespace GPExtractor
 {
     public class ImageGenerator
     {
-        public void RenderCounterBlocksOnBitmap(ImageView imageView, List<AbsoluteBlock> piactureElements, Collection<RawColorBlock> secondPartBlocks, ImageLayoutInfo layout, List<Color> imagePaletteColors, List<Color> generalPaletteColors)
+        public void RenderCounterBlocksOnBitmap(ImageView imageView, List<AbsoluteBlock> piactureElements, Collection<RawColorBlock> secondPartBlocks, ImageLayoutInfo layout, Color[] imagePaletteArray, List<Color> generalPaletteColors)
         {
             var blocksDistributor = new BlocksDistributor();
 
@@ -20,9 +21,13 @@ namespace GPExtractor
                 {
                     if (counterBlockContainer.RawColorBlock.type == RawColorBlockType.MultiPiexl)
                     {
-                        var slice = imagePaletteColors.Skip(counterBlockContainer.RawColorBlock.Offset + counterBlockContainer.StripePadding)
-                                .Take(counterBlockContainer.Width)
-                                .ToList();
+                        var slice = new Color[counterBlockContainer.Width];
+
+                        Array.Copy(imagePaletteArray, 
+                            sourceIndex: counterBlockContainer.RawColorBlock.Offset + counterBlockContainer.StripePadding,
+                            destinationArray: slice,
+                            destinationIndex: 0,
+                            length: counterBlockContainer.Width);
 
                         imageView.DrawHorizontalColorLine(slice,
                             layout.offsetX + blockContainer.Block.OffsetX + counterBlockContainer.Offset,
@@ -55,9 +60,9 @@ namespace GPExtractor
             }
         }
 
-        public static List<Color> OffsetsToColors(byte[] imagePaletteOffsets, Collection<Color> colorCollection)
+        public static Color[] OffsetsToColors(byte[] imagePaletteOffsets, Collection<Color> colorCollection)
         {
-            return imagePaletteOffsets.Select(offset => colorCollection[offset]).ToList();
+            return imagePaletteOffsets.Select(offset => colorCollection[offset]).ToArray();
         }
     }
 }
