@@ -69,9 +69,9 @@ namespace WindowsFormsTestClient
 
                             bitMapCollection.Add(bitMap);
                         }
-                        catch (Exception)
+                        catch (Exception e)
                         {
-                            
+                            Debug.WriteLine(e);
                         }
                     }
 

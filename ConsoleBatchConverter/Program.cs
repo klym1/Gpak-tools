@@ -42,19 +42,19 @@ namespace ConsoleBatchConverter
 
         private static void SaveAsPng(string gpFile, string pngDirectory)
         {
-            var extractResult = new Extractor().GetImagesFromOutput(gpFile);
-
             IRenderer renderer = new BitmapRenderer();
-            
-            var paletteBytes = File.ReadAllBytes(@"..\..\..\palette\0\agew_1.pal");
+
+            var imagePaletteBytes = new Extractor().GetPaletteBytes(gpFile);
+            var extractResult = new Extractor().GetImagesFromOutput(gpFile).ToList();
 
             var rawParser = new RawParser();
 
+            var paletteBytes = File.ReadAllBytes(@"..\..\..\palette\0\agew_1.pal");
             var colorCollection = rawParser.GetColorCollectionFromPalleteFile(paletteBytes);
 
-            var imagePaletteColors = ImageGenerator.OffsetsToColors(extractResult.PaletteBytes, colorCollection);
+            var imagePaletteColors = ImageGenerator.OffsetsToColors(imagePaletteBytes, colorCollection);
 
-            using (var bitMap = new Runner().Run(extractResult, TODO, rawParser, renderer, imagePaletteColors, colorCollection.ToList()))
+            using (var bitMap = new Runner().Run(extractResult, 1, rawParser, renderer, imagePaletteColors, colorCollection.ToList()))
             {
                 using (var stream = new MemoryStream())
                 {
