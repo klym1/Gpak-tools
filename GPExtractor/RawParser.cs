@@ -72,13 +72,13 @@ namespace GPExtractor
         {
             var rawShapeBlocksGroups = new Collection<RawShapeBlocksGroup>();
 
-            var rowIndex = 0;
-            offset = 0;
+           int rowIndex = 0;
+           offset = 0;
 
            var collectionOfBlockTypes = new Collection<byte>();
 
-            while (rawShapeBlocksGroups.Count < numberOfRows)
-            {
+           while (rowIndex < numberOfRows)
+           {
                 int blockType = imageBytes[offset];
 
                 collectionOfBlockTypes.Add((byte)blockType);
