@@ -51,7 +51,7 @@ namespace WindowsFormsTestClient
         }
 
         private IList<Bitmap> DrawImage(IList<ImageLayout> extractResult, int numberOfImages, RawParser rawParser, IRenderer renderer, Color[] imagePaletteArray,
-            Collection<Color> colorCollection)
+            Color[] generalPalleteArray)
         {
             return Helper.WithMeasurement(
                 () =>
@@ -65,8 +65,7 @@ namespace WindowsFormsTestClient
                         {
                             try
                             {
-                                var bitMap = new Runner().Run(extractResult, i, rawParser, renderer, imagePaletteArray,
-                                    colorCollection.ToList());
+                                var bitMap = new Runner().Run(extractResult, i, rawParser, renderer, imagePaletteArray, generalPalleteArray);
                                 bitMapCollection.Add(bitMap);
                             }
                             catch (Exception)

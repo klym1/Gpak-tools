@@ -8,7 +8,7 @@ namespace ImageRenderer
 {
     public class Runner
     {
-        public Bitmap Run(IList<ImageLayout> extractResult, int imageNumber, RawParser rawParser, IRenderer renderer, Color[] imagePaletteArray, List<Color> generalPaletteColors)
+        public Bitmap Run(IList<ImageLayout> extractResult, int imageNumber, RawParser rawParser, IRenderer renderer, Color[] imagePaletteArray, Color[] generalPaletteColors)
         {
             var imageGenerator = new ImageGenerator();
 

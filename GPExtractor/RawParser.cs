@@ -242,7 +242,7 @@ namespace GPExtractor
             }
         }
 
-        public Collection<Color> GetColorCollectionFromPalleteFile(byte[] paletteBytes)
+        public Color[] GetColorCollectionFromPalleteFile(byte[] paletteBytes)
         {
             var colorCollection = new Collection<Color>();
 
@@ -251,7 +251,7 @@ namespace GPExtractor
                 colorCollection.Add(Color.FromArgb(255, paletteBytes[i], paletteBytes[i + 1], paletteBytes[i + 2]));
             }
 
-            return colorCollection;
+            return colorCollection.ToArray();
         }
     }
 }
