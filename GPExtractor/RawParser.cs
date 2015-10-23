@@ -9,6 +9,11 @@ namespace GPExtractor
 {
     public class RawParser
     {
+        public RawParser()
+        {
+            PrecalculatedValues.CalculateSecondPartBlockBits();
+        }
+
         public Collection<RawColorBlock> GetRawColorBlocks(byte[] imageBytes, int initialOffset, int globalOffset)
         {
             var offset = initialOffset + 1; // skip CD bytes
@@ -22,20 +27,24 @@ namespace GPExtractor
                 offset++;
                 globalOffset++;
 
-                foreach (var bit in Helper.IterateBits(blockStartByte))
+                foreach (var bit in PrecalculatedValues.SecondPartBlockBits[blockStartByte])
                 {
+                    RawColorBlock block;
+
                     if (bit == 0)
                     {
-                        ProcessSinglepixelBlock(imageBytes, offset, tempByteCollection);
+                        block = ProcessSinglepixelBlock(imageBytes, offset);
                         offset++;
                         globalOffset++;
                     }
                     else
                     {
-                        ProcessMultipixelBlock(imageBytes, offset, tempByteCollection);
+                        block = ProcessMultipixelBlock(imageBytes, offset);
                         offset += 2;
                         globalOffset += 2;
                     }
+
+                    tempByteCollection.Add(block);
 
                     //last block might not be full (less than 8 elems)
                     if (offset == imageBytes.Length)
@@ -48,19 +57,15 @@ namespace GPExtractor
             return tempByteCollection;
         }
 
-        private void ProcessMultipixelBlock(byte[] imageBytes, int offset,
-            Collection<RawColorBlock> tempByteCollection)
+        private RawColorBlock ProcessMultipixelBlock(byte[] imageBytes, int offset)
         {
-            var block = new RawColorBlock(RawColorBlockType.TwoPixel, imageBytes[offset], imageBytes[offset + 1]);
-                tempByteCollection.Add(block); 
+            return new RawColorBlock(RawColorBlockType.TwoPixel, imageBytes[offset], imageBytes[offset + 1]);
         }
 
-        private void ProcessSinglepixelBlock(byte[] imageBytes, int offset,
-           Collection<RawColorBlock> tempByteCollection)
+        private RawColorBlock ProcessSinglepixelBlock(byte[] imageBytes, int offset)
         {
             var @byte = imageBytes[offset];
-            var block = new RawColorBlock(RawColorBlockType.SinglePixel, @byte);
-            tempByteCollection.Add(block);   
+            return new RawColorBlock(RawColorBlockType.SinglePixel, @byte);
         }
 
        public RawShapeBlocksGroup[] ParseRawBlockGroups(byte[] imageBytes, short numberOfRows, out int offset)
