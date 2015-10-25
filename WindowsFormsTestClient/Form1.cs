@@ -18,12 +18,11 @@ namespace WindowsFormsTestClient
     {
         private void Do()
         {
-            var filePath = @"c:\GpArch\gp\ADET.gp";
+            var filePath = @"c:\GpArch\gp\hh.gp";
 
             var imagePaletteBytes = new Extractor().GetPaletteBytes(filePath);
             var extractResult = new Extractor().GetImagesFromOutput(filePath).ToList();
             
-
             IRenderer renderer = new BitmapRenderer();
             
             var paletteBytes = File.ReadAllBytes(@"..\..\..\palette\0\agew_1.pal");
@@ -60,8 +59,8 @@ namespace WindowsFormsTestClient
                 {
                     var bitMapCollection = new Collection<Bitmap>();
 
-                   // foreach (int i in new []{9,10})
-                       for (int i = 0; i < numberOfImages; i++)
+                    foreach (int i in new []{0,1,2,3,4,5,6})
+                     //  for (int i = 0; i < numberOfImages; i++)
                    // var i = 10;
                     {
 

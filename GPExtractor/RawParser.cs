@@ -84,7 +84,7 @@ namespace GPExtractor
 
         private RawColorBlock ProcessMultipixelBlock(byte[] imageBytes, int offset)
         {
-            return new RawColorBlock(RawColorBlockType.TwoPixel, imageBytes[offset], imageBytes[offset + 1]);
+            return new RawColorBlock(RawColorBlockType.MultiPixel, imageBytes[offset], imageBytes[offset + 1]);
         }
 
         private RawColorBlock ProcessSinglepixelBlock(byte[] imageBytes, int offset)
@@ -233,7 +233,7 @@ namespace GPExtractor
 
             PrintBlocksSTatistics(blockStatistics);
 
-            return rawShapeBlocksGroups.ToArray();
+            return rawShapeBlocksGroups.MergeBlocks().ToArray();
         }
 
         private void PrintBlocksSTatistics(Dictionary<byte, int> blockStatistics)

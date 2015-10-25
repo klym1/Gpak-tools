@@ -25,7 +25,7 @@ namespace GPExtractor
                     var sourceOffset = counterBlockContainer.RawColorBlock.Offset +
                                           counterBlockContainer.StripePadding;
 
-                    if (counterBlockContainer.RawColorBlock.type == RawColorBlockType.TwoPixel)
+                    if (counterBlockContainer.RawColorBlock.type == RawColorBlockType.MultiPixel)
                     {
                         var offsetX = layout.offsetX + blockContainer.Block.OffsetX + counterBlockContainer.Offset;
                         var offsetY = layout.offsetY + blockContainer.Block.OffsetY;

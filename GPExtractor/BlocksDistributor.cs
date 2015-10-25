@@ -119,10 +119,17 @@ namespace Types
 
         private void VerifyBlockContainerCollection(Collection<AbsoluteBlockContainer> blockContainerCollection)
         {
+            var numberOfZeroLengthed = blockContainerCollection.Count(it => it.TotalSpaceOccupied == 0);
+
+            if (numberOfZeroLengthed > 0)
+            {
+              //  throw new Exception("numberOfZeroLengthed > 0");
+            }
+
             var all = blockContainerCollection.All(it => it.TotalSpaceOccupied == it.Block.Length);
             if (!all)
             {
-              //  throw new Exception("23423");
+                throw new Exception("23423");
             }
         }
 
