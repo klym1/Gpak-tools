@@ -31,7 +31,7 @@ namespace GPExtractor
                 layoutInfo.Bytes = bytes
                     .Skip((int) offset)
                     .Skip(ImageHeaderSize)
-                    .Take(layoutInfo.newImageOffset - 1 - ImageHeaderSize).ToArray();
+                    .Take(layoutInfo.newImageOffset - ImageHeaderSize).ToArray();
 
                 layoutInfo.GlobalByteOffsetEnd = offset + layoutInfo.newImageOffset - 1;
             }

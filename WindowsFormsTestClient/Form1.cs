@@ -18,7 +18,7 @@ namespace WindowsFormsTestClient
     {
         private void Do()
         {
-            var filePath = @"c:\GpArch\gp\hh.gp";
+            var filePath = @"c:\GpArch\gp\ADET.gp";
 
             var imagePaletteBytes = new Extractor().GetPaletteBytes(filePath);
             var extractResult = new Extractor().GetImagesFromOutput(filePath).ToList();

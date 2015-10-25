@@ -19,32 +19,23 @@ namespace GPExtractor
         {
             var offset = initialOffset + 1; // skip CD bytes
             globalOffset++;
+            
+            return nationColorPart 
+                ? ProcessNataionColorPart(imageBytes, globalOffset, offset) 
+                : ProcessOrdinaryPart(imageBytes, globalOffset, offset);
+        }
+
+        private Collection<RawColorBlock> ProcessOrdinaryPart(byte[] imageBytes, int globalOffset, int offset)
+        {
             var tempByteCollection = new Collection<RawColorBlock>();
 
             while (offset < imageBytes.Length)
             {
                 var blockStartByte = imageBytes[offset];
 
-                if (nationColorPart)
-                {
-                    var block = ProcessFourPixelBlock(imageBytes, offset);
-                    tempByteCollection.Add(block);
-
-                    //last block might not be full (less than 8 elems)
-                    if (offset > imageBytes.Length)
-                    {
-                        break;
-                    }
-
-                    offset++;
-                    globalOffset++;
-                    continue;
-                }
-
                 offset++;
                 globalOffset++;
 
-                
                 foreach (var bit in PrecalculatedValues.SecondPartBlockBits[blockStartByte])
                 {
                     RawColorBlock block;
@@ -65,13 +56,34 @@ namespace GPExtractor
                     tempByteCollection.Add(block);
 
                     //last block might not be full (less than 8 elems)
-                    if (offset > imageBytes.Length)
+                    if (offset > imageBytes.Length - 1)
                     {
                         break;
                     }
                 }
             }
 
+            return tempByteCollection;
+        }
+
+        private Collection<RawColorBlock> ProcessNataionColorPart(byte[] imageBytes, int globalOffset, int offset)
+        {
+            var tempByteCollection = new Collection<RawColorBlock>();
+
+            while (offset < imageBytes.Length)
+            {
+                var block = ProcessFourPixelBlock(imageBytes, offset);
+                tempByteCollection.Add(block);
+
+                if (offset > imageBytes.Length)
+                {
+                    break;
+                }
+
+                offset++;
+                globalOffset++;
+            }
+            
             return tempByteCollection;
         }
 
@@ -199,7 +211,7 @@ namespace GPExtractor
                     continue;
                 }
 
-                if (blockType > 40)
+               if (blockType > 111)
                 {
                     Helper.DumpArray(imageBytes, offset - 5, 128);
                     throw new Exception("wrong block type. Dump:\n ");

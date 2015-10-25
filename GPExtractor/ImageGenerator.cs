@@ -48,7 +48,7 @@ namespace GPExtractor
 
                         var colorByte = counterBlockContainer.RawColorBlock.One; // Codes 4 pixels: 2 bits for pixel
 
-                        var _1 = (byte)colorByte & 0x03;
+                        var _1 = colorByte & 0x03;
                         var _2 = (colorByte >> 2) & 0x03;
                         var _3 = (colorByte >> 4) & 0x03;
                         var _4 = (colorByte >> 6) & 0x03;
