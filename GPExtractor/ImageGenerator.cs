@@ -63,7 +63,7 @@ namespace GPExtractor
 
                         Array.Copy(
                             sourceArray: slice,
-                            sourceIndex: 0,
+                            sourceIndex: sourceOffset,
                             destinationArray: imageView.Pixels,
                             destinationIndex: destinationOffset,
                             length: counterBlockContainer.Width);

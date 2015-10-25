@@ -60,7 +60,9 @@ namespace WindowsFormsTestClient
                 {
                     var bitMapCollection = new Collection<Bitmap>();
 
-                    for (int i = 0; i < numberOfImages; i++)
+                   // foreach (int i in new []{9,10})
+                       for (int i = 0; i < numberOfImages; i++)
+                   // var i = 10;
                     {
 
                         Helper.WithMeasurement(() =>

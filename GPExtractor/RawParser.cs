@@ -75,11 +75,6 @@ namespace GPExtractor
                 var block = ProcessFourPixelBlock(imageBytes, offset);
                 tempByteCollection.Add(block);
 
-                if (offset > imageBytes.Length)
-                {
-                    break;
-                }
-
                 offset++;
                 globalOffset++;
             }
@@ -238,7 +233,7 @@ namespace GPExtractor
 
             PrintBlocksSTatistics(blockStatistics);
 
-            return rawShapeBlocksGroups.MergeBlocks().ToArray();
+            return rawShapeBlocksGroups.ToArray();
         }
 
         private void PrintBlocksSTatistics(Dictionary<byte, int> blockStatistics)
