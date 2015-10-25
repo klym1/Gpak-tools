@@ -11,7 +11,7 @@ namespace GPExtractor
 {
     public class ImageGenerator
     {
-        public void RenderCounterBlocksOnBitmap(ImageView imageView, List<AbsoluteBlock> piactureElements, Collection<RawColorBlock> secondPartBlocks, ImageLayoutInfo layout, Color[] imagePaletteArray, Color[] generalPaletteColors)
+        public void RenderCounterBlocksOnBitmap(ImageView imageView, NationColorOffset nationColorOffset, List<AbsoluteBlock> piactureElements, Collection<RawColorBlock> secondPartBlocks, ImageLayoutInfo layout, Color[] imagePaletteArray, Color[] generalPaletteColors)
         {
             var blocksDistributor = new BlocksDistributor();
 
@@ -38,15 +38,28 @@ namespace GPExtractor
                             destinationIndex: destinationOffset,
                             length: counterBlockContainer.Width);
 
-                    } else if (counterBlockContainer.RawColorBlock.type == RawColorBlockType.FourPixel)
+                    }
+                    else if (counterBlockContainer.RawColorBlock.type == RawColorBlockType.FourPixel)
                     {
 
                         var offsetX = layout.offsetX + blockContainer.Block.OffsetX + counterBlockContainer.Offset;
                         var offsetY = layout.offsetY + blockContainer.Block.OffsetY;
                         var destinationOffset = offsetY * imageView.Width + offsetX;
-                        var color = generalPaletteColors[0xd4];
 
-                        var slice = new[] {color, color, color, color};
+                        var colorByte = counterBlockContainer.RawColorBlock.One; // Codes 4 pixels: 2 bits for pixel
+
+                        var _1 = (byte)colorByte & 0x03;
+                        var _2 = (colorByte >> 2) & 0x03;
+                        var _3 = (colorByte >> 4) & 0x03;
+                        var _4 = (colorByte >> 6) & 0x03;
+
+                        var slice = new[]
+                        {
+                             generalPaletteColors[nationColorOffset.Offset + _1], 
+                             generalPaletteColors[nationColorOffset.Offset + _2], 
+                             generalPaletteColors[nationColorOffset.Offset + _3], 
+                             generalPaletteColors[nationColorOffset.Offset + _4]
+                        };
 
                         Array.Copy(
                             sourceArray: slice,

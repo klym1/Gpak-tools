@@ -8,7 +8,7 @@ namespace ImageRenderer
 {
     public class Runner
     {
-        public Bitmap Run(IList<ImageLayout> extractResult, int imageNumber, RawParser rawParser, IRenderer renderer, Color[] imagePaletteArray, Color[] generalPaletteColors)
+        public Bitmap Run(IList<ImageLayout> extractResult, NationColorOffset nationColorOffset, int imageNumber, RawParser rawParser, IRenderer renderer, Color[] imagePaletteArray, Color[] generalPaletteColors)
         {
             var imageGenerator = new ImageGenerator();
 
@@ -49,7 +49,7 @@ namespace ImageRenderer
                 Helper.WithMeasurement(() =>
                 {
                     imageGenerator.RenderShapeBlocks(imageView, firstPartBlocks, layout1);
-                    imageGenerator.RenderCounterBlocksOnBitmap(imageView, firstPartBlocks, secondPartBlocks, layout1, imagePaletteArray, generalPaletteColors);
+                    imageGenerator.RenderCounterBlocksOnBitmap(imageView, nationColorOffset, firstPartBlocks, secondPartBlocks, layout1, imagePaletteArray, generalPaletteColors);
                 }, "RenderCounterBlocksOnBitmap");
 
                 Helper.WithMeasurement(() => renderer.RenderImage(bitMap, imageView), "Render on bitmap");

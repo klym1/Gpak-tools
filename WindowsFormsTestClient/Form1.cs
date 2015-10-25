@@ -34,7 +34,9 @@ namespace WindowsFormsTestClient
 
             var imagePaletteColors = ImageGenerator.OffsetsToColors(imagePaletteBytes, colorCollection);
 
-            var bitmapList = DrawImage(extractResult, extractResult.Count, rawParser, renderer, imagePaletteColors, colorCollection);
+            var nationColorOffset = NationColorOffset.Blue;
+
+            var bitmapList = DrawImage(extractResult, nationColorOffset, extractResult.Count, rawParser, renderer, imagePaletteColors, colorCollection);
 
             var itemsForListBox = Enumerable.Range(0, bitmapList.Count).Select(it => it.ToString()).ToList();
 
@@ -50,7 +52,7 @@ namespace WindowsFormsTestClient
             listBox1.SelectedIndex = 0;
         }
 
-        private IList<Bitmap> DrawImage(IList<ImageLayout> extractResult, int numberOfImages, RawParser rawParser, IRenderer renderer, Color[] imagePaletteArray,
+        private IList<Bitmap> DrawImage(IList<ImageLayout> extractResult, NationColorOffset nationColorOffset, int numberOfImages, RawParser rawParser, IRenderer renderer, Color[] imagePaletteArray,
             Color[] generalPalleteArray)
         {
             return Helper.WithMeasurement(
@@ -65,7 +67,7 @@ namespace WindowsFormsTestClient
                         {
                             try
                             {
-                                var bitMap = new Runner().Run(extractResult, i, rawParser, renderer, imagePaletteArray, generalPalleteArray);
+                                var bitMap = new Runner().Run(extractResult, nationColorOffset, i, rawParser, renderer, imagePaletteArray, generalPalleteArray);
                                 bitMapCollection.Add(bitMap);
                             }
                             catch (Exception ex)

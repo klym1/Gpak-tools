@@ -21,7 +21,7 @@ namespace GPExtractor
             globalOffset++;
             var tempByteCollection = new Collection<RawColorBlock>();
 
-            while (offset < imageBytes.Length-2)
+            while (offset < imageBytes.Length)
             {
                 var blockStartByte = imageBytes[offset];
 
@@ -31,7 +31,7 @@ namespace GPExtractor
                     tempByteCollection.Add(block);
 
                     //last block might not be full (less than 8 elems)
-                    if (offset > imageBytes.Length - 1)
+                    if (offset > imageBytes.Length)
                     {
                         break;
                     }
@@ -65,7 +65,7 @@ namespace GPExtractor
                     tempByteCollection.Add(block);
 
                     //last block might not be full (less than 8 elems)
-                    if (offset > imageBytes.Length - 1)
+                    if (offset > imageBytes.Length)
                     {
                         break;
                     }
