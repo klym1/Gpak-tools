@@ -13,14 +13,14 @@ namespace Types
         public byte Two { get; private set; }
 
         public int Offset { get; private set; }
-        public byte ThirdNibble { get; private set; } // four-bit group
+        public byte ThirdTetrade { get; private set; } // four-bit group
         public RawColorBlockType type;
 
         public RawColorBlock(RawColorBlockType typee, byte one, byte two)
         {
             One = one;
             Two = two;
-            ThirdNibble = (byte) ((two) >> 4);
+            ThirdTetrade = (byte) ((two) >> 4);
             Offset = (one | ((two) & 0x0f) << 8);
             type = typee;
         }
