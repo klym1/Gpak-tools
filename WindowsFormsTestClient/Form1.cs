@@ -59,11 +59,8 @@ namespace WindowsFormsTestClient
                 {
                     var bitMapCollection = new Collection<Bitmap>();
 
-                    foreach (int i in new []{0,1,2,3,4,5,6})
-                     //  for (int i = 0; i < numberOfImages; i++)
-                   // var i = 10;
+                    for (int i = 0; i < numberOfImages; i++)
                     {
-
                         Helper.WithMeasurement(() =>
                         {
                             try
