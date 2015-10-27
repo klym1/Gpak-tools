@@ -24,5 +24,5 @@ Since it's still in development it should be run from Visual Studio (>= 2012). C
 
 Samples:
 
-![alt text](https://raw.githubusercontent.com/klym1/Gpak-tools/master/Example.PNG "Building from Cossacks Game")
-![alt text](https://raw.githubusercontent.com/klym1/Gpak-tools/master/Example2.PNG "Getman unit")
+![alt text](https://raw.githubusercontent.com/klym1/Gpak-tools/master/OutputExamples/Example.PNG "Building from Cossacks Game")
+![alt text](https://raw.githubusercontent.com/klym1/Gpak-tools/master/OutputExamples/Example2.PNG "Getman unit")
