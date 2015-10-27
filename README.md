@@ -22,6 +22,7 @@ Since it's still in development it should be run from Visual Studio (>= 2012). C
 
 ## Examples
 
-Sample of recovered image:
+Samples:
 
 ![alt text](https://raw.githubusercontent.com/klym1/Gpak-tools/master/Example.PNG "Building from Cossacks Game")
+![alt text](https://raw.githubusercontent.com/klym1/Gpak-tools/master/Example2.PNG "Getman unit")
