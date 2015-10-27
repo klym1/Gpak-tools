@@ -2,6 +2,8 @@
 
 *this project is still under development*
 
+![alt text](https://travis-ci.org/klym1/Gpak-tools.svg "CI")
+
 ## Description
 
 C# library for reading **GPAK** files (have *.gp* extension) which were utilized for storing graphical data in some old games (such as **Cossacks** and **American Conquest** from **GSC Game World** company). Library produces Bitmap objects which can be saved using ordinary image format (e.g. *PNG*).
