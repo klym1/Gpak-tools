@@ -20,7 +20,7 @@ Next goal is to improve code quality, improve performance and make usable for re
 
 ## Dev/Run
 
-Since it's still in development it should be run from Visual Studio (>= 2012). Currently projects are build with .NET 4.5 support but I think they could be run with .NET 4.0 also. All dependencies should be successfully restored by NuGet on first build (in fact only **UnitTests** project uses external dependencies: NUnit and Fluent Assertions).
+Since it's still in development it should be run from Visual Studio (>= 2012). You need .NET 4.0 (Windows 7 or later) or Mono 4.0 (i suppose older version of mono might be working too but haven't tested yet) to build the project. All dependencies should be successfully restored by NuGet on first build (in fact only **UnitTests** project uses external dependencies: NUnit and Fluent Assertions).
 
 ## Examples
 
