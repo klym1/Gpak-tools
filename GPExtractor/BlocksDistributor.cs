@@ -113,7 +113,7 @@ namespace Types
                 return 4;
             }
 
-            var type = rawColorBlock.ThirdOctet;
+            var type = rawColorBlock.ThirdNibble;
             return type + 3;
         }
 
