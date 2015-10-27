@@ -2,7 +2,7 @@
 
 *this project is still under development*
 
-![alt text](https://travis-ci.org/klym1/Gpak-tools.svg "CI")
+[![Build Status](https://travis-ci.org/klym1/Gpak-tools.svg)](https://travis-ci.org/klym1/Gpak-tools)
 
 ## Description
 
