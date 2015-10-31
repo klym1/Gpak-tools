@@ -76,6 +76,10 @@ namespace GPExtractor
                         {
                             value = binaryReader.ReadInt32();
                         }
+                        else if (proprtyType == typeof(bool))
+                        {
+                            value = binaryReader.ReadBoolean();
+                        }
                         else
                         {
                             throw new Exception("Unsupported type");

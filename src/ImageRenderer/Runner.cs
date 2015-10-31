@@ -42,9 +42,7 @@ namespace ImageRenderer
 
                 }, "firstPartBlocks");
 
-                var nationColorPart = layout1.HeaderBytes[16] == 1;
-
-                var secondPartBlocks = Helper.WithMeasurement(() => rawParser.GetRawColorBlocks(layout1.Bytes, offset, (int)layout1.GlobalByteOffsetStart + offset + layout1.HeaderBytes.Length, nationColorPart), "secondPartBlocks");
+                var secondPartBlocks = Helper.WithMeasurement(() => rawParser.GetRawColorBlocks(layout1.Bytes, offset, (int)layout1.GlobalByteOffsetStart + offset + layout1.HeaderBytes.Length, layout1.IsNationColorImage), "secondPartBlocks");
 
                 Helper.WithMeasurement(() =>
                 {

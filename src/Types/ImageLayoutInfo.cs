@@ -25,6 +25,9 @@ namespace Types
         [ByteLayout(offset: 12)]
         public Int32 EndOfHeader { get; set; }
         
+        [ByteLayout(offset: 16)]
+        public bool IsNationColorImage { get; set; }
+
         public byte[] HeaderBytes { get; set; }
         public byte[] Bytes { get; set; }
         public long GlobalByteOffsetEnd { get; set; }
