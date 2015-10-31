@@ -25,7 +25,7 @@ namespace WindowsFormsTestClient
             
             IRenderer renderer = new BitmapRenderer();
             
-            var paletteBytes = File.ReadAllBytes(@"..\..\..\palette\0\agew_1.pal");
+            var paletteBytes = File.ReadAllBytes(@"..\..\..\..\palette\0\agew_1.pal");
 
             var rawParser = new RawParser();
 

@@ -49,7 +49,7 @@ namespace ConsoleBatchConverter
 
             var rawParser = new RawParser();
 
-            var paletteBytes = File.ReadAllBytes(@"..\..\..\palette\0\agew_1.pal");
+            var paletteBytes = File.ReadAllBytes(@"..\..\..\..\palette\0\agew_1.pal");
             var colorCollection = rawParser.GetColorCollectionFromPalleteFile(paletteBytes);
 
             var imagePaletteColors = ImageGenerator.OffsetsToColors(imagePaletteBytes, colorCollection);
