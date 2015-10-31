@@ -61,7 +61,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\GPExtractor\GPExtractor.csproj">
+    <ProjectReference Include="..\Extractor\GPExtractor.csproj">
       <Project>{1dfbc20e-cea9-4831-a923-4c651bc63e0f}</Project>
       <Name>GPExtractor</Name>
     </ProjectReference>

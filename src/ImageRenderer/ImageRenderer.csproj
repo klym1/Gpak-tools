@@ -48,7 +48,7 @@
     <Compile Include="Runner.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\GPExtractor\GPExtractor.csproj">
+    <ProjectReference Include="..\Extractor\GPExtractor.csproj">
       <Project>{1DFBC20E-CEA9-4831-A923-4C651BC63E0F}</Project>
       <Name>GPExtractor</Name>
     </ProjectReference>
