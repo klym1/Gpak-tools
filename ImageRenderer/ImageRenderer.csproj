@@ -44,7 +44,6 @@
   <ItemGroup>
     <Compile Include="BitmapRenderer.cs" />
     <Compile Include="IRenderer.cs" />
-    <Compile Include="LockBitmap.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Runner.cs" />
   </ItemGroup>
@@ -52,6 +51,10 @@
     <ProjectReference Include="..\GPExtractor\GPExtractor.csproj">
       <Project>{1DFBC20E-CEA9-4831-A923-4C651BC63E0F}</Project>
       <Name>GPExtractor</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Shared\Shared.csproj">
+      <Project>{e26f6fcd-2644-4997-b86c-e3a396fb8026}</Project>
+      <Name>Shared</Name>
     </ProjectReference>
     <ProjectReference Include="..\Types\Types.csproj">
       <Project>{a1778edf-7b59-41c6-a961-a00f09356c44}</Project>
