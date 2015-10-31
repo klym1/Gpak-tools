@@ -12,6 +12,8 @@ namespace GPExtractor
         private readonly IBinaryMapper _mapper;
         private const int ImageHeaderSize = 23;
 
+        private const int MaxNumberOfSubimages = 100;
+
         public Extractor()
         {
             _mapper = new BinaryAutoMapper();
@@ -72,29 +74,17 @@ namespace GPExtractor
             {
                 var offset = BitConverter.ToUInt32(new[] { bytes[z], bytes[z + 1], bytes[z + 2], bytes[z+3] }, 0);
                 
-                var layoutInfo = ReadImageLayoutInfo(bytes, offset);
-                layoutInfoCollection.Add(layoutInfo);
+                var currentOffset = 0;
+                var subImageIndex = 0;
 
-                //Handle more than two images
-                if (layoutInfo.newImageOffset > -1)
+                while (currentOffset != -1)
                 {
-                    var newImageLayoutInfo = ReadImageLayoutInfo(bytes, (uint)(offset + layoutInfo.newImageOffset));
+                    var newImageLayoutInfo = ReadImageLayoutInfo(bytes, (uint) (offset + currentOffset));
 
                     layoutInfoCollection.Add(newImageLayoutInfo);
+                    currentOffset = newImageLayoutInfo.newImageOffset;
 
-                    if (newImageLayoutInfo.newImageOffset > -1)
-                    {
-                        var newImageLayoutInfo2 = ReadImageLayoutInfo(bytes, (uint)(offset + newImageLayoutInfo.newImageOffset));
-
-                        layoutInfoCollection.Add(newImageLayoutInfo2);
-
-                        if (newImageLayoutInfo2.newImageOffset > -1)
-                        {
-                            var g = 8;
-                        }
-                        
-                    }
-
+                    if (subImageIndex++ > MaxNumberOfSubimages) break;
                 }
 
                 imageLayoutCollection.Add(new ImageLayout() { PartialLayouts = layoutInfoCollection });
