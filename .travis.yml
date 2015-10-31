@@ -1,8 +1,8 @@
 language: csharp
-solution: GPExtractor.sln
+solution: ./src/GPExtractor.sln
 install:
   - nuget restore GPExtractor.sln
   - nuget install NUnit.Runners -Version 2.6.4 -OutputDirectory testrunner
 script:
   - xbuild /p:Configuration=Release GPExtractor.sln
-  - mono ./testrunner/NUnit.Runners.2.6.4/tools/nunit-console.exe ./UnitTests/bin/Release/UnitTests.dll
+  - mono ./testrunner/NUnit.Runners.2.6.4/tools/nunit-console.exe ./src/UnitTests/bin/Release/UnitTests.dll
