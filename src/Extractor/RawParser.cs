@@ -46,6 +46,11 @@ namespace GPExtractor
                 {
                     RawColorBlock block;
 
+                    if (offset >= imageBytes.Length - 1)
+                    {
+                        break;
+                    }
+
                     if (bit == 0)
                     {
                         block = ProcessSinglepixelBlock(imageBytes, offset);
@@ -169,20 +174,26 @@ namespace GPExtractor
                     continue;
                 }
 
-                if (blockType == 0xA1)
+                if (blockType >> 4 == 0xA)
                 {
                     //A1 60 => offset 0, width 22 (0x16)
-                    var nextByte = imageBytes[offset + 1];
+                    var numberOfSubBlocks = blockType & 0x0f;
 
-                    var a = (nextByte >> 4) | (1 << 4);
-                    var b = (nextByte & 0x0f);
+                    var tempCollection = new List<RawShapeBlock>();
 
-                    rawShapeBlocksGroups.Add(new RawShapeBlocksGroup(new List<RawShapeBlock>
+                    for (int i = 0; i < numberOfSubBlocks; i++)
                     {
-                        new RawShapeBlock(b,a)
-                    }, rowIndex++));
+                        var nextByte = imageBytes[offset + 1];
+                        var a = (nextByte >> 4) | (1 << 4);
+                        var b = (nextByte & 0x0f);
 
-                    offset += 2;
+                        tempCollection.Add(new RawShapeBlock(b, a));
+                        offset++;
+
+                    }
+                    offset++;
+                    rawShapeBlocksGroups.Add(new RawShapeBlocksGroup(tempCollection, rowIndex++));
+
                     continue;
                 }
 
@@ -272,7 +283,7 @@ namespace GPExtractor
                 var emptyCollection = new List<RawShapeBlock>();
 
                 for (int k = 0; k < blockType * 2; k += 2)
-                {
+                { 
                     emptyCollection.Add(new RawShapeBlock(
                         offsetx: imageBytes[offset + k + 1],
                         length: imageBytes[offset + k + 2]));
