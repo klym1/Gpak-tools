@@ -36,6 +36,12 @@ namespace GPExtractor
                 offset++;
                 globalOffset++;
 
+                //last block might not be full (less than 8 elems)
+                if (offset >= imageBytes.Length)
+                {
+                    break;
+                }
+
                 foreach (var bit in PrecalculatedValues.SecondPartBlockBits[blockStartByte])
                 {
                     RawColorBlock block;
@@ -54,12 +60,6 @@ namespace GPExtractor
                     }
 
                     tempByteCollection.Add(block);
-
-                    //last block might not be full (less than 8 elems)
-                    if (offset > imageBytes.Length - 1)
-                    {
-                        break;
-                    }
                 }
             }
 
@@ -112,6 +112,8 @@ namespace GPExtractor
            {
                 int blockType = imageBytes[offset];
 
+                Debug.WriteLine("{0:X2}", blockType);
+
                 collectionOfBlockTypes.Add((byte)blockType);
 
                 if (blockType == 0x00)//new row
@@ -127,7 +129,8 @@ namespace GPExtractor
 
                 if (blockType == 0xE1) // magic number. 1-byte coded block. Investigate other similar cases
                 {
-                    //E1  4B  E1  C7  => 1 27 20 1 23 28
+                    //E1  4B  E1  C7  => 1 27 20 1 23 28 // [1B 14] [17 1C]
+
 
                     var nextByte = imageBytes[offset + 1];
                     var a = (nextByte >> 4) | (1 << 4);
@@ -154,7 +157,7 @@ namespace GPExtractor
                     {
                         var nextByte = imageBytes[offset + 1];
                         var a = (nextByte >> 4);
-                        var b = (1 << 4) | (0x0f & nextByte);
+                        var b = (nextByte & 0x0f) | (1 << 4);
 
                         tempCollection.Add(new RawShapeBlock(b,a));
                         offset++;
@@ -172,7 +175,7 @@ namespace GPExtractor
                     var nextByte = imageBytes[offset + 1];
 
                     var a = (nextByte >> 4) | (1 << 4);
-                    var b = (0x0f & nextByte);
+                    var b = (nextByte & 0x0f);
 
                     rawShapeBlocksGroups.Add(new RawShapeBlocksGroup(new List<RawShapeBlock>
                     {
@@ -180,6 +183,31 @@ namespace GPExtractor
                     }, rowIndex++));
 
                     offset += 2;
+                    continue;
+                }
+
+               //new
+                if (blockType >> 4 == 0x7)
+                {
+                    var numberOfSubBlocks = blockType & 0x0f;
+
+                    //C2 11 15 => [offset 0x11, width 1], [offset 15, width]
+
+                    var tempCollection = new List<RawShapeBlock>();
+
+                    for (int i = 0; i < numberOfSubBlocks; i++)
+                    {
+                        var nextByte = imageBytes[offset + 1];
+                        var a = ((nextByte >> 4) | (0x1 << 4)) << 1;
+                        var b = ((nextByte & 0xf) | (0x1 << 4)) << 1;
+
+                        tempCollection.Add(new RawShapeBlock(b, a));
+                        offset++;
+
+                    }
+                    offset++;
+                    rawShapeBlocksGroups.Add(new RawShapeBlocksGroup(tempCollection, rowIndex++));
+
                     continue;
                 }
 
@@ -206,8 +234,34 @@ namespace GPExtractor
                     continue;
                 }
 
+                //new
+                if (blockType >> 4 == 0x9)
+                {
+                    var numberOfSubBlocks = blockType & 0x0f;
+
+                    var tempCollection = new List<RawShapeBlock>();
+
+                    for (var i = 0; i < numberOfSubBlocks; i++)
+                    {
+                        var nextByte = imageBytes[offset + 1];
+
+                        var b = (nextByte >> 4);
+                        var a = (0x0f & nextByte);
+
+                        tempCollection.Add(new RawShapeBlock(b, a));
+                        offset++;
+                    }
+
+                    rawShapeBlocksGroups.Add(new RawShapeBlocksGroup(tempCollection, rowIndex++));
+
+                    offset++;
+                    continue;
+                }
+
+
                if (blockType > 111)
                 {
+                   //break;
                     Helper.DumpArray(imageBytes, offset - 5, 128);
                     throw new Exception("wrong block type. Dump:\n ");
                 }
@@ -233,7 +287,7 @@ namespace GPExtractor
 
             PrintBlocksSTatistics(blockStatistics);
 
-            return rawShapeBlocksGroups.MergeBlocks().ToArray();
+            return rawShapeBlocksGroups.ToArray();
         }
 
         private void PrintBlocksSTatistics(Dictionary<byte, int> blockStatistics)

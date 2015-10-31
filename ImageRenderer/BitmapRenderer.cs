@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms.VisualStyles;
+using Shared;
 using Types;
 
 namespace ImageRenderer
