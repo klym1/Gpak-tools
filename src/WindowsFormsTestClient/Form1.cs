@@ -18,7 +18,7 @@ namespace WindowsFormsTestClient
     {
         private void Do()
         {
-            var filePath = @"c:\GpArch\gp\hh.gp";
+            var filePath = @"..\..\..\..\gp\test.gp";
 
             var imagePaletteBytes = new Extractor().GetPaletteBytes(filePath);
             var extractResult = new Extractor().GetImagesFromOutput(filePath).ToList();
@@ -35,6 +35,8 @@ namespace WindowsFormsTestClient
 
             var nationColorOffset = NationColorOffset.Blue;
 
+            //Watch(extractResult);
+
             var bitmapList = DrawImage(extractResult, nationColorOffset, extractResult.Count, rawParser, renderer, imagePaletteColors, colorCollection);
 
             var itemsForListBox = Enumerable.Range(0, bitmapList.Count).Select(it => it.ToString()).ToList();
@@ -50,7 +52,7 @@ namespace WindowsFormsTestClient
             listBox1.ClearSelected();
             listBox1.SelectedIndex = 0;
         }
-
+        
         private IList<Bitmap> DrawImage(IList<ImageLayout> extractResult, NationColorOffset nationColorOffset, int numberOfImages, RawParser rawParser, IRenderer renderer, Color[] imagePaletteArray,
             Color[] generalPalleteArray)
         {
@@ -59,7 +61,16 @@ namespace WindowsFormsTestClient
                 {
                     var bitMapCollection = new Collection<Bitmap>();
 
-                    for (int i = 0; i < numberOfImages; i++)
+                    //var idsForProcessing = new[] { 0 };
+                    var idsForProcessing = Enumerable.Range(1, numberOfImages - 1).ToList();
+
+                    foreach (var imageNumber in idsForProcessing)
+                    {
+                        Debug.WriteLine("***************************** " + imageNumber);
+                        Watch(extractResult[imageNumber].PartialLayouts.ToList());
+                    }
+                    
+                    foreach (int i in idsForProcessing)
                     {
                         Helper.WithMeasurement(() =>
                         {
@@ -81,6 +92,16 @@ namespace WindowsFormsTestClient
                 name: "Run",
                 onFinish: elapsed => richTextBox1.Text += String.Format("Finished in {0:c}\n ", elapsed));
                 
+        }
+
+        private void Watch(List<ImageLayoutInfo> extractResult)
+        {
+            var headerBytes = extractResult.Select(it => it).ToList();
+
+            foreach (var imageLayoutInfo in headerBytes)
+            {
+                Helper.DumpArray(imageLayoutInfo.HeaderBytes);
+            }
         }
 
         public Form1()
