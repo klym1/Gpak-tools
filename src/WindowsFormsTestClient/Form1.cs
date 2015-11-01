@@ -18,14 +18,14 @@ namespace WindowsFormsTestClient
     {
         private void Do()
         {
-            var filePath = @"..\..\..\..\gp\test.gp";
+            var filePath = @"../../../../gp/test.gp";
 
             var imagePaletteBytes = new Extractor().GetPaletteBytes(filePath);
             var extractResult = new Extractor().GetImagesFromOutput(filePath).ToList();
             
             IRenderer renderer = new BitmapRenderer();
             
-            var paletteBytes = File.ReadAllBytes(@"..\..\..\..\palette\0\agew_1.pal");
+            var paletteBytes = File.ReadAllBytes(@"../../../../palette/0/agew_1.pal");
 
             var rawParser = new RawParser();
 
