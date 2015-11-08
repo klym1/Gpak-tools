@@ -117,7 +117,7 @@ namespace GPExtractor
            {
                 int blockType = imageBytes[offset];
 
-                //Debug.WriteLine("{0:X2}", blockType);
+                Debug.WriteLine("{0:X2}", blockType);
 
                 collectionOfBlockTypes.Add((byte)blockType);
 
@@ -136,18 +136,13 @@ namespace GPExtractor
                 {
                     var numberOfSubBlocks = blockType & 0x0f;
                     var tempCollection = new List<RawShapeBlock>();
-
+                    
                     for (int i = 0; i < numberOfSubBlocks; i++)
                     {
                         var nextByte = imageBytes[offset + 1];
                         var a = (nextByte >> 4) | (1 << 4);
                         var b = (nextByte & 0xf) | (1 << 4);
-
-                        rawShapeBlocksGroups.Add(new RawShapeBlocksGroup(new List<RawShapeBlock>
-                        {
-                            new RawShapeBlock(b, a)
-                        }, rowIndex++));
-
+                        
                         tempCollection.Add(new RawShapeBlock(b, a));
                         offset++;
                     }
