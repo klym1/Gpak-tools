@@ -117,7 +117,7 @@ namespace GPExtractor
            {
                 int blockType = imageBytes[offset];
 
-                Debug.WriteLine("{0:X2}", blockType);
+                //Debug.WriteLine("{0:X2}", blockType);
 
                 collectionOfBlockTypes.Add((byte)blockType);
 
@@ -132,21 +132,29 @@ namespace GPExtractor
                     continue;
                 }
 
-                if (blockType == 0xE1) // magic number. 1-byte coded block. Investigate other similar cases
+                if (blockType >> 4 == 0xE)
                 {
-                    //E1  4B  E1  C7  => 1 27 20 1 23 28 // [1B 14] [17 1C]
+                    var numberOfSubBlocks = blockType & 0x0f;
+                    var tempCollection = new List<RawShapeBlock>();
 
-
-                    var nextByte = imageBytes[offset + 1];
-                    var a = (nextByte >> 4) | (1 << 4);
-                    var b = (nextByte & 0xf) | (1 << 4);
-
-                    rawShapeBlocksGroups.Add(new RawShapeBlocksGroup(new List<RawShapeBlock>
+                    for (int i = 0; i < numberOfSubBlocks; i++)
                     {
-                        new RawShapeBlock(b,a)
-                    }, rowIndex++));
+                        var nextByte = imageBytes[offset + 1];
+                        var a = (nextByte >> 4) | (1 << 4);
+                        var b = (nextByte & 0xf) | (1 << 4);
 
-                    offset += 2;
+                        rawShapeBlocksGroups.Add(new RawShapeBlocksGroup(new List<RawShapeBlock>
+                        {
+                            new RawShapeBlock(b, a)
+                        }, rowIndex++));
+
+                        tempCollection.Add(new RawShapeBlock(b, a));
+                        offset++;
+                    }
+
+                    offset++;
+                    rawShapeBlocksGroups.Add(new RawShapeBlocksGroup(tempCollection, rowIndex++));
+
                     continue;
                 }
 
