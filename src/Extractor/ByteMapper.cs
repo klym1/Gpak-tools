@@ -7,12 +7,12 @@ namespace GPExtractor
 {
     public interface IBinaryMapper
     {
-        T GetMappedObject<T>(byte[] bytes, int initialOffset) where T : class, new();
+        T GetMappedObject<T>(byte[] bytes, uint initialOffset) where T : class, new();
     }
     
     public class BinaryManualMapper : IBinaryMapper
     {
-        public T GetMappedObject<T>(byte[] bytes, int initialOffset) where T : class,new()
+        public T GetMappedObject<T>(byte[] bytes, uint initialOffset) where T : class,new()
         {
             if (typeof (T) == typeof (ImageLayoutInfo))
             {
@@ -41,7 +41,7 @@ namespace GPExtractor
 
     public class BinaryAutoMapper : IBinaryMapper
     {
-        public T GetMappedObject<T>(byte[] bytes, int initialOffset) where T: class, new()
+        public T GetMappedObject<T>(byte[] bytes, uint initialOffset) where T: class, new()
         {
             var emptyObject = Activator.CreateInstance<T>();
 

@@ -104,12 +104,12 @@ namespace GPExtractor
             return new RawColorBlock(RawColorBlockType.FourPixel, @byte);
         }
 
-       public RawShapeBlocksGroup[] ParseRawBlockGroups(byte[] imageBytes, short numberOfRows, out int offset)
+       public RawShapeBlocksGroup[] ParseRawBlockGroups(byte[] imageBytes, short numberOfRows)
         {
             var rawShapeBlocksGroups = new Collection<RawShapeBlocksGroup>();
 
            int rowIndex = 0;
-           offset = 0;
+           var offset = 0;
 
            var collectionOfBlockTypes = new Collection<byte>();
 

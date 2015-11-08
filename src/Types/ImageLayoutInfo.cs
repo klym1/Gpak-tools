@@ -34,7 +34,7 @@ namespace Types
         public byte[] HeaderBytes { get; set; }
         public byte[] Bytes { get; set; }
         public long GlobalByteOffsetEnd { get; set; }
-        public int GlobalByteOffsetStart { get; set; }
+        public uint GlobalByteOffsetStart { get; set; }
         public int ColorBlocksSectionOffset { get; set; }
 
         //public ImageLayoutInfo ChildImageLayoutInfo { get; set; }

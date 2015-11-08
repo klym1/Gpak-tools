@@ -32,7 +32,6 @@ namespace ImageRenderer
             
             foreach (var layout in partialLayouts)
             {
-                int offset = 0;
 
                 ImageLayoutInfo layout1 = layout;
 
@@ -40,12 +39,12 @@ namespace ImageRenderer
 
                 var firstPartBlocks = Helper.WithMeasurement(() =>
                 {
-                    var rawFirstPartBlocks = rawParser.ParseRawBlockGroups(layout1.Bytes, layout1.NumberOfRows, out offset);
+                    var rawFirstPartBlocks = rawParser.ParseRawBlockGroups(layout1.Bytes, layout1.NumberOfRows);
                     return rawFirstPartBlocks.ConvertToAbsoluteCoordinatesBlocks();
 
                 }, "firstPartBlocks");
 
-                var secondPartBlocks = Helper.WithMeasurement(() => rawParser.GetRawColorBlocks(layout1.Bytes, layout1.ColorBlocksSectionOffset, (int)layout1.GlobalByteOffsetStart + offset + layout1.HeaderBytes.Length, layout1.IsNationColorImage), "secondPartBlocks");
+                var secondPartBlocks = Helper.WithMeasurement(() => rawParser.GetRawColorBlocks(layout1.Bytes, layout1.ColorBlocksSectionOffset, (int)layout1.GlobalByteOffsetStart + layout1.ColorBlocksSectionOffset + layout1.HeaderBytes.Length, layout1.IsNationColorImage), "secondPartBlocks");
 
                 Helper.WithMeasurement(() =>
                 {
