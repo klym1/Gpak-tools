@@ -1,8 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Windows.Forms;
 using GPExtractor;
 using Types;
+using ImageLayout = GPExtractor.ImageLayout;
 
 namespace ImageRenderer
 {
@@ -42,7 +45,7 @@ namespace ImageRenderer
 
                 }, "firstPartBlocks");
 
-                var secondPartBlocks = Helper.WithMeasurement(() => rawParser.GetRawColorBlocks(layout1.Bytes, offset, (int)layout1.GlobalByteOffsetStart + offset + layout1.HeaderBytes.Length, layout1.IsNationColorImage), "secondPartBlocks");
+                var secondPartBlocks = Helper.WithMeasurement(() => rawParser.GetRawColorBlocks(layout1.Bytes, layout1.ColorBlocksSectionOffset, (int)layout1.GlobalByteOffsetStart + offset + layout1.HeaderBytes.Length, layout1.IsNationColorImage), "secondPartBlocks");
 
                 Helper.WithMeasurement(() =>
                 {

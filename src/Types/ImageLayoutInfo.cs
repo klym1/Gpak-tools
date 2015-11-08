@@ -4,6 +4,9 @@ namespace Types
 {
     public class ImageLayoutInfo : IEquatable<ImageLayoutInfo>
     {
+        [ByteLayout(offset: 0)]
+        public Int32 newImageOffset { get; set; }
+
         [ByteLayout(offset: 4)]
         public Int16 offsetX { get; set; }
 
@@ -15,23 +18,24 @@ namespace Types
         
         [ByteLayout(offset: 10)]
         public Int16 Height { get; set; }
-        
-        [ByteLayout(offset: 21)]
-        public Int16 NumberOfRows { get; set; }
-        
-        [ByteLayout(offset: 0)]
-        public Int32 newImageOffset { get; set; }
-        
+
         [ByteLayout(offset: 12)]
         public Int32 EndOfHeader { get; set; }
+
+        [ByteLayout(offset: 21)]
+        public Int16 NumberOfRows { get; set; }
         
         [ByteLayout(offset: 16)]
         public bool IsNationColorImage { get; set; }
 
+       // [ByteLayout(offset: 18)]
+       // public UInt16 ColorBlocksOffset2 { get; set; }
+
         public byte[] HeaderBytes { get; set; }
         public byte[] Bytes { get; set; }
         public long GlobalByteOffsetEnd { get; set; }
-        public uint GlobalByteOffsetStart { get; set; }
+        public int GlobalByteOffsetStart { get; set; }
+        public int ColorBlocksSectionOffset { get; set; }
 
         //public ImageLayoutInfo ChildImageLayoutInfo { get; set; }
 

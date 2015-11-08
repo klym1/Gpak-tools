@@ -21,11 +21,16 @@ namespace GPExtractor
             return IterateBitsLeftToRight(value).Reverse();
         }
 
-        public static void DumpArray(byte [] bytes, int offset = 0, int count = 0)
+        public static void DumpArray(byte[] bytes, int offset = 0, int count = 0)
+        {
+           DumpArray(bytes, (uint)offset, count);
+        }
+
+        public static void  DumpArray(byte [] bytes, uint offset = 0, int count = 0)
         {
             var str = String.Empty;
 
-            for (var k = 0; k < (count == 0 ? bytes.Length-offset : count); k++)
+            for (var k = 0; k < (count == 0 ? bytes.Length - offset : count) && (offset + k) < bytes.Length; k++)
             {
                 str += String.Format("{0:X2} ", bytes[offset + k]);
             }

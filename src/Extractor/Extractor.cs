@@ -47,6 +47,8 @@ namespace GPExtractor
                 layoutInfo.GlobalByteOffsetEnd = bytes.Length - 1;
             }
 
+            layoutInfo.ColorBlocksSectionOffset = BitConverter.ToInt16(new[] { layoutInfo.HeaderBytes[17], (byte)(0x0f & layoutInfo.HeaderBytes[18]) }, 0) - 24; // This makes me crazy! But this works.
+
             return layoutInfo;
         }
 
