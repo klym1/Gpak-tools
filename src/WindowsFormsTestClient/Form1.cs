@@ -100,7 +100,7 @@ namespace WindowsFormsTestClient
 
             foreach (var imageLayoutInfo in headerBytes)
             {
-                Helper.DumpArray(imageLayoutInfo.HeaderBytes);
+                Helper.DumpArray(imageLayoutInfo.HeaderBytes, (int)0);
             }
         }
 
