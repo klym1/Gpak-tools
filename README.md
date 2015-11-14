@@ -1,5 +1,7 @@
 # GPAK tools
 
+[![Join the chat at https://gitter.im/klym1/Gpak-tools](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/klym1/Gpak-tools?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 *this project is still under development*
 
 [![Build Status](https://travis-ci.org/klym1/Gpak-tools.svg)](https://travis-ci.org/klym1/Gpak-tools)
