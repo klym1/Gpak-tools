@@ -19,6 +19,8 @@
         <Button x:Name="PreviousButton" Content="◀" ToolTip.Tip="Previous frame" />
         <Button x:Name="PlayButton" Content="▶ Play" MinWidth="84" ToolTip.Tip="Play or pause the animation" />
         <Button x:Name="NextButton" Content="▶|" ToolTip.Tip="Next frame" />
+        <TextBlock x:Name="FrameText" VerticalAlignment="Center" MinWidth="64"
+                   ToolTip.Tip="Frame (or, by direction, pose) shown / last one" />
       </StackPanel>
 
       <StackPanel Orientation="Horizontal" Spacing="8">
@@ -60,24 +62,15 @@
       </StackPanel>
     </WrapPanel>
 
-    <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="16">
-
-      <!-- Rendered image at its native size (no scaling). Frames share the same origin, so they line up. -->
-      <ScrollViewer Grid.Column="0"
-                    HorizontalScrollBarVisibility="Auto"
-                    VerticalScrollBarVisibility="Auto">
-        <Image x:Name="ImageView"
-               Stretch="None"
-               HorizontalAlignment="Left"
-               VerticalAlignment="Top" />
-      </ScrollViewer>
-
-      <Grid Grid.Column="1" RowDefinitions="Auto,*" Width="126" RowSpacing="6">
-        <TextBlock Grid.Row="0" Text="Frames" FontWeight="SemiBold" />
-        <ListBox Grid.Row="1" x:Name="ImageList" />
-      </Grid>
-
-    </Grid>
+    <!-- Rendered image at its native size (no scaling). Frames share the same origin, so they line up. -->
+    <ScrollViewer Grid.Row="1"
+                  HorizontalScrollBarVisibility="Auto"
+                  VerticalScrollBarVisibility="Auto">
+      <Image x:Name="ImageView"
+             Stretch="None"
+             HorizontalAlignment="Left"
+             VerticalAlignment="Top" />
+    </ScrollViewer>
 
     <!-- Loading progress, errors and skipped parts -->
     <TextBlock Grid.Row="2" x:Name="StatusText" TextWrapping="Wrap" Foreground="Gray" />

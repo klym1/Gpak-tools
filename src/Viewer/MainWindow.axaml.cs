@@ -31,6 +31,7 @@ namespace Viewer
         private readonly Palette _palette = Palette.Load(PaletteFile);
         private IReadOnlyList<RenderedImage> _images = Array.Empty<RenderedImage>();
         private GpFile _file;
+        private int _current = -1;
         private GpDirections _directions;
         private bool _updatingControls;
         private int _renderVersion;
@@ -46,7 +47,10 @@ namespace Viewer
         public bool IsPlaying => _timer.IsEnabled;
 
         /// <summary>Number of the frame (or, by direction, the pose) currently shown, or -1.</summary>
-        public int CurrentFrame => (ImageList.SelectedItem as RenderedImage)?.Number ?? -1;
+        public int CurrentFrame => _current >= 0 ? _images[_current].Number : -1;
+
+        /// <summary>Number of frames (or, by direction, poses) that can be shown.</summary>
+        public int FrameCount => _images.Count;
 
         /// <summary>Directions of the current file, or null if it has none.</summary>
         public GpDirections Directions => _directions;
@@ -79,11 +83,6 @@ namespace Viewer
             {
                 DirectionBox.IsEnabled = ByDirectionBox.IsChecked == true;
                 Rerender(resetRange: true);
-            };
-
-            ImageList.SelectionChanged += (sender, args) =>
-            {
-                ImageView.Source = (ImageList.SelectedItem as RenderedImage)?.Bitmap;
             };
 
             OpenButton.Click += async (sender, args) => await PickFileAsync();
@@ -131,6 +130,14 @@ namespace Viewer
         {
             ByDirectionBox.IsChecked = byDirection;
             return RenderingCompleted;
+        }
+
+        /// <summary>Shows the image at a position (0 to <see cref="FrameCount"/> - 1), or nothing for -1.</summary>
+        public void ShowFrameAt(int index)
+        {
+            _current = index >= 0 && index < _images.Count ? index : -1;
+            ImageView.Source = _current >= 0 ? _images[_current].Bitmap : null;
+            FrameText.Text = _current >= 0 ? (ShowsDirection ? "Pose " : "Frame ") + _images[_current].Number + " / " + _images[^1].Number : "";
         }
 
         public void Play()
@@ -183,13 +190,12 @@ namespace Viewer
                 return;
             }
 
-            var position = loop.IndexOf(ImageList.SelectedIndex);
+            var position = loop.IndexOf(_current);
             position = position < 0
                 ? (direction >= 0 ? 0 : loop.Count - 1)
                 : ((position + direction) % loop.Count + loop.Count) % loop.Count;
 
-            ImageList.SelectedIndex = loop[position];
-            ImageList.ScrollIntoView(loop[position]);
+            ShowFrameAt(loop[position]);
         }
 
         private IBrush SwatchOf(NationColorOffset color)
@@ -380,7 +386,6 @@ namespace Viewer
 
             var shownFrame = CurrentFrame;
             _images = images;
-            ImageList.ItemsSource = images;
 
             Title = "GP Viewer - " + Path.GetFileName(CurrentFile);
             FileNameText.Text = Path.GetFileName(CurrentFile) + (_directions == null
@@ -390,7 +395,7 @@ namespace Viewer
             if (!resetRange)
             {
                 var index = images.FindIndex(image => image.Number == shownFrame);
-                ImageList.SelectedIndex = index >= 0 ? index : (images.Count > 0 ? 0 : -1);
+                ShowFrameAt(index >= 0 ? index : 0);
                 return;
             }
 
@@ -400,7 +405,7 @@ namespace Viewer
             FromFrame.Value = 0;
             ToFrame.Value = last;
 
-            ImageList.SelectedIndex = images.Count > 0 ? 0 : -1;
+            ShowFrameAt(0);
         }
 
         /// <summary>

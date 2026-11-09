@@ -39,13 +39,14 @@ namespace ViewerTests
             window.Show();
             await window.RenderingCompleted;
 
-            var list = window.FindControl<ListBox>("ImageList");
             var image = window.FindControl<Image>("ImageView");
             var status = window.FindControl<TextBlock>("StatusText");
 
             Assert.That(window.Title, Is.EqualTo("GP Viewer - test.gp"));
-            Assert.That(list.ItemCount, Is.EqualTo(15));
-            Assert.That(list.SelectedIndex, Is.EqualTo(0));
+            Assert.That(window.FrameCount, Is.EqualTo(15));
+            Assert.That(window.CurrentFrame, Is.EqualTo(0));
+            Assert.That(window.FindControl<TextBlock>("FrameText").Text, Is.EqualTo("Frame 0 / 14"));
+            Assert.That(window.FindControl<ListBox>("ImageList"), Is.Null, "the frame list is gone");
             Assert.That(status.Text, Is.Empty, "every frame rendered");
             Assert.That(window.FindControl<TextBox>("LogBox"), Is.Null, "the render log is gone");
 
@@ -53,12 +54,12 @@ namespace ViewerTests
             Assert.That(HashOf(bitmap), Is.EqualTo(ExpectedFirstImage));
 
             // Selecting another entry shows that image, on the same canvas size as the largest frame.
-            list.SelectedIndex = 9;
+            window.ShowFrameAt(9);
             Assert.That(((Bitmap)image.Source).PixelSize, Is.EqualTo(new PixelSize(576, 467)));
             Assert.That(HashOf((WriteableBitmap)image.Source), Is.Not.EqualTo(ExpectedFirstImage));
 
             // Keep a screenshot of the window as a test artifact.
-            list.SelectedIndex = 1;
+            window.ShowFrameAt(1);
             var frame = window.CaptureRenderedFrame();
             Assert.That(frame, Is.Not.Null);
             var screenshot = Path.Combine(TestContext.CurrentContext.WorkDirectory, "viewer.png");
@@ -76,7 +77,7 @@ namespace ViewerTests
             await window.RenderingCompleted;
 
             Assert.That(window.FindControl<TextBlock>("StatusText").Text, Does.StartWith("Failed to open"));
-            Assert.That(window.FindControl<ListBox>("ImageList").ItemCount, Is.EqualTo(0));
+            Assert.That(window.FrameCount, Is.EqualTo(0));
 
             window.Close();
         }
@@ -175,7 +176,6 @@ namespace ViewerTests
             window.Show();
             await window.RenderingCompleted;
 
-            var list = window.FindControl<ListBox>("ImageList");
             var image = window.FindControl<Image>("ImageView");
             var colors = window.FindControl<ComboBox>("PlayerColorBox");
 
@@ -184,7 +184,7 @@ namespace ViewerTests
 
             // Frame 9 of test.gp has player color parts.
             window.FindControl<NumericUpDown>("FromFrame").Value = 8;
-            list.SelectedIndex = 9;
+            window.ShowFrameAt(9);
             var blue = HashOf((WriteableBitmap)image.Source);
             window.Play();
 
@@ -199,7 +199,7 @@ namespace ViewerTests
             Assert.That(frame, Is.InRange(8, 14), "still within the loop");
 
             await window.SetPlayerColor(NationColorOffset.Blue);
-            list.SelectedIndex = 9;
+            window.ShowFrameAt(9);
             Assert.That(HashOf((WriteableBitmap)image.Source), Is.EqualTo(blue));
 
             await window.SetPlayerColor(NationColorOffset.Red);
@@ -224,14 +224,14 @@ namespace ViewerTests
                 window.Show();
                 await window.RenderingCompleted;
 
-                var list = window.FindControl<ListBox>("ImageList");
-                var image = window.FindControl<Image>("ImageView");
+                    var image = window.FindControl<Image>("ImageView");
 
                 Assert.That(window.FindControl<StackPanel>("DirectionPanel").IsVisible, Is.True);
                 Assert.That(window.FindControl<ComboBox>("DirectionBox").ItemCount, Is.EqualTo(16));
                 Assert.That(window.FindControl<TextBlock>("FileNameText").Text, Does.EndWith("(3 poses × 16 directions)"));
                 Assert.That(window.Directions.Source, Is.EqualTo(GpDirectionsSource.Descriptor));
-                Assert.That(list.ItemCount, Is.EqualTo(3), "one entry per pose");
+                Assert.That(window.FrameCount, Is.EqualTo(3), "one image per pose");
+                Assert.That(window.FindControl<TextBlock>("FrameText").Text, Is.EqualTo("Pose 0 / 2"));
                 Assert.That(window.CurrentDirection, Is.EqualTo(0));
 
                 // The canvas is centred on the anchor (x = 20 of a 40 pixel wide canvas).
@@ -245,7 +245,7 @@ namespace ViewerTests
                 window.Pause();
 
                 // West is stored: 5 pixels to the right of the anchor.
-                list.SelectedIndex = 1;
+                window.ShowFrameAt(1);
                 var pose = window.CurrentFrame;
                 Assert.That(DrawnColumns(image), Is.EqualTo(new[] { 20, 21, 22, 23, 24 }));
 
@@ -259,7 +259,7 @@ namespace ViewerTests
 
                 // All frames in file order.
                 await window.SetShowByDirection(false);
-                Assert.That(list.ItemCount, Is.EqualTo(27));
+                Assert.That(window.FrameCount, Is.EqualTo(27));
                 Assert.That(window.CurrentDirection, Is.EqualTo(-1));
                 Assert.That(window.FindControl<NumericUpDown>("ToFrame").Value, Is.EqualTo(26));
 
