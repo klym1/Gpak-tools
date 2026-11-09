@@ -1,11 +1,7 @@
 <Project>
   <PropertyGroup>
-    <!-- Cross-platform by default. Windows-only projects (WinForms client, Shared)
-         override this with net10.0-windows. -->
+    <!-- All projects are cross-platform (Windows, Linux, macOS). -->
     <TargetFramework>net10.0</TargetFramework>
-    <!-- Lets the Windows-only projects compile on Linux/macOS too, so the whole
-         solution builds everywhere (they still only run on Windows). -->
-    <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <LangVersion>latest</LangVersion>
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>disable</Nullable>

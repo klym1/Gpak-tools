@@ -22,14 +22,20 @@ Next goal is to improve code quality, improve performance and make usable for re
 
 ## Dev/Run
 
-Requires the [.NET 10 SDK](https://dotnet.microsoft.com/download). Works on Windows, Linux and macOS.
+Requires the [.NET 10 SDK](https://dotnet.microsoft.com/download). Everything works on Windows, Linux and macOS.
 
 ```
 dotnet build src/GPExtractor.sln
 dotnet test src/GPExtractor.sln
 ```
 
-Convert every `.gp` file in a folder to PNG (any OS):
+View all images of a `.gp` file (defaults to `gp/test.gp`):
+
+```
+dotnet run --project src/Viewer -- [gp-file]
+```
+
+Convert every `.gp` file in a folder to PNG:
 
 ```
 dotnet run --project src/ConsoleBatchConverter -- <gp-folder> <png-output-folder> [palette-file]
@@ -37,14 +43,19 @@ dotnet run --project src/ConsoleBatchConverter -- <gp-folder> <png-output-folder
 
 The palette defaults to `palette/0/agew_1.pal`.
 
-| Project | Platforms |
+| Project | Purpose |
 |---|---|
-| `Types`, `GPExtractor` (parsing), `ImageRenderer` (rendering + PNG output), `ConsoleBatchConverter`, `UnitTests` | Windows, Linux, macOS |
-| `WindowsFormsTestClient` (image viewer), `Shared` (GDI+ bitmap helpers) | Windows only (they still compile on other OSes) |
+| `Types`, `GPExtractor` | GP file parsing |
+| `ImageRenderer` | Rendering to an in-memory pixel buffer, built-in PNG encoder |
+| `ConsoleBatchConverter` | Batch `.gp` → PNG conversion |
+| `Viewer` | Desktop image viewer ([Avalonia](https://avaloniaui.net/)) |
+| `UnitTests`, `ViewerTests` | Tests; `ViewerTests` run the viewer headlessly |
 
-The core library has no native or imaging dependencies: images are rendered into an in-memory pixel buffer and written by a small built-in PNG encoder. The test suite includes a pixel-exact regression test against output of the original GDI+ renderer.
+The core library and converter have no native or imaging dependencies. The tests include pixel-exact regression checks against the output of the original GDI+ renderer.
 
-NuGet dependencies (NUnit, FluentAssertions, System.Drawing.Common for the Windows-only projects) are restored automatically on build.
+On Linux the viewer (and `ViewerTests`) need fontconfig (`libfontconfig1`), which desktop distributions already include.
+
+NuGet dependencies (NUnit, FluentAssertions, Avalonia) are restored automatically on build.
 
 ## Examples
 

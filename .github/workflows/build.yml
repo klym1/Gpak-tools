@@ -17,7 +17,9 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
-      # The Windows-only projects (WinForms client, Shared) still compile
-      # elsewhere thanks to EnableWindowsTargeting in Directory.Build.props.
+      # Avalonia's Skia renderer needs fontconfig on Linux (usually preinstalled).
+      - if: runner.os == 'Linux'
+        run: sudo apt-get install -y libfontconfig1
       - run: dotnet build src/GPExtractor.sln -c Release
+      # ViewerTests run the Avalonia viewer headlessly, so no display is needed.
       - run: dotnet test src/GPExtractor.sln -c Release --no-build

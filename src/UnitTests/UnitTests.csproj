@@ -7,7 +7,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
-    <PackageReference Include="NUnit" Version="4.4.0" />
+    <PackageReference Include="NUnit" Version="4.5.1" />
     <PackageReference Include="NUnit3TestAdapter" Version="5.2.0" />
     <!-- 7.x is the last Apache-2.0 licensed FluentAssertions line -->
     <PackageReference Include="FluentAssertions" Version="7.2.0" />

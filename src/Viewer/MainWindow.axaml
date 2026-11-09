@@ -1,0 +1,32 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Viewer.MainWindow"
+        Title="GP Viewer"
+        Width="1112" Height="578">
+
+  <Grid ColumnDefinitions="*,Auto" Margin="12" ColumnSpacing="16">
+
+    <!-- Rendered image at its native size (no scaling) -->
+    <ScrollViewer Grid.Column="0"
+                  HorizontalScrollBarVisibility="Auto"
+                  VerticalScrollBarVisibility="Auto">
+      <Image x:Name="ImageView"
+             Stretch="None"
+             HorizontalAlignment="Left"
+             VerticalAlignment="Top" />
+    </ScrollViewer>
+
+    <Grid Grid.Column="1" RowDefinitions="Auto,200,Auto,*" Width="444" RowSpacing="6">
+      <TextBlock Grid.Row="0" Text="Images" FontWeight="SemiBold" />
+      <ListBox Grid.Row="1" x:Name="ImageList" Width="126" HorizontalAlignment="Left" />
+      <TextBlock Grid.Row="2" Text="Render times" FontWeight="SemiBold" Margin="0,12,0,0" />
+      <TextBox Grid.Row="3" x:Name="LogBox"
+               IsReadOnly="True"
+               AcceptsReturn="True"
+               TextWrapping="NoWrap"
+               FontFamily="Cascadia Mono, Consolas, Menlo, DejaVu Sans Mono, Liberation Mono, monospace"
+               FontSize="14" />
+    </Grid>
+
+  </Grid>
+</Window>
