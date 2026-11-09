@@ -9,6 +9,7 @@ using System.Timers;
 using System.Windows.Forms;
 using GPExtractor;
 using ImageRenderer;
+using Shared;
 using Types;
 using ImageLayout = GPExtractor.ImageLayout;
 
@@ -76,7 +77,7 @@ namespace WindowsFormsTestClient
                         {
                             try
                             {
-                                var bitMap = new Runner().Run(extractResult, nationColorOffset, i, rawParser, renderer, imagePaletteArray, generalPalleteArray);
+                                var bitMap = new Runner().Run(extractResult, nationColorOffset, i, rawParser, renderer, imagePaletteArray, generalPalleteArray).ToBitmap();
                                 bitMapCollection.Add(bitMap);
                             }
                             catch (Exception ex)

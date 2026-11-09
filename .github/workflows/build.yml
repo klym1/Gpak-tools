@@ -7,12 +7,17 @@ on:
 
 jobs:
   build:
-    # System.Drawing / WinForms require Windows on modern .NET
-    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
+      # The Windows-only projects (WinForms client, Shared) still compile
+      # elsewhere thanks to EnableWindowsTargeting in Directory.Build.props.
       - run: dotnet build src/GPExtractor.sln -c Release
       - run: dotnet test src/GPExtractor.sln -c Release --no-build

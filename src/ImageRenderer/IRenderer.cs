@@ -1,12 +1,10 @@
-﻿using System.Collections.Generic;
-using System.Drawing;
-using Types;
+﻿using Types;
 
 namespace ImageRenderer
 {
     public interface IRenderer
     {
-        void SetupCanvas(Bitmap bitmap);
-        void RenderImage(Bitmap bitmap, ImageView imageView);
+        void SetupCanvas(ImageView canvas);
+        void RenderImage(ImageView canvas, ImageView imageView);
     }
 }

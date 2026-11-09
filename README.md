@@ -22,15 +22,29 @@ Next goal is to improve code quality, improve performance and make usable for re
 
 ## Dev/Run
 
-Requires the [.NET 10 SDK](https://dotnet.microsoft.com/download) on Windows (the projects target `net10.0-windows`, because `System.Drawing` and WinForms are Windows-only on modern .NET). Open `src/GPExtractor.sln` in Visual Studio 2022 or later, or use the CLI:
+Requires the [.NET 10 SDK](https://dotnet.microsoft.com/download). Works on Windows, Linux and macOS.
 
 ```
 dotnet build src/GPExtractor.sln
 dotnet test src/GPExtractor.sln
-dotnet run --project src/WindowsFormsTestClient
 ```
 
-NuGet dependencies (NUnit, FluentAssertions, System.Drawing.Common) are restored automatically on build.
+Convert every `.gp` file in a folder to PNG (any OS):
+
+```
+dotnet run --project src/ConsoleBatchConverter -- <gp-folder> <png-output-folder> [palette-file]
+```
+
+The palette defaults to `palette/0/agew_1.pal`.
+
+| Project | Platforms |
+|---|---|
+| `Types`, `GPExtractor` (parsing), `ImageRenderer` (rendering + PNG output), `ConsoleBatchConverter`, `UnitTests` | Windows, Linux, macOS |
+| `WindowsFormsTestClient` (image viewer), `Shared` (GDI+ bitmap helpers) | Windows only (they still compile on other OSes) |
+
+The core library has no native or imaging dependencies: images are rendered into an in-memory pixel buffer and written by a small built-in PNG encoder. The test suite includes a pixel-exact regression test against output of the original GDI+ renderer.
+
+NuGet dependencies (NUnit, FluentAssertions, System.Drawing.Common for the Windows-only projects) are restored automatically on build.
 
 ## Examples
 
