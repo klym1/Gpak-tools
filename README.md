@@ -43,11 +43,21 @@ dotnet run --project src/ConsoleBatchConverter -- <gp-folder> <png-output-folder
 
 The palette defaults to `palette/0/agew_1.pal`.
 
+Extract the game's `.gsc` archives (e.g. `All.gsc` from Cossacks), optionally keeping only paths that contain a filter such as `.gp`:
+
+```
+dotnet run --project src/GscExtractor -- <archive.gsc> <output-folder> [name-filter]
+dotnet run --project src/GscExtractor -- --list <archive.gsc> [name-filter]
+```
+
+The extracted `.gp` files can be passed straight to `ConsoleBatchConverter`.
+
 | Project | Purpose |
 |---|---|
 | `Types`, `GPExtractor` | GP file parsing |
 | `ImageRenderer` | Rendering to an in-memory pixel buffer, built-in PNG encoder |
 | `ConsoleBatchConverter` | Batch `.gp` → PNG conversion |
+| `GscExtractor` | Extracts `.gsc` game archives (`GscArchive` in `GPExtractor` does the reading) |
 | `Viewer` | Desktop image viewer ([Avalonia](https://avaloniaui.net/)) |
 | `UnitTests`, `ViewerTests` | Tests; `ViewerTests` run the viewer headlessly |
 
@@ -56,6 +66,22 @@ The core library and converter have no native or imaging dependencies. The tests
 On Linux the viewer (and `ViewerTests`) need fontconfig (`libfontconfig1`), which desktop distributions already include.
 
 NuGet dependencies (NUnit, FluentAssertions, Avalonia) are restored automatically on build.
+
+## GSC archive format
+
+Cossacks keeps its data in `.gsc` archives (`All.gsc` holds about 2,400 files: GP sprites, palettes, bitmaps, unit definitions, texts). Integers are little-endian:
+
+| Offset | Size | Content |
+|---|---|---|
+| `0x00` | 6 | Signature `GSCfmt` |
+| `0x06` | 4 | Unknown |
+| `0x0A` | 4 | Number of files *N* |
+| `0x0E` | 81 × *N* | Directory records |
+| after directory | … | File data, back to back |
+
+Each record: 4 unknown bytes (hash?), a 64-byte NUL-terminated name with `\` as the folder separator, the bitwise NOT of the data offset (relative to the start of the data area), the size, 4 zero bytes and a 0/1 flag of unknown meaning.
+
+Every file except GP sprites (which start with `GPAK`) is obfuscated by XOR-ing each byte with `0x78`.
 
 ## Examples
 
