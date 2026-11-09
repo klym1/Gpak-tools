@@ -1,32 +1,73 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:Viewer"
         x:Class="Viewer.MainWindow"
         Title="GP Viewer"
-        Width="1112" Height="578">
+        Width="1112" Height="620"
+        DragDrop.AllowDrop="True">
 
-  <Grid ColumnDefinitions="*,Auto" Margin="12" ColumnSpacing="16">
+  <Grid RowDefinitions="Auto,*,Auto" Margin="12" RowSpacing="12">
 
-    <!-- Rendered image at its native size (no scaling) -->
-    <ScrollViewer Grid.Column="0"
-                  HorizontalScrollBarVisibility="Auto"
-                  VerticalScrollBarVisibility="Auto">
-      <Image x:Name="ImageView"
-             Stretch="None"
-             HorizontalAlignment="Left"
-             VerticalAlignment="Top" />
-    </ScrollViewer>
+    <!-- File and playback controls -->
+    <WrapPanel Grid.Row="0" Orientation="Horizontal" ItemSpacing="20" LineSpacing="8">
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Button x:Name="OpenButton" Content="Open .gp…" ToolTip.Tip="Open a .gp file (or drop one on the window)" />
+        <TextBlock x:Name="FileNameText" VerticalAlignment="Center" FontWeight="SemiBold" MinWidth="120" />
+      </StackPanel>
 
-    <Grid Grid.Column="1" RowDefinitions="Auto,200,Auto,*" Width="444" RowSpacing="6">
-      <TextBlock Grid.Row="0" Text="Images" FontWeight="SemiBold" />
-      <ListBox Grid.Row="1" x:Name="ImageList" Width="126" HorizontalAlignment="Left" />
-      <TextBlock Grid.Row="2" Text="Render times" FontWeight="SemiBold" Margin="0,12,0,0" />
-      <TextBox Grid.Row="3" x:Name="LogBox"
-               IsReadOnly="True"
-               AcceptsReturn="True"
-               TextWrapping="NoWrap"
-               FontFamily="Cascadia Mono, Consolas, Menlo, DejaVu Sans Mono, Liberation Mono, monospace"
-               FontSize="14" />
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Button x:Name="PreviousButton" Content="◀" ToolTip.Tip="Previous frame" />
+        <Button x:Name="PlayButton" Content="▶ Play" MinWidth="84" ToolTip.Tip="Play or pause the animation" />
+        <Button x:Name="NextButton" Content="▶|" ToolTip.Tip="Next frame" />
+      </StackPanel>
+
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <TextBlock Text="Frames" VerticalAlignment="Center" />
+        <NumericUpDown x:Name="FromFrame" Minimum="0" Increment="1" FormatString="0" Width="106" ToolTip.Tip="First frame of the loop" />
+        <TextBlock Text="to" VerticalAlignment="Center" />
+        <NumericUpDown x:Name="ToFrame" Minimum="0" Increment="1" FormatString="0" Width="106" ToolTip.Tip="Last frame of the loop" />
+      </StackPanel>
+
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <TextBlock Text="FPS" VerticalAlignment="Center" />
+        <NumericUpDown x:Name="FramesPerSecond" Minimum="1" Maximum="60" Increment="1" Value="12" FormatString="0" Width="108" />
+      </StackPanel>
+
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <TextBlock Text="Color" VerticalAlignment="Center" />
+        <ComboBox x:Name="PlayerColorBox" MinWidth="112" ToolTip.Tip="Player color of units and buildings">
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="local:PlayerColorOption">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Border Width="14" Height="14" CornerRadius="2" Background="{Binding Swatch}" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+              </StackPanel>
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+      </StackPanel>
+    </WrapPanel>
+
+    <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="16">
+
+      <!-- Rendered image at its native size (no scaling). Frames share the same origin, so they line up. -->
+      <ScrollViewer Grid.Column="0"
+                    HorizontalScrollBarVisibility="Auto"
+                    VerticalScrollBarVisibility="Auto">
+        <Image x:Name="ImageView"
+               Stretch="None"
+               HorizontalAlignment="Left"
+               VerticalAlignment="Top" />
+      </ScrollViewer>
+
+      <Grid Grid.Column="1" RowDefinitions="Auto,*" Width="126" RowSpacing="6">
+        <TextBlock Grid.Row="0" Text="Frames" FontWeight="SemiBold" />
+        <ListBox Grid.Row="1" x:Name="ImageList" />
+      </Grid>
+
     </Grid>
 
+    <!-- Loading progress, errors and skipped parts -->
+    <TextBlock Grid.Row="2" x:Name="StatusText" TextWrapping="Wrap" Foreground="Gray" />
   </Grid>
 </Window>
