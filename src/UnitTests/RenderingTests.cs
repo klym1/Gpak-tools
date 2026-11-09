@@ -96,6 +96,25 @@ namespace UnitTests
             image.Pixels.Should().Contain(Color.FromArgb(0x99, 0, 0, 0));
         }
 
+        [Test]
+        public void RendersOnALargerCanvasWithoutMovingTheFrame()
+        {
+            var file = GpFile.Load(TestFile);
+            var renderer = new GpRenderer(Palette.Load(PaletteFile));
+            var frame = file.Frames[9];
+
+            var own = renderer.Render(file, frame).Image;
+            var large = renderer.Render(file, frame, 600, 500).Image;
+
+            large.Width.Should().Be(600);
+            large.Height.Should().Be(500);
+            for (var y = 0; y < own.Height; y++)
+            {
+                large.Pixels.AsSpan(y * large.Width, own.Width).ToArray()
+                    .Should().Equal(own.Pixels.AsSpan(y * own.Width, own.Width).ToArray());
+            }
+        }
+
         internal static string HashOf(ImageView image)
         {
             var bytes = image.Pixels.SelectMany(color => BitConverter.GetBytes(color.ToArgb())).ToArray();

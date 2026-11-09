@@ -35,7 +35,18 @@ namespace ImageRenderer
         /// </summary>
         public RenderedFrame Render(GpFile file, GpFrame frame)
         {
-            var image = new ImageView(Math.Max(frame.Width, 1), Math.Max(frame.Height, 1));
+            return Render(file, frame, frame.Width, frame.Height);
+        }
+
+        /// <summary>
+        /// Renders a frame on a canvas of at least the given size, e.g. the largest frame of the file,
+        /// so all frames of an animation have the same size.
+        /// </summary>
+        public RenderedFrame Render(GpFile file, GpFrame frame, int canvasWidth, int canvasHeight)
+        {
+            var image = new ImageView(
+                Math.Max(Math.Max(frame.Width, canvasWidth), 1),
+                Math.Max(Math.Max(frame.Height, canvasHeight), 1));
             Array.Fill(image.Pixels, Background);
 
             var skipped = new List<GpFramePart>();
