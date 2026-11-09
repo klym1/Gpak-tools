@@ -10,7 +10,7 @@
 
 C# library for reading **GPAK** files (have *.gp* extension) which were utilized for storing graphical data in some old games (such as **Cossacks** and **American Conquest** from **GSC Game World** company). Library produces Bitmap objects which can be saved using ordinary image format (e.g. *PNG*).
 
-Format specs were reverse engineered completely from scratch. There is still room for improvements since not all available GP files can be successfully recovered. 
+Format specs were reverse engineered completely from scratch. All GP files of Cossacks: European Wars decode, except for one rare part encoding (type 42, see below).
 
 ## Goals
 
@@ -35,7 +35,7 @@ View all images of a `.gp` file (defaults to `gp/test.gp`):
 dotnet run --project src/Viewer -- [gp-file]
 ```
 
-Convert every `.gp` file in a folder to PNG:
+Convert every frame of every `.gp` file in a folder to PNG (`<name>_<frame>.png`, transparent background):
 
 ```
 dotnet run --project src/ConsoleBatchConverter -- <gp-folder> <png-output-folder> [palette-file]
@@ -54,18 +54,64 @@ The extracted `.gp` files can be passed straight to `ConsoleBatchConverter`.
 
 | Project | Purpose |
 |---|---|
-| `Types`, `GPExtractor` | GP file parsing |
-| `ImageRenderer` | Rendering to an in-memory pixel buffer, built-in PNG encoder |
+| `GPExtractor` | GP file decoding (`GpFile`), `.gsc` archive reading (`GscArchive`) |
+| `ImageRenderer` | Compositing frames to RGBA (`GpRenderer`), palettes, built-in PNG encoder |
+| `Types` | `ImageView` pixel buffer |
 | `ConsoleBatchConverter` | Batch `.gp` → PNG conversion |
 | `GscExtractor` | Extracts `.gsc` game archives (`GscArchive` in `GPExtractor` does the reading) |
 | `Viewer` | Desktop image viewer ([Avalonia](https://avaloniaui.net/)) |
 | `UnitTests`, `ViewerTests` | Tests; `ViewerTests` run the viewer headlessly |
 
-The core library and converter have no native or imaging dependencies. The tests include pixel-exact regression checks against the output of the original GDI+ renderer.
+The core library and converter have no native or imaging dependencies. The tests decode synthetic GP data for every encoding and include pixel-exact regression checks of `gp/test.gp`.
 
 On Linux the viewer (and `ViewerTests`) need fontconfig (`libfontconfig1`), which desktop distributions already include.
 
 NuGet dependencies (NUnit, FluentAssertions, Avalonia) are restored automatically on build.
+
+## GP sprite format
+
+All integers are little-endian.
+
+| Offset | Size | Content |
+|---|---|---|
+| `0x00` | 4 | Signature `GPAK` |
+| `0x04` | 2 | Number of frames *N* |
+| `0x06` | 2 | Unknown |
+| `0x08` | 4 | Offset of the shared color dictionary |
+| `0x0C` | 2 | Length of the dictionary |
+| `0x0E` | 4 × *N* | Frame offsets |
+
+A frame is a chain of parts drawn on top of each other (typically shadow, body, anti-aliased edges, player color). Each part starts with a 23-byte header:
+
+| Offset | Size | Content |
+|---|---|---|
+| `+0` | 4 | Offset of the next part, relative to the frame; -1 for the last |
+| `+4` | 2 × 4 | x, y, width, height |
+| `+12` | 4 | Always -1 |
+| `+16` | 1 | Part type (below) |
+| `+17` | 4 | Bits 0-13: offset of the color data + 1; bits 14-31: number of pixel values |
+| `+21` | 2 | Number of rows |
+
+The header is followed by one entry per row saying which pixels are drawn, as runs of (skip, length):
+
+- `0x00`: empty row.
+- `0x01`-`0x7F`: that many runs follow, as byte pairs (skip, length).
+- `0x80`-`0xFF`: the low 5 bits are the number of runs, one byte each (low nibble skip, high nibble length); bit `0x40` adds 16 to every skip, bit `0x20` to every length.
+
+After the rows comes one unused byte, then the color data. The pixel values fill the runs in order, across rows:
+
+| Type | Meaning | Color data |
+|---|---|---|
+| 0 | Opaque pixels | Groups of a control byte and 8 items, from the control byte's highest bit down. Bit 0: one palette index. Bit 1: two bytes `a`, `b`; copy `(b >> 4) + 3` indices from the dictionary at `a \| (b & 0x0F) << 8` |
+| 1 | Player color | 2 bits per pixel, lowest bits first: palette index `player base + value` (e.g. `0xD0` red); padded with 1-4 values at the end |
+| 2, 3, 4 | Anti-aliased edges (2 outermost, 4 innermost) | One palette index per pixel |
+| 5 | Shadow | None |
+| 7 | Translucent effects (smoke, water) | One palette index per pixel |
+| 39 | Interface graphics and fonts | One palette index per pixel |
+| 42 | Unknown | Not decoded yet; skipped when rendering |
+| 255 | Empty frame | None |
+
+The opacity of types 2, 3, 4 and 7 is not stored in the file. The renderer uses 25 %, 50 %, 75 % and 50 %, which is an estimate; the game probably blends through its `.XLT` tables.
 
 ## GSC archive format
 
