@@ -4,7 +4,7 @@
 
 *this project is still under development*
 
-[![Build Status](https://travis-ci.org/klym1/Gpak-tools.svg)](https://travis-ci.org/klym1/Gpak-tools)
+[![build](https://github.com/klym1/Gpak-tools/actions/workflows/build.yml/badge.svg)](https://github.com/klym1/Gpak-tools/actions/workflows/build.yml)
 
 ## Description
 
@@ -22,7 +22,15 @@ Next goal is to improve code quality, improve performance and make usable for re
 
 ## Dev/Run
 
-Since it's still in development it should be run from Visual Studio (>= 2012). You need .NET 4.0 (Windows 7 or later) or Mono 4.0 (i suppose older version of mono might be working too but haven't tested yet) to build the project. All dependencies should be successfully restored by NuGet on first build (in fact only **UnitTests** project uses external dependencies: NUnit and Fluent Assertions).
+Requires the [.NET 10 SDK](https://dotnet.microsoft.com/download) on Windows (the projects target `net10.0-windows`, because `System.Drawing` and WinForms are Windows-only on modern .NET). Open `src/GPExtractor.sln` in Visual Studio 2022 or later, or use the CLI:
+
+```
+dotnet build src/GPExtractor.sln
+dotnet test src/GPExtractor.sln
+dotnet run --project src/WindowsFormsTestClient
+```
+
+NuGet dependencies (NUnit, FluentAssertions, System.Drawing.Common) are restored automatically on build.
 
 ## Examples
 

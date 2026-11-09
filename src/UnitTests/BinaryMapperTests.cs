@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using FluentAssertions.Common;
 using GPExtractor;
 using NUnit.Framework;
 using Types;
@@ -26,7 +25,7 @@ namespace UnitTests
             var manualMapper = new BinaryManualMapper();
             var manualMapperResult = manualMapper.GetMappedObject<ImageLayoutInfo>(buffer, 0);
 
-            Assert.AreEqual(autoMapperResult, manualMapperResult);
+            Assert.That(manualMapperResult, Is.EqualTo(autoMapperResult));
         }
     }
 }
