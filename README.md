@@ -29,7 +29,7 @@ dotnet build src/GPExtractor.sln
 dotnet test src/GPExtractor.sln
 ```
 
-View all images of a `.gp` file (defaults to `gp/test.gp`):
+View and animate a `.gp` file (defaults to `gp/test.gp`; files can also be opened or dropped in the window). For units it offers a direction picker, and a player color for all sprites:
 
 ```
 dotnet run --project src/Viewer -- [gp-file]
@@ -112,6 +112,12 @@ After the rows comes one unused byte, then the color data. The pixel values fill
 | 255 | Empty frame | None |
 
 The opacity of types 2, 3, 4 and 7 is not stored in the file. The renderer uses 25 %, 50 %, 75 % and 50 %, which is an estimate; the game probably blends through its `.XLT` tables.
+
+### Directions
+
+Unit, ship and projectile sprites store each pose from several directions, frame-major: frame `pose × D + direction`. The descriptors (`*.MD`, next to the sprites in `All.gsc`) give *D* per animation, e.g. `#MOTION_L  9 10  1 0 1 1 ...` (9 directions, 10 poses as sprite/pose pairs), and the anchor in `USERLC 1 ba1g  SHADOW -62 -90` (x = 62).
+
+With *D* = 2^n + 1 (9, 17, 33, 65, 129), the stored directions cover half a turn, from facing the viewer (south) clockwise to facing away (north); the game mirrors them around the anchor for the eastern half, giving 2 × (*D* − 1) directions. `GpDirections` reads this from the descriptors or, for sprites without one, recognizes it from the frames, and the viewer plays the poses of a chosen direction.
 
 ## GSC archive format
 
