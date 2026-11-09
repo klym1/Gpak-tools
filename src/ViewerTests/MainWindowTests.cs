@@ -209,6 +209,99 @@ namespace ViewerTests
             window.Close();
         }
 
+        [AvaloniaTest]
+        public async Task PlaysOneDirectionAndMirrorsTheEasternHalf()
+        {
+            var folder = Path.Combine(Path.GetTempPath(), "viewer-directions-" + Guid.NewGuid());
+            Directory.CreateDirectory(folder);
+            var sprite = Path.Combine(folder, "UNIT.GP");
+            File.WriteAllBytes(sprite, UnitTests.GpTestFiles.Unit(poses: 3, anchorX: 20));
+            File.WriteAllText(Path.Combine(folder, "UNIT.MD"), "USERLC 0 unit  SHADOW -20 -10\r\n#MOTION_L  9 3  0 0 0 1 0 2\r\n");
+
+            try
+            {
+                var window = new MainWindow(sprite);
+                window.Show();
+                await window.RenderingCompleted;
+
+                var list = window.FindControl<ListBox>("ImageList");
+                var image = window.FindControl<Image>("ImageView");
+
+                Assert.That(window.FindControl<StackPanel>("DirectionPanel").IsVisible, Is.True);
+                Assert.That(window.FindControl<ComboBox>("DirectionBox").ItemCount, Is.EqualTo(16));
+                Assert.That(window.FindControl<TextBlock>("FileNameText").Text, Does.EndWith("(3 poses × 16 directions)"));
+                Assert.That(window.Directions.Source, Is.EqualTo(GpDirectionsSource.Descriptor));
+                Assert.That(list.ItemCount, Is.EqualTo(3), "one entry per pose");
+                Assert.That(window.CurrentDirection, Is.EqualTo(0));
+
+                // The canvas is centred on the anchor (x = 20 of a 40 pixel wide canvas).
+                // South: 1 pixel at the anchor.
+                Assert.That(DrawnColumns(image), Is.EqualTo(new[] { 20 }));
+
+                // Changing direction while playing keeps playing.
+                window.Play();
+                await window.SetDirection(4);
+                Assert.That(window.IsPlaying, Is.True);
+                window.Pause();
+
+                // West is stored: 5 pixels to the right of the anchor.
+                list.SelectedIndex = 1;
+                var pose = window.CurrentFrame;
+                Assert.That(DrawnColumns(image), Is.EqualTo(new[] { 20, 21, 22, 23, 24 }));
+
+                // East is west mirrored around the anchor.
+                await window.SetDirection(12);
+                Assert.That(window.CurrentFrame, Is.EqualTo(pose), "the pose is kept");
+                Assert.That(DrawnColumns(image), Is.EqualTo(new[] { 15, 16, 17, 18, 19 }));
+
+                await window.SetDirection(4);
+                Assert.That(DrawnColumns(image), Is.EqualTo(new[] { 20, 21, 22, 23, 24 }));
+
+                // All frames in file order.
+                await window.SetShowByDirection(false);
+                Assert.That(list.ItemCount, Is.EqualTo(27));
+                Assert.That(window.CurrentDirection, Is.EqualTo(-1));
+                Assert.That(window.FindControl<NumericUpDown>("ToFrame").Value, Is.EqualTo(26));
+
+                window.Close();
+            }
+            finally
+            {
+                Directory.Delete(folder, true);
+            }
+        }
+
+        [AvaloniaTest]
+        public async Task HidesTheDirectionPickerForSpritesWithoutDirections()
+        {
+            var window = new MainWindow();
+            window.Show();
+            await window.RenderingCompleted;
+
+            Assert.That(window.Directions, Is.Null);
+            Assert.That(window.FindControl<StackPanel>("DirectionPanel").IsVisible, Is.False);
+            Assert.That(window.CurrentDirection, Is.EqualTo(-1));
+
+            window.Close();
+        }
+
+        /// <summary>Columns of row 0 that differ from the gray background.</summary>
+        private static int[] DrawnColumns(Image image)
+        {
+            var bitmap = (WriteableBitmap)image.Source;
+            var width = bitmap.PixelSize.Width;
+            var row = new byte[width * 4];
+
+            using (var buffer = bitmap.Lock())
+            {
+                Marshal.Copy(buffer.Address, row, 0, row.Length);
+            }
+
+            return Enumerable.Range(0, width)
+                .Where(x => row[4 * x] != 0x80 || row[4 * x + 1] != 0x80 || row[4 * x + 2] != 0x80)
+                .ToArray();
+        }
+
         private static string HashOf(WriteableBitmap bitmap)
         {
             var size = bitmap.PixelSize;

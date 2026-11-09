@@ -42,10 +42,15 @@ namespace ImageRenderer
         /// Renders a frame on a canvas of at least the given size, e.g. the largest frame of the file,
         /// so all frames of an animation have the same size.
         /// </summary>
-        public RenderedFrame Render(GpFile file, GpFrame frame, int canvasWidth, int canvasHeight)
+        /// <param name="offsetX">Moves the frame right by this many pixels.</param>
+        /// <param name="mirror">
+        /// Flips the result horizontally around the canvas centre, for directions the game draws mirrored.
+        /// Place the frame's anchor at the centre with <paramref name="offsetX"/> to flip around the anchor.
+        /// </param>
+        public RenderedFrame Render(GpFile file, GpFrame frame, int canvasWidth, int canvasHeight, int offsetX = 0, bool mirror = false)
         {
             var image = new ImageView(
-                Math.Max(Math.Max(frame.Width, canvasWidth), 1),
+                Math.Max(Math.Max(frame.Width + offsetX, canvasWidth), 1),
                 Math.Max(Math.Max(frame.Height, canvasHeight), 1));
             Array.Fill(image.Pixels, Background);
 
@@ -59,13 +64,13 @@ namespace ImageRenderer
                     continue;
                 }
 
-                DrawPart(image, file, part);
+                DrawPart(image, file, part, offsetX, mirror);
             }
 
             return new RenderedFrame(image, skipped);
         }
 
-        private void DrawPart(ImageView image, GpFile file, GpFramePart part)
+        private void DrawPart(ImageView image, GpFile file, GpFramePart part, int offsetX, bool mirror)
         {
             var rows = part.DecodeRows();
             var pixels = part.DecodePixels(file.Dictionary);
@@ -75,7 +80,7 @@ namespace ImageRenderer
             for (var row = 0; row < rows.Count; row++)
             {
                 var y = part.Y + row;
-                var x = part.X;
+                var x = part.X + offsetX;
 
                 foreach (var run in rows[row])
                 {
@@ -100,9 +105,10 @@ namespace ImageRenderer
                             continue;
                         }
 
-                        if (x >= 0 && x < image.Width && y >= 0 && y < image.Height)
+                        var targetX = mirror ? image.Width - 1 - x : x;
+                        if (targetX >= 0 && targetX < image.Width && y >= 0 && y < image.Height)
                         {
-                            var target = y * image.Width + x;
+                            var target = y * image.Width + targetX;
                             image.Pixels[target] = Blend(color, image.Pixels[target]);
                         }
                     }

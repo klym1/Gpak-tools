@@ -17,4 +17,9 @@
     <ProjectReference Include="..\Viewer\Viewer.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Synthetic GP files, shared with UnitTests -->
+    <Compile Include="..\UnitTests\GpTestFiles.cs" Link="GpTestFiles.cs" />
+  </ItemGroup>
+
 </Project>
