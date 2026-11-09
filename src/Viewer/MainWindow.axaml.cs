@@ -9,6 +9,7 @@ using Avalonia.Media.Imaging;
 using GPExtractor;
 using ImageRenderer;
 using Types;
+using Color = System.Drawing.Color;
 
 namespace Viewer
 {
@@ -62,7 +63,13 @@ namespace Viewer
                 if (result.Image != null)
                 {
                     images.Add(new RenderedImage(result.Number, result.Image.ToWriteableBitmap()));
-                    log.AppendFormat("[{0,4}] - {1:g}", result.Number, result.Elapsed).AppendLine();
+                    log.AppendFormat("[{0,4}] - {1:g}", result.Number, result.Elapsed);
+                    if (result.Error != null)
+                    {
+                        log.Append(" (").Append(result.Error).Append(')');
+                    }
+
+                    log.AppendLine();
                 }
                 else
                 {
@@ -79,28 +86,28 @@ namespace Viewer
 
         private static RenderResult[] Render(string gpFile)
         {
-            var extractor = new Extractor();
-            var imagePaletteBytes = extractor.GetPaletteBytes(gpFile);
-            var layouts = extractor.GetImagesFromOutput(gpFile).ToList();
+            var file = GpFile.Load(gpFile);
+            var renderer = new GpRenderer(Palette.Load(PaletteFile))
+            {
+                PlayerColor = NationColorOffset.Blue,
+                Background = Color.FromArgb(255, 0x80, 0x80, 0x80),
+            };
 
-            var rawParser = new RawParser();
-            var colorCollection = rawParser.GetColorCollectionFromPalleteFile(File.ReadAllBytes(PaletteFile));
-            var imagePaletteColors = ImageGenerator.OffsetsToColors(imagePaletteBytes, colorCollection);
-
-            var nationColorOffset = NationColorOffset.Blue;
-
-            return Enumerable.Range(0, layouts.Count)
-                .Select(number =>
+            return file.Frames
+                .Select(frame =>
                 {
                     var stopwatch = System.Diagnostics.Stopwatch.StartNew();
                     try
                     {
-                        var image = new Runner().Run(layouts, nationColorOffset, number, rawParser, new BitmapRenderer(), imagePaletteColors, colorCollection);
-                        return new RenderResult(number, image, null, stopwatch.Elapsed);
+                        var rendered = renderer.Render(file, frame);
+                        var warning = rendered.SkippedParts.Count > 0
+                            ? rendered.SkippedParts.Count + " unsupported part(s) skipped"
+                            : null;
+                        return new RenderResult(frame.Index, rendered.Image, warning, stopwatch.Elapsed);
                     }
-                    catch (Exception ex)
+                    catch (Exception ex) when (ex is InvalidDataException || ex is NotSupportedException)
                     {
-                        return new RenderResult(number, null, ex.Message, stopwatch.Elapsed);
+                        return new RenderResult(frame.Index, null, ex.Message, stopwatch.Elapsed);
                     }
                 })
                 .ToArray();

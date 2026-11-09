@@ -27,9 +27,9 @@ namespace ViewerTests
 
     public class MainWindowTests
     {
-        // Same reference as UnitTests.RenderingTests: image 0 of gp/test.gp as
-        // rendered by the original GDI+ pipeline (BGRA bytes).
-        private const string ExpectedFirstImage = "576x467:21B0FE1991803055568737669D26893E4794086B84980AE1F782A063C0ADC10A";
+        // Image 0 of gp/test.gp as the viewer shows it: on a gray background
+        // (BGRA bytes).
+        private const string ExpectedFirstImage = "576x467:E749EB9D4F20DC75FF810C98258F00554A63BA0667E695BEB49135D3738762DF";
 
         [AvaloniaTest]
         public async Task ShowsAllImagesOfTheFile()

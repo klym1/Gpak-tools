@@ -13,6 +13,7 @@ namespace ConsoleBatchConverter
             if (args.Length < 2)
             {
                 Console.Error.WriteLine("Usage: ConsoleBatchConverter <gp-directory> <png-output-directory> [palette-file]");
+                Console.Error.WriteLine("  Writes every frame of every .gp file as <name>_<frame>.png.");
                 Console.Error.WriteLine("  palette-file defaults to palette/0/agew_1.pal next to the executable.");
                 return 1;
             }
@@ -31,7 +32,7 @@ namespace ConsoleBatchConverter
 
             Directory.CreateDirectory(pngDirectory);
 
-            var paletteBytes = File.ReadAllBytes(paletteFile);
+            var renderer = new GpRenderer(Palette.Load(paletteFile));
 
             // Match *.gp case-insensitively: Linux file systems are case-sensitive
             // and the original game ships both *.gp and *.GP files.
@@ -41,43 +42,40 @@ namespace ConsoleBatchConverter
                 .ToList();
 
             var failed = 0;
+            var frames = 0;
+            var skippedParts = 0;
 
             foreach (var gpFile in gpFiles)
             {
                 try
                 {
-                    SaveAsPng(gpFile, pngDirectory, paletteBytes);
+                    var file = GpFile.Load(gpFile);
+                    var name = Path.GetFileNameWithoutExtension(gpFile);
+
+                    foreach (var frame in file.Frames)
+                    {
+                        var rendered = renderer.Render(file, frame);
+                        PngWriter.Save(rendered.Image, Path.Combine(pngDirectory, name + "_" + frame.Index.ToString("D3") + ".png"));
+
+                        frames++;
+                        skippedParts += rendered.SkippedParts.Count;
+                    }
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (ex is InvalidDataException || ex is IOException || ex is NotSupportedException)
                 {
                     failed++;
                     Console.Error.WriteLine("Error in: " + gpFile + ": " + ex.Message);
                 }
             }
 
-            Console.WriteLine("Converted {0} of {1} files to {2}", gpFiles.Count - failed, gpFiles.Count, pngDirectory);
+            Console.WriteLine("Converted {0} of {1} files ({2} frames) to {3}", gpFiles.Count - failed, gpFiles.Count, frames, pngDirectory);
+
+            if (skippedParts > 0)
+            {
+                Console.WriteLine("Skipped {0} frame parts with unsupported encodings", skippedParts);
+            }
 
             return failed == 0 ? 0 : 2;
-        }
-
-        private static void SaveAsPng(string gpFile, string pngDirectory, byte[] paletteBytes)
-        {
-            IRenderer renderer = new BitmapRenderer();
-
-            var imagePaletteBytes = new Extractor().GetPaletteBytes(gpFile);
-            var extractResult = new Extractor().GetImagesFromOutput(gpFile).ToList();
-
-            var rawParser = new RawParser();
-
-            var colorCollection = rawParser.GetColorCollectionFromPalleteFile(paletteBytes);
-
-            var imagePaletteColors = ImageGenerator.OffsetsToColors(imagePaletteBytes, colorCollection);
-
-            var nationColorOffset = NationColorOffset.Red;
-
-            var image = new Runner().Run(extractResult, nationColorOffset, 0, rawParser, renderer, imagePaletteColors, colorCollection);
-
-            PngWriter.Save(image, Path.Combine(pngDirectory, Path.GetFileNameWithoutExtension(gpFile) + ".png"));
         }
     }
 }
