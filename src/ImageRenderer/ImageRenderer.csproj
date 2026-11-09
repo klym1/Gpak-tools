@@ -1,12 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <UseWindowsForms>true</UseWindowsForms>
-  </PropertyGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\Extractor\GPExtractor.csproj" />
-    <ProjectReference Include="..\Shared\Shared.csproj" />
     <ProjectReference Include="..\Types\Types.csproj" />
   </ItemGroup>
 

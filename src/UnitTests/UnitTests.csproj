@@ -7,7 +7,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
-    <PackageReference Include="NUnit" Version="4.4.0" />
+    <PackageReference Include="NUnit" Version="4.5.1" />
     <PackageReference Include="NUnit3TestAdapter" Version="5.2.0" />
     <!-- 7.x is the last Apache-2.0 licensed FluentAssertions line -->
     <PackageReference Include="FluentAssertions" Version="7.2.0" />
@@ -15,7 +15,13 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Extractor\GPExtractor.csproj" />
+    <ProjectReference Include="..\ImageRenderer\ImageRenderer.csproj" />
     <ProjectReference Include="..\Types\Types.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\gp\test.gp" Link="gp\test.gp" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\palette\0\agew_1.pal" Link="palette\0\agew_1.pal" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

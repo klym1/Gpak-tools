@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="12.1.6" />
+    <PackageReference Include="Avalonia.Desktop" Version="12.1.6" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.6" />
+    <!-- Bundled font so the UI looks the same on every OS (and works on
+         minimal Linux installs without system fonts). -->
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.6" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Extractor\GPExtractor.csproj" />
+    <ProjectReference Include="..\ImageRenderer\ImageRenderer.csproj" />
+    <ProjectReference Include="..\Types\Types.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\gp\test.gp" Link="gp\test.gp" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\palette\0\agew_1.pal" Link="palette\0\agew_1.pal" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

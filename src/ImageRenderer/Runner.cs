@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
-using System.Windows.Forms;
 using GPExtractor;
 using Types;
 using ImageLayout = GPExtractor.ImageLayout;
@@ -11,7 +10,7 @@ namespace ImageRenderer
 {
     public class Runner
     {
-        public Bitmap Run(IList<ImageLayout> extractResult, NationColorOffset nationColorOffset, int imageNumber, RawParser rawParser, IRenderer renderer, Color[] imagePaletteArray, Color[] generalPaletteColors)
+        public ImageView Run(IList<ImageLayout> extractResult, NationColorOffset nationColorOffset, int imageNumber, RawParser rawParser, IRenderer renderer, Color[] imagePaletteArray, Color[] generalPaletteColors)
         {
             var imageGenerator = new ImageGenerator();
 
@@ -27,7 +26,7 @@ namespace ImageRenderer
                 .OrderByDescending(it => it)
                 .First();
 
-            var bitMap = new Bitmap(largestWidth, largestHeight);
+            var bitMap = new ImageView(largestWidth, largestHeight);
             renderer.SetupCanvas(bitMap);
             
             foreach (var layout in partialLayouts)
