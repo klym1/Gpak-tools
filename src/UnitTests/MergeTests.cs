@@ -24,7 +24,7 @@ namespace UnitTests
 
             var merged = elem.MergeBlocks();
 
-            merged.Collection.ShouldBeEquivalentTo(new Collection<RawShapeBlock>
+            merged.Collection.Should().BeEquivalentTo(new Collection<RawShapeBlock>
             {
                 new RawShapeBlock (12, 101),
                 new RawShapeBlock (12, 55),
