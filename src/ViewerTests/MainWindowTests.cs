@@ -285,6 +285,100 @@ namespace ViewerTests
             window.Close();
         }
 
+        [AvaloniaTest]
+        public async Task BrowsesUnitsOfAGameArchive()
+        {
+            var folder = Path.Combine(Path.GetTempPath(), "viewer-units-" + Guid.NewGuid());
+            Directory.CreateDirectory(folder);
+            var archive = Path.Combine(folder, "All.gsc");
+            File.WriteAllBytes(archive, UnitTests.GpTestFiles.GameArchive(UnitTests.GpTestFiles.UnitGameData()));
+
+            try
+            {
+                var window = new MainWindow(archive);
+                window.Show();
+                await window.RenderingCompleted;
+
+                var image = window.FindControl<Image>("ImageView");
+
+                Assert.That(window.FindControl<StackPanel>("UnitPanel").IsVisible, Is.True);
+                Assert.That(window.FindControl<ComboBox>("UnitBox").ItemCount, Is.EqualTo(1), "only units, not buildings");
+                Assert.That(window.CurrentUnit.Label, Is.EqualTo("Тестовый воин (TST)"));
+                Assert.That(window.CurrentState.Code, Is.EqualTo("MOTION_L+MOTION_R"), "starts with walking");
+                Assert.That(window.FrameCount, Is.EqualTo(4));
+                Assert.That(window.FindControl<TextBlock>("FileNameText").Text, Is.EqualTo("All.gsc"));
+                Assert.That(window.Title, Is.EqualTo("GP Viewer - All.gsc - Тестовый воин (TST)"));
+                Assert.That(window.Directions.Count, Is.EqualTo(16));
+                Assert.That(window.FindControl<CheckBox>("ByDirectionBox").IsVisible, Is.False);
+                Assert.That(window.FindControl<TextBlock>("DirectionLabel").IsVisible, Is.True);
+
+                // Every sprite is placed with its anchor at x = 9 of the canvas, whatever its own anchor.
+                Assert.That(DrawnColumns(image), Is.EqualTo(new[] { 9 }), "south: 1 pixel at the anchor");
+                await window.SetDirection(4);
+                Assert.That(DrawnColumns(image), Is.EqualTo(new[] { 9, 10, 11, 12, 13 }), "west");
+                await window.SetDirection(12);
+                Assert.That(DrawnColumns(image), Is.EqualTo(new[] { 4, 5, 6, 7, 8 }), "east, mirrored");
+
+                // Another state uses another sprite (anchored at (20, 10) instead of (30, 15)): same place.
+                window.Play();
+                await window.SelectState("STAND");
+                Assert.That(window.FrameCount, Is.EqualTo(1));
+                Assert.That(window.CurrentDirection, Is.EqualTo(12), "the direction is kept");
+                Assert.That(DrawnColumns(image), Is.EqualTo(new[] { 4, 5, 6, 7, 8 }));
+
+                await window.SetPlayerColor(NationColorOffset.Red);
+                Assert.That(window.CurrentState.Code, Is.EqualTo("STAND"), "the state is kept");
+
+                // Opening a sprite without game data around it leaves unit mode.
+                window.Pause();
+                await window.LoadFile(MainWindow.DefaultGpFile);
+                Assert.That(window.CurrentUnit, Is.Null);
+                Assert.That(window.Catalog, Is.Null);
+                Assert.That(window.FindControl<StackPanel>("UnitPanel").IsVisible, Is.False);
+                Assert.That(window.FrameCount, Is.EqualTo(15));
+
+                window.Close();
+            }
+            finally
+            {
+                Directory.Delete(folder, true);
+            }
+        }
+
+        [AvaloniaTest]
+        public async Task OffersUnitsNextToAnOpenedSprite()
+        {
+            var folder = Path.Combine(Path.GetTempPath(), "viewer-sprite-units-" + Guid.NewGuid());
+            Directory.CreateDirectory(folder);
+            foreach (var (name, content) in UnitTests.GpTestFiles.UnitGameData())
+            {
+                File.WriteAllBytes(Path.Combine(folder, name), content);
+            }
+
+            try
+            {
+                var window = new MainWindow(Path.Combine(folder, "TSTG.GP"));
+                window.Show();
+                await window.RenderingCompleted;
+
+                // The sprite is shown, with directions from the descriptor; the unit can be picked.
+                Assert.That(window.CurrentUnit, Is.Null);
+                Assert.That(window.Directions.Source, Is.EqualTo(GpDirectionsSource.Descriptor));
+                Assert.That(window.FrameCount, Is.EqualTo(4), "4 poses of one direction");
+                Assert.That(window.FindControl<StackPanel>("UnitPanel").IsVisible, Is.True);
+
+                await window.SelectUnit("TST");
+                Assert.That(window.CurrentUnit.Descriptor.FileName, Is.EqualTo("TST"));
+                Assert.That(window.FindControl<ComboBox>("StateBox").ItemCount, Is.EqualTo(5));
+
+                window.Close();
+            }
+            finally
+            {
+                Directory.Delete(folder, true);
+            }
+        }
+
         /// <summary>Columns of row 0 that differ from the gray background.</summary>
         private static int[] DrawnColumns(Image image)
         {

@@ -43,15 +43,16 @@ namespace ImageRenderer
         /// so all frames of an animation have the same size.
         /// </summary>
         /// <param name="offsetX">Moves the frame right by this many pixels.</param>
+        /// <param name="offsetY">Moves the frame down by this many pixels.</param>
         /// <param name="mirror">
         /// Flips the result horizontally around the canvas centre, for directions the game draws mirrored.
         /// Place the frame's anchor at the centre with <paramref name="offsetX"/> to flip around the anchor.
         /// </param>
-        public RenderedFrame Render(GpFile file, GpFrame frame, int canvasWidth, int canvasHeight, int offsetX = 0, bool mirror = false)
+        public RenderedFrame Render(GpFile file, GpFrame frame, int canvasWidth, int canvasHeight, int offsetX = 0, bool mirror = false, int offsetY = 0)
         {
             var image = new ImageView(
                 Math.Max(Math.Max(frame.Width + offsetX, canvasWidth), 1),
-                Math.Max(Math.Max(frame.Height, canvasHeight), 1));
+                Math.Max(Math.Max(frame.Height + offsetY, canvasHeight), 1));
             Array.Fill(image.Pixels, Background);
 
             var skipped = new List<GpFramePart>();
@@ -64,13 +65,13 @@ namespace ImageRenderer
                     continue;
                 }
 
-                DrawPart(image, file, part, offsetX, mirror);
+                DrawPart(image, file, part, offsetX, offsetY, mirror);
             }
 
             return new RenderedFrame(image, skipped);
         }
 
-        private void DrawPart(ImageView image, GpFile file, GpFramePart part, int offsetX, bool mirror)
+        private void DrawPart(ImageView image, GpFile file, GpFramePart part, int offsetX, int offsetY, bool mirror)
         {
             var rows = part.DecodeRows();
             var pixels = part.DecodePixels(file.Dictionary);
@@ -79,7 +80,7 @@ namespace ImageRenderer
 
             for (var row = 0; row < rows.Count; row++)
             {
-                var y = part.Y + row;
+                var y = part.Y + offsetY + row;
                 var x = part.X + offsetX;
 
                 foreach (var run in rows[row])

@@ -26,8 +26,8 @@ namespace UnitTests
             var descriptor = GpDescriptor.Parse("BA1", Descriptor);
 
             descriptor.Sprites.Should().Equal(
-                new GpDescriptorSprite(0, "ba1s", 62),
-                new GpDescriptorSprite(1, "ba1g", 62));
+                new GpDescriptorSprite(0, "ba1s", 62, 90),
+                new GpDescriptorSprite(1, "ba1g", 62, 90));
             descriptor.Animations.Select(a => a.Name).Should().Equal("STAND", "MOTION_L", "MOTION_R");
             descriptor.Animations[1].Directions.Should().Be(9);
             descriptor.Animations[1].Frames.Should().Equal((1, 0), (1, 1), (1, 2));

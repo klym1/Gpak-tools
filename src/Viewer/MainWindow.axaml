@@ -11,8 +11,18 @@
     <!-- File and playback controls -->
     <WrapPanel Grid.Row="0" Orientation="Horizontal" ItemSpacing="20" LineSpacing="8">
       <StackPanel Orientation="Horizontal" Spacing="8">
-        <Button x:Name="OpenButton" Content="Open .gp…" ToolTip.Tip="Open a .gp file (or drop one on the window)" />
+        <Button x:Name="OpenButton" Content="Open…"
+                ToolTip.Tip="Open a .gp sprite, or the game's All.gsc archive to browse its units (or drop either on the window)" />
         <TextBlock x:Name="FileNameText" VerticalAlignment="Center" FontWeight="SemiBold" MinWidth="120" />
+      </StackPanel>
+
+      <!-- Shown when game data (descriptors) is available -->
+      <StackPanel x:Name="UnitPanel" Orientation="Horizontal" Spacing="8" IsVisible="False">
+        <TextBlock Text="Unit" VerticalAlignment="Center" />
+        <ComboBox x:Name="UnitBox" Width="260" MaxDropDownHeight="520" IsTextSearchEnabled="True"
+                  PlaceholderText="Pick a unit…" ToolTip.Tip="Units described in the game data (type to search)" />
+        <TextBlock Text="State" VerticalAlignment="Center" />
+        <ComboBox x:Name="StateBox" Width="280" MaxDropDownHeight="520" ToolTip.Tip="Animation of the unit" />
       </StackPanel>
 
       <StackPanel Orientation="Horizontal" Spacing="8">
@@ -38,6 +48,7 @@
       <StackPanel x:Name="DirectionPanel" Orientation="Horizontal" Spacing="8" IsVisible="False">
         <CheckBox x:Name="ByDirectionBox" Content="Direction" IsChecked="True"
                   ToolTip.Tip="Play the poses of one direction instead of all frames in file order" />
+        <TextBlock x:Name="DirectionLabel" Text="Direction" VerticalAlignment="Center" IsVisible="False" />
         <ComboBox x:Name="DirectionBox" MinWidth="96" MaxDropDownHeight="420" ToolTip.Tip="Direction the unit faces">
           <ComboBox.ItemTemplate>
             <DataTemplate x:DataType="local:DirectionOption">

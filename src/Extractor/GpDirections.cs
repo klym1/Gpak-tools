@@ -89,6 +89,13 @@ namespace GPExtractor
         /// <summary>Direction in degrees, clockwise from south.</summary>
         public double AngleOf(int direction) => 360.0 * direction / Count;
 
+        /// <summary>The direction closest to an angle in degrees, clockwise from south.</summary>
+        public int DirectionAt(double angle)
+        {
+            var turns = (angle / 360.0 % 1 + 1) % 1;
+            return (int) Math.Round(turns * Count) % Count;
+        }
+
         /// <summary>A short name: a compass point for up to 16 directions, otherwise degrees.</summary>
         public string NameOf(int direction)
         {
@@ -144,7 +151,7 @@ namespace GPExtractor
             }
 
             var anchorX = source.Sprite.AnchorX ?? EstimateAnchorX(file, directions);
-            return new GpDirections(directions, frameCount / directions, anchorX, GpDirectionsSource.Descriptor, source.Descriptor.Name);
+            return new GpDirections(directions, frameCount / directions, anchorX, GpDirectionsSource.Descriptor, source.Descriptor.FileName);
         }
 
         /// <summary>
@@ -304,7 +311,7 @@ namespace GPExtractor
         /// The first pose seen from the front (direction 0) and from behind (the last stored direction) is
         /// symmetric around the anchor; later poses (e.g. lying after death) need not be.
         /// </summary>
-        private static int EstimateAnchorX(GpFile file, int directions)
+        public static int EstimateAnchorX(GpFile file, int directions)
         {
             var centres = new[] { 0, directions - 1 }
                 .Where(frame => frame < file.Frames.Count)

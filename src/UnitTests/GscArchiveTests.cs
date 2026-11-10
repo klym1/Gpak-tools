@@ -15,37 +15,7 @@ namespace UnitTests
         private static readonly byte[] GpData = Encoding.ASCII.GetBytes("GPAK\x01\x02\x03");
         private static readonly byte[] TextData = Encoding.ASCII.GetBytes("STONE1 4\r\nSound\\ResKam1.wav\r\n");
 
-        /// <summary>Builds an archive in the same layout as Cossacks' All.gsc.</summary>
-        private static byte[] BuildArchive(params (string Name, byte[] Content, bool Obfuscate)[] files)
-        {
-            var output = new MemoryStream();
-            var writer = new BinaryWriter(output);
-
-            writer.Write(Encoding.ASCII.GetBytes("GSCfmt"));
-            writer.Write(new byte[] { 0x00, 0x02, 0xCD, 0x78 });
-            writer.Write((uint) files.Length);
-
-            uint offset = 0;
-            foreach (var file in files)
-            {
-                writer.Write(new byte[] { 0x95, 0x7A, 0x5E, 0xC1 });
-                var name = new byte[64];
-                Encoding.ASCII.GetBytes(file.Name).CopyTo(name, 0);
-                writer.Write(name);
-                writer.Write(~offset);
-                writer.Write((uint) file.Content.Length);
-                writer.Write(0u);
-                writer.Write((byte) 1);
-                offset += (uint) file.Content.Length;
-            }
-
-            foreach (var file in files)
-            {
-                writer.Write(file.Obfuscate ? file.Content.Select(b => (byte) (b ^ GscArchive.XorKey)).ToArray() : file.Content);
-            }
-
-            return output.ToArray();
-        }
+        private static byte[] BuildArchive(params (string Name, byte[] Content, bool Obfuscate)[] files) => GpTestFiles.Archive(files);
 
         [Test]
         public void ReadsDirectoryAndDecodesContent()
