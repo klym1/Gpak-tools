@@ -66,6 +66,27 @@ namespace GPExtractor
         /// </summary>
         public IReadOnlyList<(string Animation, int Frame)> FiringFrames { get; private init; } = Array.Empty<(string, int)>();
 
+        /// <summary>The <c>LIFE</c> line: how much damage the object takes before it dies; null if it has none.</summary>
+        public int? Life { get; private init; }
+
+        /// <summary>The <c>DAMAGE attack value</c> lines: the damage each attack does.</summary>
+        public IReadOnlyList<(int Attack, int Value)> Damages { get; private init; } = Array.Empty<(int, int)>();
+
+        /// <summary>
+        /// The damage of an attack animation (<c>ATTACK</c> or <c>ATTACK0</c> is attack 0, <c>ATTACK1</c>
+        /// attack 1, …); null if the descriptor does not give it.
+        /// </summary>
+        public int? DamageOf(string animation)
+        {
+            var number = animation.Substring(animation.IndexOf("ATTACK", StringComparison.OrdinalIgnoreCase) + "ATTACK".Length);
+            var attack = TryInt(number, out var parsed) ? parsed : 0;
+
+            return Damages
+                .Where(damage => damage.Attack == attack)
+                .Select(damage => (int?) damage.Value)
+                .FirstOrDefault();
+        }
+
         /// <summary>Whether any animation has several directions: units, ships, cannons.</summary>
         public bool HasDirections => Animations.Any(animation => animation.Directions > 1);
 
@@ -90,6 +111,8 @@ namespace GPExtractor
             var sounds = new List<GpDescriptorSound>();
             var weapons = new List<GpDescriptorWeapon>();
             var firingFrames = new List<(string Animation, int Frame)>();
+            var damages = new List<(int Attack, int Value)>();
+            int? life = null;
 
             foreach (var line in text.Split('\n'))
             {
@@ -135,6 +158,15 @@ namespace GPExtractor
                 {
                     firingFrames.Add((tokens[1].Substring(1), firingFrame));
                 }
+                else if (tokens[0].Equals("LIFE", StringComparison.OrdinalIgnoreCase) && TryInt(tokens[1], out var lifeValue))
+                {
+                    life ??= lifeValue;
+                }
+                else if (tokens.Length >= 3 && tokens[0].Equals("DAMAGE", StringComparison.OrdinalIgnoreCase)
+                         && TryInt(tokens[1], out var damageAttack) && TryInt(tokens[2], out var damageValue))
+                {
+                    damages.Add((damageAttack, damageValue));
+                }
                 else if (tokens.Length >= 3 && tokens[0].StartsWith('#') && TryInt(tokens[1], out var directions)
                          && TryInt(tokens[2], out var count) && directions > 0)
                 {
@@ -162,6 +194,8 @@ namespace GPExtractor
                 Sounds = sounds,
                 Weapons = weapons,
                 FiringFrames = firingFrames,
+                Life = life,
+                Damages = damages,
             };
         }
 

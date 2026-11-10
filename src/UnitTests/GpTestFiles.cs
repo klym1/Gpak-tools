@@ -125,6 +125,7 @@ namespace UnitTests
                 "SETACTIVEPOINT #ATTACK 2 1 1 1 1",
                 "SOUND 3 #DEATH GONE",
                 "LIFE 50",
+                "DAMAGE 0 30",
                 ""));
 
             var building = Encoding.ASCII.GetBytes(string.Join("\r\n",

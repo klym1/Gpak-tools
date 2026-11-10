@@ -42,6 +42,8 @@ namespace Viewer
         private const double MeleeReach = 40;
         private const double ShotReach = 300;
 
+        private const double LifeBarWidth = 30;
+
         /// <summary>How long after the shot a weapon lands, in ticks.</summary>
         private const int TicksToImpact = 20;
 
@@ -88,7 +90,10 @@ namespace Viewer
             {
                 Ring = new Ellipse { Stroke = RingBrush, StrokeThickness = 2, IsHitTestVisible = false, IsVisible = false },
                 Marker = new Ellipse { Width = 14, Height = 7, Stroke = Brushes.White, StrokeThickness = 1.5, IsHitTestVisible = false, IsVisible = false },
+                LifeBar = new Rectangle { Height = 3, Fill = RingBrush, IsHitTestVisible = false, IsVisible = false, ZIndex = 99999 },
             };
+
+            Field.Children.Add(unit.LifeBar);
 
             Field.Children.Add(unit.Ring);
             Field.Children.Add(unit.Marker);
@@ -193,6 +198,30 @@ namespace Viewer
             return fires ? ShotReach : MeleeReach;
         }
 
+        /// <summary>An idle unit that is attacked turns on its attacker, if it can attack at all.</summary>
+        private void FightBack(FieldUnitView unit, FieldUnitView attacker)
+        {
+            var idle = unit.Target == null && !unit.IsDead && !unit.PlaysOnce && !unit.Movement.IsWalking;
+            if (idle && AttackStateOf(unit.Kind) != null)
+            {
+                unit.Target = attacker;
+            }
+        }
+
+        /// <summary>
+        /// The unit's attack lands: the target loses the attack's damage from its life (all of it, if the unit
+        /// has no damage given) and dies when none is left; otherwise the unit attacks again.
+        /// </summary>
+        private void Hit(FieldUnitView unit, FieldUnitView target)
+        {
+            target.Life = Math.Max(0, target.Life - (unit.Kind.Descriptor.DamageOf(unit.State.Code) ?? target.Life));
+            if (target.Life == 0)
+            {
+                Kill(target);
+                unit.Target = null;
+            }
+        }
+
         /// <summary>
         /// Goes after the unit's target: walks until it is within reach, then turns to it and attacks.
         /// </summary>
@@ -219,6 +248,7 @@ namespace Viewer
                 unit.Movement.Stop();
                 unit.Movement.TurnTo(FieldUnit.HeadingOf(way));
                 PlayOnce(unit, attack);
+                FightBack(target, unit);
             }
             else
             {
@@ -232,6 +262,7 @@ namespace Viewer
             Field.Children.Remove(unit.Image);
             Field.Children.Remove(unit.Ring);
             Field.Children.Remove(unit.Marker);
+            Field.Children.Remove(unit.LifeBar);
             _fieldUnits.Remove(unit);
         }
 
@@ -262,8 +293,7 @@ namespace Viewer
                 // The attack is over (and its target falls), or the unit has fallen and now lies dead.
                 if (!unit.IsDead && unit.Target is { IsDead: false } hit)
                 {
-                    Kill(hit);
-                    unit.Target = null;
+                    Hit(unit, hit);
                 }
 
                 SetFieldState(unit, unit.IsDead ? StateOf(unit.Kind, "DEATHLIE") ?? unit.State : StandStateOf(unit.Kind));
@@ -463,6 +493,7 @@ namespace Viewer
                 Field.Children.Remove(unit.Image);
                 Field.Children.Remove(unit.Ring);
                 Field.Children.Remove(unit.Marker);
+                Field.Children.Remove(unit.LifeBar);
             }
 
             _fieldUnits.Clear();
@@ -783,6 +814,15 @@ namespace Viewer
                 unit.Ring.Height = ringHeight;
                 Canvas.SetLeft(unit.Ring, feet.X - ringWidth / 2);
                 Canvas.SetTop(unit.Ring, feet.Y - ringHeight / 2);
+
+                var wounded = !unit.IsDead && unit.Life < unit.FullLife;
+                unit.LifeBar.IsVisible = wounded;
+                if (wounded)
+                {
+                    unit.LifeBar.Width = Math.Max(1, Math.Round(LifeBarWidth * unit.Life / (double) unit.FullLife));
+                    Canvas.SetLeft(unit.LifeBar, feet.X - LifeBarWidth / 2);
+                    Canvas.SetTop(unit.LifeBar, (unit.DrawnBounds?.Top ?? feet.Y - 40) - 6);
+                }
 
                 var target = unit.Movement.Target;
                 unit.Marker.IsVisible = unit.IsSelected && target != null;

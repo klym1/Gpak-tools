@@ -18,7 +18,14 @@ namespace Viewer
             Color = color;
             State = state;
             Movement = movement;
+            Life = FullLife;
         }
+
+        /// <summary>The life the unit starts with: its descriptor's, or 1 if it gives none.</summary>
+        public int FullLife => Kind.Descriptor.Life ?? 1;
+
+        /// <summary>The life left; the unit dies when an attack takes the last of it.</summary>
+        public int Life { get; internal set; }
 
         /// <summary>The kind of unit (its descriptor).</summary>
         public GameObject Kind { get; }
@@ -60,6 +67,9 @@ namespace Viewer
         internal Ellipse Ring { get; set; }
 
         internal Ellipse Marker { get; set; }
+
+        /// <summary>Shows the life left, above a wounded unit.</summary>
+        internal Rectangle LifeBar { get; set; }
 
         /// <summary>The frames drawn last; kept until the frames for a new state or direction are ready.</summary>
         internal FieldFrames Shown { get; set; }

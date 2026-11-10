@@ -353,13 +353,34 @@ namespace ViewerTests
                 Assert.That(unit.Direction, Is.EqualTo(12));
                 Assert.That(enemy.IsDead, Is.False);
 
-                // ... and when the attack is over the enemy falls and the unit stands again.
+                // The enemy fights back at once, ...
+                Assert.That(enemy.Target, Is.SameAs(unit));
                 window.Tick();
+                Assert.That(enemy.State.Code, Is.EqualTo("ATTACK"));
+                Assert.That(enemy.Direction, Is.EqualTo(4), "west, facing the unit");
+
+                // ... and both lose life as attacks land (30 of 50): the unit's first, ...
                 window.Tick();
+                Assert.That(enemy.Life, Is.EqualTo(20));
+                Assert.That(enemy.IsDead, Is.False);
+                Assert.That(enemy.LifeBar.IsVisible, Is.True);
+                window.Tick();
+                Assert.That(unit.Life, Is.EqualTo(20));
+                Assert.That(unit.State.Code, Is.EqualTo("ATTACK"), "it attacks again");
+
+                // ... so its second attack kills the enemy before the enemy's second lands; it stands again.
+                for (var i = 0; i < 10 && !enemy.IsDead; i++)
+                {
+                    window.Tick();
+                }
+
                 Assert.That(enemy.IsDead, Is.True);
                 Assert.That(enemy.State.Code, Is.EqualTo("DEATH"));
-                Assert.That(unit.State.Code, Is.EqualTo("STAND"));
+                Assert.That(unit.IsDead, Is.False);
+                Assert.That(unit.Life, Is.EqualTo(20));
                 Assert.That(unit.Target, Is.Null);
+                window.Tick();
+                Assert.That(unit.State.Code, Is.EqualTo("STAND"));
                 Assert.That(friend.State.Code, Is.EqualTo("STAND"), "units that were not selected stay out of it");
 
                 window.Close();

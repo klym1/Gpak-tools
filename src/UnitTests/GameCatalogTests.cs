@@ -59,6 +59,11 @@ namespace UnitTests
             animations["MOTION_R"].Frames.Should().Equal((1, 2), (1, 3));
             // A descending range plays backwards.
             animations["MOTION_LB"].Frames.Should().Equal((1, 3), (1, 2));
+
+            descriptor.Life.Should().Be(50);
+            descriptor.DamageOf("ATTACK").Should().Be(30);
+            descriptor.DamageOf("ATTACK0").Should().Be(30);
+            descriptor.DamageOf("ATTACK2").Should().BeNull();
         }
 
         [Test]
