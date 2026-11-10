@@ -70,6 +70,15 @@ namespace GPExtractor
         };
 
         private readonly ConcurrentDictionary<string, GpFile> _sprites = new ConcurrentDictionary<string, GpFile>(StringComparer.OrdinalIgnoreCase);
+        private static readonly Dictionary<string, string> BlendTableFiles = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["WHITE"] = "AGEW_1W",
+            ["DARK"] = "AGEW_1D",
+            ["RED"] = "AGEW_1R",
+            ["BRIGHT"] = "AGEW_1BR",
+        };
+
+        private readonly ConcurrentDictionary<string, GrdTable> _blendTables = new ConcurrentDictionary<string, GrdTable>(StringComparer.OrdinalIgnoreCase);
         private readonly ConcurrentDictionary<string, GameObject> _effects = new ConcurrentDictionary<string, GameObject>(StringComparer.OrdinalIgnoreCase);
         private readonly ConcurrentDictionary<string, RlcFile> _rlcSprites = new ConcurrentDictionary<string, RlcFile>(StringComparer.OrdinalIgnoreCase);
 
@@ -107,6 +116,33 @@ namespace GPExtractor
                     : StatesOf(WeaponAnimations).FirstOrDefault(s => s.Code.Equals(name, StringComparison.OrdinalIgnoreCase) && s.Frames.Count > 0);
 
                 return state == null ? null : new GameObject(WeaponAnimations, "WEAPON.ADS", new[] { state });
+            });
+        }
+
+        /// <summary>
+        /// The table (<c>*.GRD</c>) the game lays a weapon of a transparency over the picture with: of its 32
+        /// rows, row n is what every palette color turns into under a pixel of strength n: all the way to one
+        /// color in the last row (light gray for <c>WHITE</c>, smoke). Null for <c>NONE</c> and for kinds
+        /// that are not known.
+        /// </summary>
+        public GrdTable BlendTable(string transparency)
+        {
+            return _blendTables.GetOrAdd(transparency ?? "", name =>
+            {
+                var path = BlendTableFiles.TryGetValue(name, out var file) ? Files.Find(file, ".GRD") : null;
+                if (path == null)
+                {
+                    return null;
+                }
+
+                try
+                {
+                    return GrdTable.Parse(Files.Read(path));
+                }
+                catch (InvalidDataException)
+                {
+                    return null;
+                }
             });
         }
 

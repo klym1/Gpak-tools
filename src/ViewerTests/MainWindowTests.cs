@@ -112,7 +112,13 @@ namespace ViewerTests
                 Assert.That(window.FindControl<StackPanel>("UnitPanel").IsVisible, Is.True);
                 Assert.That(window.FindControl<ComboBox>("UnitBox").ItemCount, Is.EqualTo(1), "only units, not buildings");
                 Assert.That(window.FindControl<Button>("AddUnitButton"), Is.Null);
-                Assert.That(window.FieldUnits.Single().Kind.Descriptor.FileName, Is.EqualTo("TST"));
+                Assert.That(window.FieldUnits.Select(unit => unit.Kind.Descriptor.FileName), Is.EqualTo(new[] { "TST", "TST" }));
+                Assert.That(
+                      window.FieldUnits.Select(unit => unit.Color.Offset)
+                    , Is.EqualTo(new[] { NationColorOffset.Blue.Offset, NationColorOffset.Red.Offset })
+                    , "each kind starts in two colors"
+                );
+                Assert.That(window.SelectedFieldUnits, Is.EqualTo(new[] { window.FieldUnits[0] }));
                 Assert.That(window.IsPlaying, Is.True);
 
                 window.Close();
@@ -145,7 +151,7 @@ namespace ViewerTests
                 window.Tick();
                 await window.RenderingCompleted;
 
-                var unit = window.FieldUnits.Single();
+                var unit = OnlyUnit(window);
                 Assert.That(unit.State.Code, Is.EqualTo("STAND"));
                 Assert.That(window.FindControl<TextBlock>("StatusText").Text, Is.Empty);
                 Assert.That(DrawnColumnsAtFeet(unit), Is.EqualTo(new[] { 0 }));
@@ -176,7 +182,7 @@ namespace ViewerTests
                 window.UpdateLayout();
 
                 // Standing is silent.
-                var unit = window.FieldUnits.Single();
+                var unit = OnlyUnit(window);
                 for (var i = 0; i < 8; i++)
                 {
                     window.Tick();
@@ -238,7 +244,7 @@ namespace ViewerTests
                 window.UpdateLayout();
 
                 var attackButton = window.FindControl<Button>("AttackButton");
-                var unit = window.FieldUnits.Single();
+                var unit = OnlyUnit(window);
                 Assert.That(attackButton.IsEnabled, Is.True, "a unit is selected");
 
                 // The attack plays once (3 frames: its sound at frame 1, its weapon's shot at frame 2), then the
@@ -318,7 +324,7 @@ namespace ViewerTests
                 window.UpdateLayout();
 
                 // A blue unit, a blue friend, and a red enemy far to the east.
-                var unit = window.FieldUnits.Single();
+                var unit = OnlyUnit(window);
                 unit.Movement.PlaceAt(new Point(100, 200));
                 var friend = window.AddToField("TST", new Point(100, 300));
                 Click(window, new Point(300, 50), MouseButton.Left); // deselect, so the friend stays blue
@@ -415,7 +421,7 @@ namespace ViewerTests
                 window.UpdateLayout();
 
                 // A unit stands right on the walker's way east.
-                var walker = window.FieldUnits.Single();
+                var walker = OnlyUnit(window);
                 walker.Movement.PlaceAt(new Point(100, 200));
                 var standing = window.AddToField("TST", new Point(300, 200));
                 window.Tick();
@@ -488,7 +494,7 @@ namespace ViewerTests
                 window.Pause();
                 window.UpdateLayout();
 
-                var east = window.FieldUnits.Single();
+                var east = OnlyUnit(window);
                 east.Movement.PlaceAt(new Point(100, 200));
                 var west = window.AddToField("TST", new Point(500, 200));
                 window.Tick();
@@ -532,7 +538,7 @@ namespace ViewerTests
                 window.Pause();
                 window.UpdateLayout();
 
-                var unit = window.FieldUnits.Single();
+                var unit = OnlyUnit(window);
                 var feet = new Point(400, 300);
                 unit.Movement.PlaceAt(feet);
                 unit.Movement.TurnTo(90); // west
@@ -612,7 +618,7 @@ namespace ViewerTests
                 // The unit faces west; one bystander stands where a shot lands (300 pixels on), one halfway out
                 // of its blast (40 pixels, from the edge of the unit's own room of 10), one just outside, one well
                 // short of it.
-                var unit = window.FieldUnits.Single();
+                var unit = OnlyUnit(window);
                 unit.Movement.PlaceAt(new Point(500, 200));
                 unit.Movement.TurnTo(90);
                 var short_ = window.AddToField("TST", new Point(350, 200));
@@ -681,7 +687,7 @@ namespace ViewerTests
 
                 // ATTACK2 reaches 200 pixels on the ground (ATTACK_RADIUS 2 100 200): 200 across the screen,
                 // 100 down it.
-                var unit = window.FieldUnits.Single();
+                var unit = OnlyUnit(window);
                 unit.Movement.PlaceAt(new Point(500, 200));
                 unit.Movement.TurnTo(90);
                 var west = window.AddToField("TST", new Point(300, 200));
@@ -766,7 +772,7 @@ namespace ViewerTests
 
                 Assert.That(window.Title, Is.EqualTo("GP Viewer - All.gsc"));
                 Assert.That(ViewerSettings.LastGameData, Is.EqualTo(archive), "remembered for the next start");
-                var unit = window.FieldUnits.Single();
+                var unit = OnlyUnit(window);
                 Assert.That(unit.State.Code, Is.EqualTo("STAND"));
                 Assert.That(unit.IsSelected, Is.True);
                 Assert.That(unit.Direction, Is.EqualTo(0), "faces the viewer");
@@ -842,7 +848,7 @@ namespace ViewerTests
                 window.UpdateLayout();
 
                 // Two more units; the color picker recolors the selected unit and colors the ones added next.
-                var first = window.FieldUnits.Single();
+                var first = OnlyUnit(window);
                 first.Movement.PlaceAt(new Point(100, 200));
                 // Picking a unit in the list puts one on the field; the list clears, so it can be picked again.
                 var unitBox = window.FindControl<ComboBox>("UnitBox");
@@ -907,7 +913,7 @@ namespace ViewerTests
 
                 // Opening other game data starts the field over.
                 await window.LoadFile(archive);
-                Assert.That(window.FieldUnits, Has.Count.EqualTo(1));
+                Assert.That(window.FieldUnits, Has.Count.EqualTo(2));
                 Assert.That(window.FieldUnits, Has.None.SameAs(first));
 
                 window.Close();
@@ -916,6 +922,17 @@ namespace ViewerTests
             {
                 Directory.Delete(folder, true);
             }
+        }
+
+        /// <summary>The first of the units the field starts with, the others taken off it.</summary>
+        private static FieldUnitView OnlyUnit(MainWindow window)
+        {
+            foreach (var other in window.FieldUnits.Skip(1).ToList())
+            {
+                window.RemoveFromField(other);
+            }
+
+            return window.FieldUnits.Single();
         }
 
         private static string UnitArchiveFolder(out string archive)

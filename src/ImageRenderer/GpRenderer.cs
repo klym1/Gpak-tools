@@ -28,6 +28,12 @@ namespace ImageRenderer
         /// <summary>Color used for <see cref="GpPartType.PlayerColor"/> parts.</summary>
         public NationColorOffset PlayerColor { get; set; } = NationColorOffset.Red;
 
+        /// <summary>
+        /// Draws the sprite as the game draws smoke: every pixel in this one color, the more opaque the
+        /// brighter the pixel is, in the 32 steps of the game's blend tables. Null draws the sprite as it is.
+        /// </summary>
+        public Color? Fog { get; set; }
+
         /// <summary>Canvas color under the sprite; transparent by default.</summary>
         public Color Background { get; set; } = Color.Transparent;
 
@@ -120,6 +126,11 @@ namespace ImageRenderer
             return new RenderedFrame(image, Array.Empty<GpFramePart>());
         }
 
+        private const int FogLevels = 32;
+
+        /// <summary>The strength of a pixel laid over the picture as fog: its brightness in 32 steps.</summary>
+        private static int FogLevelOf(Color color) => Math.Max(color.R, Math.Max(color.G, color.B)) * FogLevels / 256;
+
         private void DrawPart(ImageView image, GpFile file, GpFramePart part, int offsetX, int offsetY, bool mirror)
         {
             var rows = part.DecodeRows();
@@ -147,7 +158,9 @@ namespace ImageRenderer
                         {
                             var index = pixels[next++];
                             color = part.Type == GpPartType.PlayerColor ? _palette[PlayerColor.Offset + index] : _palette[index];
-                            color = Color.FromArgb(alpha, color);
+                            color = Fog is { } fog
+                                ? Color.FromArgb(FogLevelOf(color) * 255 / (FogLevels - 1), fog)
+                                : Color.FromArgb(alpha, color);
                         }
                         else
                         {

@@ -205,8 +205,13 @@ namespace UnitTests
             // The cannon leaves smoke where it stands (itself it flies for one cycle only, so it goes nowhere);
             // its ball flies as far as it takes, and where it lands there is a bang.
             var (muzzle, impact, flying) = catalog.Weapons.EffectsOf("CANNON");
-            muzzle.Should().Equal("SMOKE");
-            impact.Should().Equal("BANG");
+            muzzle.Should().Equal(new WeaponEffect("SMOKE", "WHITE"));
+            impact.Should().Equal(new WeaponEffect("BANG", "NONE"));
+
+            // The smoke is laid over the picture with the table of its transparency.
+            catalog.BlendTable("white")[31, 5].Should().Be(109);
+            catalog.BlendTable("NONE").Should().BeNull();
+            catalog.BlendTable("ALPHAGB").Should().BeNull("its table is not known");
             flying.Should().Equal(new WeaponFlight("SHELL", 45, 40));
             var nothing = catalog.Weapons.EffectsOf("NOTHING");
             nothing.Muzzle.Should().BeEmpty("an unknown weapon shows nothing");

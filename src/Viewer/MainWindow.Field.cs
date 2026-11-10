@@ -24,6 +24,12 @@ namespace Viewer
         /// <summary>Nearest a new unit is put to another one.</summary>
         private const double FreeSpace = 50;
 
+        // The armies the field starts with: these kinds (by descriptor name; PUS is the cannon), one of each a side.
+        private static readonly string[] StartingUnits = { "PUS", "MUS", "GRE", "PIR", "DR2" };
+        private static readonly NationColorOffset EnemyColor = NationColorOffset.Red;
+        private const double ArmyDistance = 300;
+        private const double ArmyRowSpace = 70;
+
         private static readonly IBrush RingBrush = new SolidColorBrush(Avalonia.Media.Color.FromRgb(0x9C, 0xFF, 0x57));
 
         private readonly List<FieldUnitView> _fieldUnits = new List<FieldUnitView>();
@@ -61,7 +67,7 @@ namespace Viewer
 
         // Weapon animations playing on the field (smoke, explosions), and those still to appear where a shot lands.
         private readonly List<FieldUnitView> _effects = new();
-        private readonly List<(int TicksLeft, string Animation, Point Where)> _impactEffects = new();
+        private readonly List<(int TicksLeft, WeaponEffect Effect, Point Where)> _impactEffects = new();
         private readonly Dictionary<(GameObject, GameObjectState), IReadOnlyList<GameObjectShot>> _stateShots = new();
 
         // Shots on their way: they do their damage where they land, to whoever is there then.
@@ -87,7 +93,7 @@ namespace Viewer
         private bool _dragging;
         private bool _dragAdds;
 
-        private readonly record struct FieldFramesKey(GameObject Kind, GameObjectState State, int Direction, int Color);
+        private readonly record struct FieldFramesKey(GameObject Kind, GameObjectState State, int Direction, int Color, int Fog);
 
         /// <summary>Whether game data is open, so units can be put on the field.</summary>
         private bool IsFieldMode => _catalog != null;
@@ -104,15 +110,40 @@ namespace Viewer
         /// </summary>
         public FieldUnitView AddToField(string descriptorName, Point? at = null)
         {
-            var kind = _catalog?.Units.FirstOrDefault(o => o.Descriptor.FileName.Equals(descriptorName, StringComparison.OrdinalIgnoreCase))
+            var kind = FindUnit(_catalog, descriptorName)
                        ?? throw new ArgumentException("No such unit: " + descriptorName, nameof(descriptorName));
             return AddToField(kind, at);
         }
 
-        private FieldUnitView AddToField(GameObject kind, Point? at = null)
+        private static GameObject FindUnit(GameCatalog catalog, string descriptorName) =>
+            catalog?.Units.FirstOrDefault(o => o.Descriptor.FileName.Equals(descriptorName, StringComparison.OrdinalIgnoreCase));
+
+        /// <summary>
+        /// Puts two armies on the field, either side of the middle: one unit of each kind in the picked color
+        /// on the left, which become the selection, and one in <see cref="EnemyColor"/> on the right.
+        /// </summary>
+        private void AddStartingArmies(IReadOnlyList<GameObject> kinds)
+        {
+            var middle = FieldMiddle();
+            var own = new List<FieldUnitView>();
+            for (var row = 0; row < kinds.Count; row++)
+            {
+                var y = middle.Y + (row - (kinds.Count - 1) / 2.0) * ArmyRowSpace;
+                own.Add(AddToField(kinds[row], ClampToField(new Point(middle.X - ArmyDistance / 2, y))));
+                AddToField(
+                      kinds[row]
+                    , ClampToField(new Point(middle.X + ArmyDistance / 2, y))
+                    , EnemyColor
+                );
+            }
+
+            Select(own, add: false);
+        }
+
+        private FieldUnitView AddToField(GameObject kind, Point? at = null, NationColorOffset? color = null)
         {
 
-            var unit = new FieldUnitView(kind, PlayerColor, StandStateOf(kind), new FieldUnit(at ?? FreePlace()))
+            var unit = new FieldUnitView(kind, color ?? PlayerColor, StandStateOf(kind), new FieldUnit(at ?? FreePlace()))
             {
                 Ring = new Ellipse { Stroke = RingBrush, StrokeThickness = 2, IsHitTestVisible = false, IsVisible = false },
                 Marker = new Ellipse { Width = 14, Height = 7, Stroke = Brushes.White, StrokeThickness = 1.5, IsHitTestVisible = false, IsVisible = false },
@@ -512,7 +543,7 @@ namespace Viewer
             }
         }
 
-        private void RemoveFromField(FieldUnitView unit)
+        internal void RemoveFromField(FieldUnitView unit)
         {
             Field.Children.Remove(unit.Image);
             Field.Children.Remove(unit.Ring);
@@ -869,14 +900,19 @@ namespace Viewer
             return new Point(Math.Clamp(point.X, 0, Math.Max(size.Width, 0)), Math.Clamp(point.Y, 0, Math.Max(size.Height, 0)));
         }
 
+        private Point FieldMiddle()
+        {
+            var size = FieldSize();
+            return size.Width > 0 && size.Height > 0
+                ? new Point(Math.Round(size.Width / 2), Math.Round(size.Height * 0.6))
+                : new Point(240, 200);
+        }
+
         /// <summary>The place nearest the middle of the field that is not taken by another unit.</summary>
         private Point FreePlace()
         {
             var size = FieldSize();
-            var middle = size.Width > 0 && size.Height > 0
-                ? new Point(Math.Round(size.Width / 2), Math.Round(size.Height * 0.6))
-                : new Point(240, 200);
-
+            var middle = FieldMiddle();
             var area = new Rect(size);
             return Formation.Around(middle, 121, 64)
                 .Where(place => size.Width <= 0 || area.Contains(place))
@@ -1115,7 +1151,13 @@ namespace Viewer
         /// </summary>
         private Point DrawSprite(FieldUnitView unit)
         {
-            var key = new FieldFramesKey(unit.Kind, unit.State, unit.Direction, unit.Color.Offset);
+            var key = new FieldFramesKey(
+                  unit.Kind
+                , unit.State
+                , unit.Direction
+                , unit.Color.Offset
+                , unit.Fog?.ToArgb() ?? 0
+            );
             if (_readyFrames.TryGetValue(key, out var frames))
             {
                 unit.Shown = frames;
@@ -1164,9 +1206,14 @@ namespace Viewer
             {
                 var (muzzle, impact, flying) = _catalog.Weapons.EffectsOf(shot.Weapon);
                 var from = WeaponPositionOf(unit, shot, frame);
-                foreach (var animation in muzzle)
+                foreach (var effect in muzzle)
                 {
-                    AddEffect(animation, from, unit.Movement.Heading);
+                    AddEffect(
+                          effect.Animation
+                        , from
+                        , unit.Movement.Heading
+                        , effect.Transparency
+                    );
                 }
 
                 // What flies or bursts takes its time to get there; a bullet is there at once.
@@ -1256,7 +1303,7 @@ namespace Viewer
         }
 
         /// <summary>Puts a weapon animation on the field, to play once; null if there is no such animation.</summary>
-        private FieldUnitView AddEffect(string animation, Point position, double heading)
+        private FieldUnitView AddEffect(string animation, Point position, double heading, string transparency = null)
         {
             var kind = _catalog.Effect(animation);
             if (kind == null)
@@ -1264,12 +1311,18 @@ namespace Viewer
                 return null;
             }
 
+            // The last row of the game's blend table is the one color everything turns into under the thickest smoke.
+            var blend = _catalog.BlendTable(transparency);
+
             var effect = new FieldUnitView(
                   kind
                 , NationColorOffset.Red
                 , kind.States[0]
                 , new FieldUnit(position, heading)
-            );
+            )
+            {
+                Fog = blend == null ? null : _palette[blend[blend.Rows - 1, 0]],
+            };
             Field.Children.Add(effect.Image);
             _effects.Add(effect);
             return effect;
@@ -1300,15 +1353,20 @@ namespace Viewer
 
             for (var i = _impactEffects.Count - 1; i >= 0; i--)
             {
-                var (ticksLeft, animation, where) = _impactEffects[i];
+                var (ticksLeft, effect, where) = _impactEffects[i];
                 if (ticksLeft > 1)
                 {
-                    _impactEffects[i] = (ticksLeft - 1, animation, where);
+                    _impactEffects[i] = (ticksLeft - 1, effect, where);
                     continue;
                 }
 
                 _impactEffects.RemoveAt(i);
-                AddEffect(animation, where, 0);
+                AddEffect(
+                      effect.Animation
+                    , where
+                    , 0
+                    , effect.Transparency
+                );
             }
         }
 
@@ -1322,7 +1380,15 @@ namespace Viewer
 
             TrimFrameCache();
 
-            var request = new RenderRequest(_catalog, unit.Kind, unit.State, unit.Directions, key.Direction, unit.Color);
+            var request = new RenderRequest(
+                  _catalog
+                , unit.Kind
+                , unit.State
+                , unit.Directions
+                , key.Direction
+                , unit.Color
+                , unit.Fog
+            );
             var task = RenderFieldFramesAsync(key, request);
             if (!task.IsCompleted)
             {

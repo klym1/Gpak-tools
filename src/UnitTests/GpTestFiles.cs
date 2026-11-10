@@ -145,6 +145,8 @@ namespace UnitTests
                 ("TSTS.GP", UnitAt(poses: 1, anchorX: 20, anchorY: 10)),
                 ("TSTG.GP", UnitAt(poses: 4, anchorX: 30, anchorY: 15)),
                 ("DEPO.MD", building),
+                // The blend table of WHITE: in its last row every color has turned into color 109.
+                ("AGEW_1W.GRD", Enumerable.Range(0, 32 * 256).Select(i => (byte) (i / 256 == 31 ? 109 : i % 256)).ToArray()),
                 ("WEAPON.ADS", Encoding.ASCII.GetBytes(string.Join("\r\n",
                     "// Weapon animations: smoke with directions, a bang without",
                     "USERLC 0 tstg NONE -30 -15",
@@ -156,7 +158,7 @@ namespace UnitTests
                     "[MEMBERS]",
                     "//NAME #Animation",
                     "CANNON #POINT 0 0 NONE HI_GRAVITY ANGLE 60 1",
-                    "SMOKE  #SMOKE 0 0 NONE NO_GRAVITY STAND 1 1",
+                    "SMOKE  #SMOKE 0 0 WHITE NO_GRAVITY STAND 1 1",
                     "BALL   #SHELL 0 40 NONE HI_GRAVITY ANGLE 45 -1",
                     "BANG   #BANG  0 0 NONE NO_GRAVITY SLIGHTUP 0 1",
                     "[SYNCWEAPON]",

@@ -12,6 +12,12 @@ namespace GPExtractor
     /// radius transparency gravity propagation speed cycles</c>), and <c>//</c> comments.
     /// </summary>
     /// <summary>
+    /// A weapon that is drawn where it appears: its animation and how it is laid over what is behind it
+    /// (<c>NONE</c>: as it is; <c>WHITE</c>, <c>DARK</c>, …: see <see cref="GameCatalog.BlendTable"/>).
+    /// </summary>
+    public sealed record WeaponEffect(string Animation, string Transparency);
+
+    /// <summary>
     /// A weapon in flight: its animation, the angle above the ground it is launched at, in degrees, and how
     /// far from where it lands it does damage.
     /// </summary>
@@ -33,8 +39,8 @@ namespace GPExtractor
         // The animation of weapons that are not drawn.
         private const string NoAnimation = "POINT";
 
-        private Dictionary<string, (string Animation, bool Stays, bool Travels, double LaunchAngle, double Radius)> Members { get; init; } =
-            new Dictionary<string, (string, bool, bool, double, double)>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, (string Animation, bool Stays, bool Travels, double LaunchAngle, double Radius, string Transparency)> Members { get; init; } =
+            new Dictionary<string, (string, bool, bool, double, double, string)>(StringComparer.OrdinalIgnoreCase);
 
         // The angle a weapon is taken to be launched at when the file gives its speed instead: an arrow's.
         private const double DefaultLaunchAngle = 15;
@@ -92,10 +98,10 @@ namespace GPExtractor
         /// Also the weapons that travel from the muzzle to the impact and are drawn (a cannonball, an arrow),
         /// with the angle above the ground they are launched at: 0 for one that flies straight.
         /// </returns>
-        public (IReadOnlyList<string> Muzzle, IReadOnlyList<string> Impact, IReadOnlyList<WeaponFlight> Flying) EffectsOf(string weapon)
+        public (IReadOnlyList<WeaponEffect> Muzzle, IReadOnlyList<WeaponEffect> Impact, IReadOnlyList<WeaponFlight> Flying) EffectsOf(string weapon)
         {
-            var muzzle = new List<string>();
-            var impact = new List<string>();
+            var muzzle = new List<WeaponEffect>();
+            var impact = new List<WeaponEffect>();
             var flying = new List<WeaponFlight>();
             var level = new List<(string Weapon, bool Landed)> { (weapon, false) };
 
@@ -111,7 +117,7 @@ namespace GPExtractor
                         var drawn = !member.Animation.Equals(NoAnimation, StringComparison.OrdinalIgnoreCase);
                         if (member.Stays && drawn)
                         {
-                            (landed ? impact : muzzle).Add(member.Animation);
+                            (landed ? impact : muzzle).Add(new WeaponEffect(member.Animation.ToUpperInvariant(), member.Transparency));
                         }
                         else if (member.Travels && drawn && !landed)
                         {
@@ -128,8 +134,8 @@ namespace GPExtractor
             }
 
             return (
-                  muzzle.Distinct(StringComparer.OrdinalIgnoreCase).ToList()
-                , impact.Distinct(StringComparer.OrdinalIgnoreCase).ToList()
+                  muzzle.Distinct().ToList()
+                , impact.Distinct().ToList()
                 , flying.Distinct().ToList()
             );
         }
@@ -159,7 +165,7 @@ namespace GPExtractor
             var sounds = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             var launchedTogether = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase);
             var bornOnExplosion = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase);
-            var members = new Dictionary<string, (string Animation, bool Stays, bool Travels, double LaunchAngle, double Radius)>(StringComparer.OrdinalIgnoreCase);
+            var members = new Dictionary<string, (string Animation, bool Stays, bool Travels, double LaunchAngle, double Radius, string Transparency)>(StringComparer.OrdinalIgnoreCase);
             var section = "";
 
             foreach (var rawLine in text.Split('\n'))
@@ -194,7 +200,7 @@ namespace GPExtractor
                     }
 
                     double.TryParse(tokens[3], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var radius);
-                    members.TryAdd(tokens[0], (tokens[1].Substring(1), stays, !stays && endless, angle, radius));
+                    members.TryAdd(tokens[0], (tokens[1].Substring(1), stays, !stays && endless, angle, radius, tokens[4].ToUpperInvariant()));
                 }
                 else if (section == "SOUND" && tokens.Length >= 2)
                 {

@@ -98,7 +98,7 @@ namespace Viewer
 
         /// <summary>
         /// Opens game data: the game's All.gsc, a folder extracted from it, or a sprite inside such a folder.
-        /// The field starts over with the first unit; <see cref="RenderingCompleted"/> completes when it is drawn.
+        /// The field starts over with two armies; <see cref="RenderingCompleted"/> completes when they are drawn.
         /// </summary>
         public Task LoadFile(string path)
         {
@@ -258,12 +258,10 @@ namespace Viewer
 
             try
             {
-                var (catalog, first) = await Task.Run(() =>
+                var (catalog, starting) = await Task.Run(() =>
                 {
                     var opened = OpenGameData(path);
-                    // Start with a unit that can be drawn: some use sprites that are missing or not GP files.
-                    var drawable = opened?.Units.FirstOrDefault(unit => HasSprites(opened, unit, StandStateOf(unit)));
-                    return (opened, drawable ?? opened?.Units.FirstOrDefault());
+                    return (opened, opened == null ? null : StartingKinds(opened));
                 });
                 if (version != _loadVersion)
                 {
@@ -283,14 +281,14 @@ namespace Viewer
                 Title = "GP Viewer - " + Path.GetFileName(catalog.Files.Source);
                 FileNameText.Text = Path.GetFileName(catalog.Files.Source);
 
-                if (first == null)
+                if (starting.Count == 0)
                 {
                     StatusText.Text = "No units found in " + path;
                     return;
                 }
 
                 StatusText.Text = "";
-                AddToField(first);
+                AddStartingArmies(starting);
                 Play();
             }
             catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is InvalidDataException)
@@ -300,6 +298,24 @@ namespace Viewer
                     StatusText.Text = "Failed to open " + path + ": " + ex.Message;
                 }
             }
+        }
+
+        /// <summary>
+        /// The kinds of units the field starts with: the preferred ones that are there, then the first others,
+        /// only those that can be drawn (some use sprites that are missing or not GP files) if there are any.
+        /// </summary>
+        private static IReadOnlyList<GameObject> StartingKinds(GameCatalog catalog)
+        {
+            var kinds = StartingUnits
+                .Select(name => FindUnit(catalog, name))
+                .Where(unit => unit != null)
+                .Concat(catalog.Units)
+                .Distinct()
+                .Where(unit => HasSprites(catalog, unit, StandStateOf(unit)))
+                .Take(StartingUnits.Length)
+                .ToList();
+
+            return kinds.Count > 0 ? kinds : catalog.Units.Take(1).ToList();
         }
 
         /// <summary>Whether every sprite a state uses is there.</summary>
@@ -345,7 +361,7 @@ namespace Viewer
         /// <summary>What to render: a unit's state from one direction, in one color.</summary>
         private sealed record RenderRequest(
             GameCatalog Catalog, GameObject Unit, GameObjectState State,
-            GpDirections Directions, int Direction, NationColorOffset Color);
+            GpDirections Directions, int Direction, NationColorOffset Color, Color? Fog = null);
 
         /// <summary>One image to render: a frame of a sprite placed on the shared canvas.</summary>
         private sealed record FrameJob(int Number, UnitSprite File, int Frame, bool Mirror, int OffsetX, int OffsetY, string Error = null);
@@ -360,6 +376,7 @@ namespace Viewer
             {
                 PlayerColor = request.Color,
                 Background = Color.Transparent,
+                Fog = request.Fog,
             };
 
             var (jobs, width, height, anchor) = PlanUnit(request);

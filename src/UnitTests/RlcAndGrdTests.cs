@@ -101,6 +101,31 @@ namespace UnitTests
         }
 
         [Test]
+        public void DrawsFogMoreOpaqueTheBrighterThePixel()
+        {
+            // Palette: color i is the gray i.
+            var colors = Enumerable.Range(0, 256).SelectMany(i => new[] { (byte) i, (byte) i, (byte) i }).ToArray();
+            var paletteFile = Path.Combine(Path.GetTempPath(), "fog-test-" + Guid.NewGuid() + ".pal");
+            File.WriteAllBytes(paletteFile, colors);
+            var palette = ImageRenderer.Palette.Load(paletteFile);
+            File.Delete(paletteFile);
+
+            var file = GpFile.Parse(GpTestFiles.Build(new[]
+            {
+                GpTestFiles.Line(0, 0, 1, 255),
+                GpTestFiles.Line(1, 0, 1, 128),
+                GpTestFiles.Line(2, 0, 1, 7),
+            }));
+            var fog = System.Drawing.Color.FromArgb(255, 180, 180, 170);
+            var renderer = new ImageRenderer.GpRenderer(palette) { Fog = fog };
+
+            var image = renderer.Render(file, file.Frames[0]).Image;
+
+            image.Pixels.Take(3).Select(pixel => (int) pixel.A).Should().Equal(255, 16 * 255 / 31, 0);
+            image.Pixels.Take(2).Select(pixel => (pixel.R, pixel.G, pixel.B)).Should().AllBeEquivalentTo((fog.R, fog.G, fog.B));
+        }
+
+        [Test]
         public void ReadsGrdRows()
         {
             var bytes = Enumerable.Range(0, 512).Select(i => (byte) (i < 256 ? i : 255 - i % 256)).ToArray();
