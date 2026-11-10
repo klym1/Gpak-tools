@@ -27,11 +27,39 @@ dotnet build src/GPExtractor.sln
 dotnet test src/GPExtractor.sln
 ```
 
-Put the game's units on a field: open the game's `All.gsc` (or a folder extracted from it; both can also be dropped on the window); the viewer opens it again the next time it starts. The field starts with two armies, blue (selected) and red: a cannon, a musketeer, a grenadier, a pikeman and a dragoon each. Picking a unit in the **Add unit** list puts it there in the picked color. Click a unit, or drag a box around several, to select them (Shift adds to the selection; Delete or **Remove** takes them off), then right-click to send them somewhere: each turns to the nearest direction, walks (one step of a few pixels per animation frame) to its own place in a block around the point and stands again when it arrives. Units find a way around the others instead of walking through them, wait behind one walking their way, and pass one coming towards them on the right. **Attack** plays the selected units' attack once (a list next to it picks which, for units with several, e.g. a grenadier's bayonet, musket or grenade); right-clicking a unit of another color sends the selection against it: each comes within reach (close by for a blade, as far as the attack's `ATTACK_RADIUS` for a firearm; nearer than its minimum the unit makes another of its attacks, or none if it has no other), turns to it and attacks, and the enemy fights back; every attack (a blow as it ends, a shot where and when it lands, on whoever stands within its blast radius, the fourth column of the weapon's `[MEMBERS]` line, falling off evenly to nothing at its edge) takes its `DAMAGE`, less the other's armor (`SHIELD`, and its `PROTECTION` against the attack's `WEAPONKIND`), from the other's `LIFE` and is followed by a rest of its `ATTACK_PAUSE` (taken as ticks) (a bar above a wounded unit shows what is left) until one falls. More of the descriptor is followed on the field: a unit takes the room of its `GEOMETRY` radius and walks as fast as its step (32 being a foot soldier's); one with `ROTATE` turns where it stands, that many 256ths of a turn a tick, before it walks or fires (a ship, `MOTIONSTYLE SHEEPS`, turns as it goes); it makes the attack whose `DET_RADIUS` the enemy is in; standing idle, it takes on the nearest enemy within its `SEARCH_ENEMY_RADIUS`, unless **Stand ground** (for units with `STANDGROUND`) holds it to those within reach; its shots land up to `RAZBROS` pixels per 2048 of distance from their aim, and one that lands on its target hits it at the height of its `ZPOINTS`; and with `SHOWDELAY` a white bar under the life bar shows how far its rest has got. A unit sounds its `SELECT_SOUND` when it is selected, its `ORDER_SOUND` when it is sent somewhere or against an enemy and its `BORN_SOUND` when it is put on the field; and an attack with an `ATTMASK` is made, and does damage, only on what is made of one of the materials it names (the other's `MATHERIAL`), so grenades and fire arrows are kept for buildings. An attack without a mask is held to the unit's `CANKILL` materials the same way: a unit neither takes on nor can be sent against an enemy none of its attacks is for, so foot soldiers (`CANKILL 1 BODY`) leave cannons (iron) and ships (wood) alone. a unit that has them brings its weapon up before attacking (`PATTACK`), holds it ready between attacks (`PSTAND`) and lowers it after (`UATTACK`), and takes a rest (`REST`) now and then when idle; **Kill** plays their death, after which they lie, decay through their `DEATHLIE` stages and leave the field:
+The viewer puts the game's units on a field. Open the game's `All.gsc` (or a folder extracted from it; both can also be dropped on the window); the viewer opens it again the next time it starts:
 
 ```
 dotnet run --project src/Viewer -- [All.gsc | extracted-folder]
 ```
+
+The field:
+
+- It starts with two armies, blue (selected) and red: a cannon, a musketeer, a grenadier, a pikeman and a dragoon each.
+- Picking a unit or a building in the **Add unit** list puts it there in the picked color.
+- Click a unit, or drag a box around several, to select them (Shift adds to the selection; Delete or **Remove** takes them off).
+
+Moving:
+
+- Right-click sends the selection somewhere: each turns to the nearest direction, walks (one step of a few pixels per animation frame) to its own place in a block around the point and stands again when it arrives.
+- Units find a way around the others instead of walking through them, wait behind one walking their way, and pass one coming towards them on the right.
+- A unit takes the room of its `GEOMETRY` radius and walks as fast as its step (32 being a foot soldier's). One with `ROTATE` turns where it stands, that many 256ths of a turn a tick, before it walks or fires (a ship, `MOTIONSTYLE SHEEPS`, turns as it goes).
+
+Fighting:
+
+- **Attack** plays the selected units' attack once (a list next to it picks which, for units with several, e.g. a grenadier's bayonet, musket or grenade).
+- Right-clicking a unit of another color sends the selection against it: each comes within reach (close by for a blade, as far as the attack's `ATTACK_RADIUS` for a firearm; nearer than its minimum the unit makes another of its attacks, or none if it has no other), turns to it and attacks, and the enemy fights back. A unit makes the attack whose `DET_RADIUS` the enemy is in.
+- Every attack takes its `DAMAGE`, less the other's armor (`SHIELD`, and its `PROTECTION` against the attack's `WEAPONKIND`), from the other's `LIFE`, until one falls: a blow as it ends, a shot where and when it lands, on whoever stands within its blast radius (the fourth column of the weapon's `[MEMBERS]` line), falling off evenly to nothing at its edge. A bar above a wounded unit shows the life left.
+- An attack is followed by a rest of its `ATTACK_PAUSE` (taken as ticks); with `SHOWDELAY` a white bar under the life bar shows how far the rest has got.
+- Shots land up to `RAZBROS` pixels per 2048 of distance from their aim, and one that lands on its target hits it at the height of its `ZPOINTS`.
+- Standing idle, a unit takes on the nearest enemy within its `SEARCH_ENEMY_RADIUS`, unless **Stand ground** (for units with `STANDGROUND`) holds it to those within reach.
+- An attack with an `ATTMASK` is made, and does damage, only on what is made of one of the materials it names (the other's `MATHERIAL`), so grenades and fire arrows are kept for buildings. An attack without a mask is held to the unit's `CANKILL` materials the same way: a unit neither takes on nor can be sent against an enemy none of its attacks is for, so foot soldiers (`CANKILL 1 BODY`) leave cannons (iron) and ships (wood) alone.
+
+Animations and sounds:
+
+- A unit that has them brings its weapon up before attacking (`PATTACK`), holds it ready between attacks (`PSTAND`) and lowers it after (`UATTACK`), and takes a rest (`REST`) now and then when idle.
+- **Kill** plays the selected units' death, after which they lie, decay through their `DEATHLIE` stages and leave the field.
+- A unit sounds its `SELECT_SOUND` when it is selected, its `ORDER_SOUND` when it is sent somewhere or against an enemy and its `BORN_SOUND` when it is put on the field.
 
 Extract the game's `.gsc` archives (e.g. `All.gsc` from Cossacks), optionally keeping only paths that contain a filter such as `.gp`:
 
