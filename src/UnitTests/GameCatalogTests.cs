@@ -252,6 +252,11 @@ namespace UnitTests
             catalog.BlendTable("ALPHAGB")[31, 5].Should().Be(109, "it is taken to be laid over like WHITE");
             catalog.BlendTable("YELLOW").Should().BeNull("its table is not known");
             flying.Should().Equal(new WeaponFlight("SHELL", 45, 40));
+
+            // Thrown at 45 degrees it is in the air as long as such a throw takes; a weapon with a speed, as
+            // long as the distance at that speed.
+            flying[0].TicksOver(200).Should().Be(20);
+            new WeaponFlight("ARROW", 15, 0, 20).TicksOver(300).Should().Be(15);
             var nothing = catalog.Weapons.EffectsOf("NOTHING");
             nothing.Muzzle.Should().BeEmpty("an unknown weapon shows nothing");
             nothing.Impact.Should().BeEmpty();

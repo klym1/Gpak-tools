@@ -21,7 +21,24 @@ namespace GPExtractor
     /// A weapon in flight: its animation, the angle above the ground it is launched at, in degrees, and how
     /// far from where it lands it does damage.
     /// </summary>
-    public sealed record WeaponFlight(string Animation, double LaunchAngle, double BlastRadius);
+    /// <param name="Speed">
+    /// The weapon's speed, taken as pixels a tick, for one whose line gives it (<c>FLY 20</c>); 0 for one
+    /// thrown at an angle (<c>ANGLE 75</c>), which takes as long as such a throw takes.
+    /// </param>
+    public sealed record WeaponFlight(string Animation, double LaunchAngle, double BlastRadius, double Speed = 0)
+    {
+        // Pixels a tick each tick: what makes a cannon's flat shot quick and a mortar's lob slow.
+        private const double Gravity = 1;
+
+        /// <summary>How many ticks the weapon is in the air over a distance in pixels.</summary>
+        public int TicksOver(double distance)
+        {
+            var ticks = Speed > 0
+                ? distance / Speed
+                : Math.Sqrt(2 * distance * Math.Tan(LaunchAngle * Math.PI / 180) / Gravity);
+            return Math.Max(1, (int) Math.Ceiling(ticks));
+        }
+    }
 
     public sealed class WeaponList
     {
@@ -39,8 +56,8 @@ namespace GPExtractor
         // The animation of weapons that are not drawn.
         private const string NoAnimation = "POINT";
 
-        private Dictionary<string, (string Animation, bool Stays, bool Travels, double LaunchAngle, double Radius, string Transparency)> Members { get; init; } =
-            new Dictionary<string, (string, bool, bool, double, double, string)>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, (string Animation, bool Stays, bool Travels, double LaunchAngle, double Radius, string Transparency, double Speed)> Members { get; init; } =
+            new Dictionary<string, (string, bool, bool, double, double, string, double)>(StringComparer.OrdinalIgnoreCase);
 
         // The angle a weapon is taken to be launched at when the file gives its speed instead: an arrow's.
         private const double DefaultLaunchAngle = 15;
@@ -121,7 +138,12 @@ namespace GPExtractor
                         }
                         else if (member.Travels && drawn && !landed)
                         {
-                            flying.Add(new WeaponFlight(member.Animation, member.LaunchAngle, member.Radius));
+                            flying.Add(new WeaponFlight(
+                                  member.Animation
+                                , member.LaunchAngle
+                                , member.Radius
+                                , member.Speed
+                            ));
                         }
                     }
 
@@ -165,7 +187,7 @@ namespace GPExtractor
             var sounds = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             var launchedTogether = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase);
             var bornOnExplosion = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase);
-            var members = new Dictionary<string, (string Animation, bool Stays, bool Travels, double LaunchAngle, double Radius, string Transparency)>(StringComparer.OrdinalIgnoreCase);
+            var members = new Dictionary<string, (string Animation, bool Stays, bool Travels, double LaunchAngle, double Radius, string Transparency, double Speed)>(StringComparer.OrdinalIgnoreCase);
             var section = "";
 
             foreach (var rawLine in text.Split('\n'))
@@ -190,17 +212,25 @@ namespace GPExtractor
 
                     // "ANGLE n" gives the launch angle; other weapons under gravity are taken to rise a little.
                     var angle = 0.0;
-                    if (tokens[6].Equals("ANGLE", StringComparison.OrdinalIgnoreCase) && tokens.Length >= 8)
+                    var speed = 0.0;
+                    var number = 0.0;
+                    if (tokens.Length >= 8)
                     {
-                        double.TryParse(tokens[7], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out angle);
+                        double.TryParse(tokens[7], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out number);
                     }
-                    else if (!tokens[5].Equals("NO_GRAVITY", StringComparison.OrdinalIgnoreCase))
+
+                    if (tokens[6].Equals("ANGLE", StringComparison.OrdinalIgnoreCase))
                     {
-                        angle = DefaultLaunchAngle;
+                        angle = number;
+                    }
+                    else
+                    {
+                        speed = number;
+                        angle = tokens[5].Equals("NO_GRAVITY", StringComparison.OrdinalIgnoreCase) ? 0 : DefaultLaunchAngle;
                     }
 
                     double.TryParse(tokens[3], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var radius);
-                    members.TryAdd(tokens[0], (tokens[1].Substring(1), stays, !stays && endless, angle, radius, tokens[4].ToUpperInvariant()));
+                    members.TryAdd(tokens[0], (tokens[1].Substring(1), stays, !stays && endless, angle, radius, tokens[4].ToUpperInvariant(), speed));
                 }
                 else if (section == "SOUND" && tokens.Length >= 2)
                 {

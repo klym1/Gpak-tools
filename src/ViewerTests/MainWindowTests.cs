@@ -300,7 +300,7 @@ namespace ViewerTests
                 }
 
                 Assert.That(window.FieldUnits, Is.Empty);
-                Assert.That(Path.GetFileName(player.Played.Last()), Does.StartWith("Step"), "the mortar shell landed a while after it was fired");
+                Assert.That(player.Played.TakeLast(2).Select(file => Path.GetFileName(file).Substring(0, 4)), Is.EquivalentTo(new[] { "Step", "Alar" }), "both shots landed a while after they were fired");
                 Assert.That(player.Played, Has.Count.EqualTo(5), "with the mortar shell");
 
                 window.Close();
@@ -375,8 +375,8 @@ namespace ViewerTests
                 window.Tick();
                 Assert.That(unit.State.Code, Is.EqualTo("ATTACK"));
 
-                // Nobody is hurt while the shells fly: 20 ticks from the shot.
-                for (var i = 0; i < 15; i++)
+                // Nobody is hurt while the shells fly: thrown at 45 degrees over 271 pixels, 24 ticks from the shot.
+                for (var i = 0; i < 19; i++)
                 {
                     window.Tick();
                     Assert.That((unit.Life, enemy.Life), Is.EqualTo((50, 50)));

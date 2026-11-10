@@ -81,6 +81,12 @@ namespace Viewer
 
         internal int FlightAge { get; set; }
 
+        /// <summary>For a projectile: its shadow on the ground.</summary>
+        internal Ellipse Shadow { get; set; }
+
+        /// <summary>How long the unit's last shot takes to land, in ticks: its impact is heard then.</summary>
+        internal int ShotTicks { get; set; }
+
         /// <summary>States to play once, in turn, after the one playing now (an attack after its preparation).</summary>
         internal Queue<GameObjectState> Next { get; } = new Queue<GameObjectState>();
 

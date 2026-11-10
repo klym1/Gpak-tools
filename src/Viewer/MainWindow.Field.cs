@@ -756,8 +756,8 @@ namespace Viewer
             unit.State = state;
             unit.Pose = 0;
             unit.PlaysOnce = true;
-            PlaySounds(unit);
             Fire(unit);
+            PlaySounds(unit);
         }
 
         /// <summary>The unit's next frame; false when it has lain dead long enough and leaves the field.</summary>
@@ -841,8 +841,8 @@ namespace Viewer
                 return true;
             }
 
-            PlaySounds(unit);
             Fire(unit);
+            PlaySounds(unit);
             if (unit.Movement.IsWalking)
             {
                 StepAlongRoute(unit);
@@ -926,7 +926,7 @@ namespace Viewer
             {
                 if (impact)
                 {
-                    _impacts.Add((TicksToImpact, sound));
+                    _impacts.Add((unit.ShotTicks > 0 ? unit.ShotTicks : TicksToImpact, sound));
                 }
                 else
                 {
@@ -1048,6 +1048,7 @@ namespace Viewer
             foreach (var effect in _effects)
             {
                 Field.Children.Remove(effect.Image);
+                Field.Children.Remove(effect.Shadow);
             }
 
             _effects.Clear();
@@ -1485,9 +1486,12 @@ namespace Viewer
                 var heading = unit.Movement.Heading * Math.PI / 180;
                 var ahead = new Vector(-Math.Sin(heading), Math.Cos(heading));
                 var reach = ShotReachOf(unit, unit.State.Code) / FieldPath.GroundDistance(default, new Point(ahead.X, ahead.Y));
-                var aim = unit.Target != null
-                    ? AimAt(unit.Target, takesTime ? TicksToImpact : 0)
-                    : ClampToField(unit.Movement.Position + ahead * reach);
+                // How long the shot is in the air: as its weapon flies over the distance, as near as can be told
+                // before aiming ahead of a walking target.
+                var straight = unit.Target?.Movement.Position ?? ClampToField(unit.Movement.Position + ahead * reach);
+                var ticks = flying.Count > 0 ? flying[0].TicksOver(Distance(from, straight)) : TicksToImpact;
+                unit.ShotTicks = ticks;
+                var aim = unit.Target != null ? AimAt(unit.Target, takesTime ? ticks : 0) : straight;
                 var where = Scattered(unit, aim);
 
                 // A shot that lands on its target hits it as high as the target is (ZPOINTS), not at its feet.
@@ -1501,19 +1505,29 @@ namespace Viewer
                     var projectile = AddEffect(flight.Animation, from, FieldUnit.HeadingOf(where - from));
                     if (projectile != null)
                     {
-                        projectile.Flight = (from, end, height, TicksToImpact);
+                        projectile.Flight = (from, end, height, ticks);
+                        projectile.Shadow = new Ellipse
+                        {
+                            Width = 6,
+                            Height = 3,
+                            Fill = Brushes.Black,
+                            Opacity = 0.35,
+                            IsHitTestVisible = false,
+                            ZIndex = 2,
+                        };
+                        Field.Children.Add(projectile.Shadow);
                     }
                 }
 
                 if (impact.Count > 0)
                 {
-                    _impactEffects.Add((TicksToImpact, impact[_random.Next(impact.Count)], where));
+                    _impactEffects.Add((ticks, impact[_random.Next(impact.Count)], where));
                 }
 
                 if (takesTime)
                 {
                     _shotsInFlight.Add(new ShotInFlight(
-                          TicksToImpact
+                          ticks
                         , unit
                         , unit.State.Code
                         , where
@@ -1626,13 +1640,27 @@ namespace Viewer
                 if (effect.Flight is { } flight)
                 {
                     var done = ++effect.FlightAge / (double) flight.Ticks;
-                    effect.Movement.PlaceAt(flight.From + (flight.To - flight.From) * done + new Vector(0, -4 * flight.Height * done * (1 - done)));
+                    var onGround = flight.From + (flight.To - flight.From) * done;
+                    var before = effect.Movement.Position;
+                    effect.Movement.PlaceAt(onGround + new Vector(0, -4 * flight.Height * done * (1 - done)));
                     over = effect.FlightAge >= flight.Ticks;
+
+                    // It points the way it moves on the screen, so an arrow tips over at the top of its arc.
+                    if (effect.Movement.Position != before)
+                    {
+                        effect.Movement.TurnTo(FieldUnit.HeadingOf(effect.Movement.Position - before));
+                    }
+
+                    // Its shadow runs along the ground, under where it would be without the arc.
+                    var foot = onGround;
+                    Canvas.SetLeft(effect.Shadow, foot.X - effect.Shadow.Width / 2);
+                    Canvas.SetTop(effect.Shadow, foot.Y - effect.Shadow.Height / 2);
                 }
 
                 if (over)
                 {
                     Field.Children.Remove(effect.Image);
+                    Field.Children.Remove(effect.Shadow);
                     _effects.Remove(effect);
                 }
             }
