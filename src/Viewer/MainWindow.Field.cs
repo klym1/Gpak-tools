@@ -39,20 +39,13 @@ namespace Viewer
 
         private readonly record struct FieldFramesKey(GameObject Kind, GameObjectState State, int Direction, int Color);
 
-        /// <summary>Whether the field is shown instead of the animation of one unit or sprite.</summary>
-        public bool IsFieldMode => FieldButton.IsChecked == true && _catalog != null;
+        /// <summary>Whether game data is open, so units can be put on the field.</summary>
+        private bool IsFieldMode => _catalog != null;
 
         /// <summary>Units on the field, in the order they were added.</summary>
         public IReadOnlyList<FieldUnitView> FieldUnits => _fieldUnits;
 
         public IReadOnlyList<FieldUnitView> SelectedFieldUnits => _fieldUnits.Where(unit => unit.IsSelected).ToList();
-
-        /// <summary>Shows or hides the field. The first time it gets the picked unit, standing in the middle.</summary>
-        public Task SetFieldMode(bool on)
-        {
-            FieldButton.IsChecked = on;
-            return RenderingCompleted;
-        }
 
         /// <summary>
         /// Adds the unit picked in the unit list to the field in the picked color, standing and facing the
@@ -128,8 +121,6 @@ namespace Viewer
         /// </summary>
         public void Tick()
         {
-            StepFrame(1);
-
             if (!IsFieldMode)
             {
                 return;
@@ -149,13 +140,6 @@ namespace Viewer
 
         private void InitializeField()
         {
-            FieldButton.IsCheckedChanged += (sender, args) =>
-            {
-                if (!_updatingControls)
-                {
-                    UpdateFieldControls();
-                }
-            };
             AddUnitButton.Click += (sender, args) => AddToField();
             RemoveUnitsButton.Click += (sender, args) => RemoveSelectedFromField();
             PlayerColorBox.SelectionChanged += (sender, args) =>
@@ -183,38 +167,6 @@ namespace Viewer
                     args.Handled = true;
                 }
             };
-        }
-
-        /// <summary>Shows the field or the animation view, and the controls that work with each.</summary>
-        private void UpdateFieldControls()
-        {
-            var on = IsFieldMode;
-            ImageScroller.IsVisible = !on;
-            Field.IsVisible = on;
-            AddUnitButton.IsVisible = on;
-            RemoveUnitsButton.IsVisible = on;
-
-            // On the field every unit has its own state, direction and frame.
-            StateBox.IsEnabled = !on;
-            DirectionPanel.IsEnabled = !on;
-            PreviousButton.IsEnabled = !on;
-            NextButton.IsEnabled = !on;
-            FrameText.IsVisible = !on;
-            FromFrame.IsEnabled = !on;
-            ToFrame.IsEnabled = !on;
-
-            if (!on)
-            {
-                return;
-            }
-
-            if (_fieldUnits.Count == 0)
-            {
-                AddToField();
-            }
-
-            Play();
-            UpdateFieldView();
         }
 
         /// <summary>Removes every unit and the frames rendered for them.</summary>
@@ -435,6 +387,8 @@ namespace Viewer
         {
             if (!IsFieldMode)
             {
+                FieldHint.Text = "Open the game's All.gsc (or a folder extracted from it) to put its units on the field.";
+                RemoveUnitsButton.IsEnabled = false;
                 return;
             }
 
@@ -506,7 +460,7 @@ namespace Viewer
 
             TrimFrameCache();
 
-            var request = new RenderRequest(null, _catalog, unit.Kind, unit.State, unit.Directions, key.Direction, unit.Color, Transparent: true);
+            var request = new RenderRequest(_catalog, unit.Kind, unit.State, unit.Directions, key.Direction, unit.Color);
             var task = RenderFieldFramesAsync(key, request);
             if (!task.IsCompleted)
             {

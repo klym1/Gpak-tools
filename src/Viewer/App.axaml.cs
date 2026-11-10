@@ -16,8 +16,8 @@ namespace Viewer
         {
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
-                var gpFile = desktop.Args?.FirstOrDefault() ?? MainWindow.DefaultGpFile;
-                desktop.MainWindow = new MainWindow(gpFile);
+                var path = desktop.Args?.FirstOrDefault();
+                desktop.MainWindow = new MainWindow(path);
             }
 
             base.OnFrameworkInitializationCompleted();
