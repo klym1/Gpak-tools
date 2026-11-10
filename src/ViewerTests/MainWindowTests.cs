@@ -191,6 +191,17 @@ namespace ViewerTests
                 Assert.That(Path.GetDirectoryName(player.Played[0]), Is.EqualTo(Path.Combine(folder, "Sound")));
                 Assert.That(Path.GetFileName(player.Played[0]), Does.Match("^Step[12]\\.wav$"));
 
+                // Without the wave file, the status bar says where the sounds are expected.
+                File.Delete(Path.Combine(folder, "Sound", "Step1.wav"));
+                File.Delete(Path.Combine(folder, "Sound", "Step2.wav"));
+                for (var i = 0; i < 4; i++)
+                {
+                    window.Tick();
+                }
+
+                Assert.That(player.Played, Has.Count.EqualTo(1));
+                Assert.That(window.FindControl<TextBlock>("StatusText").Text, Does.StartWith("No sound: Sound"));
+
                 // Not with the sound switched off.
                 window.FindControl<CheckBox>("SoundBox").IsChecked = false;
                 for (var i = 0; i < 8; i++)

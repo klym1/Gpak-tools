@@ -172,6 +172,11 @@ namespace Viewer
                 {
                     SoundPlayer.Play(path);
                 }
+                else if (StatusText.Text.Length == 0)
+                {
+                    StatusText.Text = "No sound: " + file + " was not found around " + _catalog.Files.Source
+                        + ". The sounds are in the game's Sound folder; open the All.gsc next to it to hear them.";
+                }
             }
         }
 
