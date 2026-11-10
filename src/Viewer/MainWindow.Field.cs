@@ -242,7 +242,7 @@ namespace Viewer
         /// </summary>
         public void AttackUnit(FieldUnitView target)
         {
-            foreach (var unit in SelectedFieldUnits.Where(unit => IsEnemy(unit, target)))
+            foreach (var unit in SelectedFieldUnits.Where(unit => IsEnemy(unit, target) && CanFight(unit, target)))
             {
                 unit.Target = target;
                 unit.TargetIsOrdered = true;
@@ -529,8 +529,12 @@ namespace Viewer
         private bool CanTakeOn(FieldUnitView unit, FieldUnitView enemy)
         {
             var idle = unit.Target == null && !unit.IsDead && !unit.PlaysOnce && !unit.Movement.IsWalking;
-            return idle && AttackStateOf(unit.Kind) != null && (!unit.StandsGround || CanReach(unit, enemy));
+            return idle && CanFight(unit, enemy) && (!unit.StandsGround || CanReach(unit, enemy));
         }
+
+        /// <summary>Whether a unit has an attack it makes on another, made of what that is (<c>CANKILL</c>, <c>ATTMASK</c>).</summary>
+        private static bool CanFight(FieldUnitView unit, FieldUnitView enemy) =>
+            AttacksOf(unit.Kind).Any(attack => unit.Kind.Descriptor.CanAttack(enemy.Kind.Descriptor, attack.Code));
 
         private static void TakeOn(FieldUnitView unit, FieldUnitView enemy)
         {

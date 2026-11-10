@@ -93,6 +93,7 @@ namespace UnitTests
                 "SELECT_SOUND ALARM",
                 "ORDER_SOUND  STEP",
                 "MATHERIAL 1 BODY",
+                "CANKILL   2 IRON  STENA WOOD",
                 "ATTMASK 2 2 BUILDING WOOD STENA",
                 "ZPOINTS 30 30",
                 "SHOWDELAY",
@@ -115,7 +116,9 @@ namespace UnitTests
             descriptor.Materials.Should().BeEquivalentTo("BODY");
             descriptor.AttackMasks[2].Should().BeEquivalentTo(new[] { "BUILDING", "WOOD" }, "the count says two");
             descriptor.CanAttack(descriptor, "ATTACK2").Should().BeFalse("a body is not in the mask");
-            descriptor.CanAttack(descriptor, "ATTACK").Should().BeTrue("an attack without a mask is made on anything");
+            descriptor.CanKill.Should().BeEquivalentTo(new[] { "IRON", "STENA" }, "the count says two");
+            descriptor.CanAttack(descriptor, "ATTACK").Should().BeFalse("without a mask of its own an attack is for what the unit can kill");
+            GpDescriptor.Parse("X", "MATHERIAL 1 BODY").CanAttack(descriptor, "ATTACK").Should().BeTrue("with neither line an attack is made on anything");
             descriptor.Height.Should().Be(30);
             descriptor.ShowsDelay.Should().BeTrue();
             descriptor.CanStandGround.Should().BeTrue();

@@ -1362,6 +1362,52 @@ namespace ViewerTests
             });
         }
 
+        [AvaloniaTest]
+        public Task AUnitLeavesAloneWhatItCannotKill()
+        {
+            // The units are of iron, and their attacks are for bodies, but for the mortar's (attack 2) own mask.
+            var lines = new[] { "MATHERIAL 1 IRON", "CANKILL 1 BODY", "SEARCH_ENEMY_RADIUS 400", "DAMAGE 2 1" };
+            return OnFieldWith(lines, async (window, unit) =>
+            {
+                var enemy = await AddEnemy(window, unit.Movement.Position + new Vector(150, 0));
+                window.Tick();
+                Assert.That(unit.Target, Is.Null, "it does not take the enemy on");
+
+                Click(window, enemy.Movement.Position, MouseButton.Right);
+                for (var i = 0; i < 5; i++)
+                {
+                    window.Tick();
+                }
+
+                Assert.That(unit.Target, Is.Null, "nor when sent against it");
+                Assert.That(unit.State.Code, Is.EqualTo("STAND"));
+
+                // A shot that lands on the enemy all the same does it no harm.
+                unit.Movement.TurnTo(270);
+                window.AttackWithSelected("ATTACK");
+                for (var i = 0; i < 30; i++)
+                {
+                    window.Tick();
+                }
+
+                Assert.That(enemy.Life, Is.EqualTo(50));
+            });
+        }
+
+        [AvaloniaTest]
+        public Task AnAttackWithItsOwnMaskIsNotHeldToWhatTheUnitCanKill()
+        {
+            var lines = new[] { "MATHERIAL 1 IRON", "CANKILL 1 BODY", "ATTMASK 2 1 IRON", "DAMAGE 2 1" };
+            return OnFieldWith(lines, async (window, unit) =>
+            {
+                var enemy = await AddEnemy(window, unit.Movement.Position + new Vector(150, 0));
+                Click(window, enemy.Movement.Position, MouseButton.Right);
+                window.Tick();
+                Assert.That(unit.Target, Is.SameAs(enemy));
+                Assert.That(unit.State.Code, Is.EqualTo("ATTACK2"));
+            });
+        }
+
         /// <summary>The first of the units the field starts with, the others taken off it.</summary>
         private static FieldUnitView OnlyUnit(MainWindow window)
         {
