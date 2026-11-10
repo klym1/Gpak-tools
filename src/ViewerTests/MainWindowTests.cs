@@ -359,34 +359,39 @@ namespace ViewerTests
                 Assert.That(enemy.State.Code, Is.EqualTo("ATTACK"));
                 Assert.That(enemy.Direction, Is.EqualTo(4), "west, facing the unit");
 
-                // ... and both lose life as attacks land (30 less 7 of armor, of 50): the unit's first, ...
+                // After its attack (the shell left at its frame 2) the unit rests for its pause (2 ticks), then
+                // attacks again.
                 window.Tick();
-                Assert.That(enemy.Life, Is.EqualTo(27));
-                Assert.That(enemy.IsDead, Is.False);
-                Assert.That(enemy.LifeBar.IsVisible, Is.True);
                 window.Tick();
-                Assert.That(unit.Life, Is.EqualTo(27));
-
-                // After its attack the unit rests for its pause (2 ticks), then attacks again.
                 Assert.That(unit.State.Code, Is.EqualTo("STAND"));
                 window.Tick();
                 Assert.That(unit.State.Code, Is.EqualTo("STAND"));
                 window.Tick();
                 Assert.That(unit.State.Code, Is.EqualTo("ATTACK"));
 
-                // ... so its third attack kills the enemy before the enemy's third lands; it stands again.
-                for (var i = 0; i < 20 && !enemy.IsDead; i++)
+                // Nobody is hurt while the shells fly: 20 ticks from the shot.
+                for (var i = 0; i < 15; i++)
+                {
+                    window.Tick();
+                    Assert.That((unit.Life, enemy.Life), Is.EqualTo((50, 50)));
+                }
+
+                // Then both shells land, each taking 30 less 7 of armor, of 50.
+                window.Tick();
+                Assert.That((unit.Life, enemy.Life), Is.EqualTo((27, 27)));
+                Assert.That(enemy.LifeBar.IsVisible, Is.True);
+
+                // They go on until the third shell kills.
+                for (var i = 0; i < 100 && !enemy.IsDead; i++)
                 {
                     window.Tick();
                 }
 
                 Assert.That(enemy.IsDead, Is.True);
                 Assert.That(enemy.State.Code, Is.EqualTo("DEATH"));
-                Assert.That(unit.IsDead, Is.False);
-                Assert.That(unit.Life, Is.EqualTo(4));
-                Assert.That(unit.Target, Is.Null);
+                Assert.That(unit.Life, Is.LessThan(27));
                 window.Tick();
-                Assert.That(unit.State.Code, Is.EqualTo("STAND"));
+                Assert.That(unit.Target, Is.Null);
                 Assert.That(friend.State.Code, Is.EqualTo("STAND"), "units that were not selected stay out of it");
 
                 window.Close();
@@ -583,6 +588,70 @@ namespace ViewerTests
                 window.Tick();
                 window.Tick();
                 Assert.That(window.Effects.Single(effect => effect.State.Code == "SMOKE").Movement.Position, Is.EqualTo(feet + new Vector(30 - 1, 1 - 15)));
+
+                window.Close();
+            }
+            finally
+            {
+                Directory.Delete(folder, true);
+            }
+        }
+
+        [AvaloniaTest]
+        public async Task AShotOnlyHurtsTheUnitsWhereItLands()
+        {
+            var folder = UnitArchiveFolder(out var archive);
+            try
+            {
+                var window = new MainWindow(archive) { SoundPlayer = new RecordingSoundPlayer() };
+                window.Show();
+                await window.RenderingCompleted;
+                window.Pause();
+                window.UpdateLayout();
+
+                // The unit faces west; one bystander stands where a shot lands (300 pixels on), another short of it.
+                var unit = window.FieldUnits.Single();
+                unit.Movement.PlaceAt(new Point(500, 200));
+                unit.Movement.TurnTo(90);
+                var short_ = window.AddToField("TST", new Point(350, 200));
+                var there = window.AddToField("TST", new Point(200, 200));
+                window.Tick();
+                await window.RenderingCompleted;
+
+                Click(window, unit.Movement.Position, MouseButton.Left);
+                window.AttackWithSelected();
+                for (var i = 0; i < 30; i++)
+                {
+                    window.Tick();
+                }
+
+                Assert.That(there.Life, Is.EqualTo(27), "hit, friend or not");
+                Assert.That(short_.Life, Is.EqualTo(50), "the shell flew over it");
+                Assert.That(unit.Life, Is.EqualTo(50));
+
+                // An enemy that walks away before the shell lands is missed.
+                Click(window, new Point(600, 50), MouseButton.Left);
+                await window.SetPlayerColor(NationColorOffset.Red);
+                var enemy = window.AddToField("TST", new Point(350, 320));
+                window.Tick();
+                await window.RenderingCompleted;
+                Click(window, unit.Movement.Position, MouseButton.Left);
+                Click(window, enemy.Movement.Position, MouseButton.Right);
+                for (var i = 0; i < 50 && unit.State.Code != "ATTACK"; i++)
+                {
+                    window.Tick();
+                }
+
+                window.Tick(); // the shell leaves
+                enemy.Target = null;
+                enemy.Movement.PlaceAt(enemy.Movement.Position + new Vector(0, 60));
+                unit.Target = null;
+                for (var i = 0; i < 30; i++)
+                {
+                    window.Tick();
+                }
+
+                Assert.That(enemy.Life, Is.EqualTo(50));
 
                 window.Close();
             }

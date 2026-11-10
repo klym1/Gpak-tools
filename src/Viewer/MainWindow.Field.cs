@@ -61,6 +61,14 @@ namespace Viewer
         private readonly List<(int TicksLeft, string Animation, Point Where)> _impactEffects = new();
         private readonly Dictionary<(GameObject, GameObjectState), IReadOnlyList<GameObjectShot>> _stateShots = new();
 
+        // Shots on their way: they do their damage where they land, to whoever is there then.
+        private readonly List<ShotInFlight> _shotsInFlight = new();
+
+        private sealed record ShotInFlight(int TicksLeft, FieldUnitView Attacker, string Attack, Point Where);
+
+        /// <summary>How far, in pixels on the ground, a shot may land from a unit's footprint and still hit it.</summary>
+        private const double HitSlack = 6;
+
         /// <summary>The weapon animations playing on the field now.</summary>
         public IReadOnlyList<FieldUnitView> Effects => _effects;
         private readonly Random _random = new Random();
@@ -366,17 +374,47 @@ namespace Viewer
         }
 
         /// <summary>
-        /// The unit's attack lands: the target loses the attack's damage, less its armor, from its life (all of
-        /// it, if the unit has no damage given) and dies when none is left; otherwise the unit attacks again.
+        /// An attack lands on a unit: it loses the attack's damage, less its armor, from its life (all of it, if
+        /// the attacker has no damage given) and dies when none is left.
         /// </summary>
-        private void Hit(FieldUnitView unit, FieldUnitView target)
+        private void Hit(GameObject attacker, string attack, FieldUnitView target)
         {
-            var damage = unit.Kind.Descriptor.DamageTo(target.Kind.Descriptor, unit.State.Code) ?? target.Life;
+            var damage = attacker.Descriptor.DamageTo(target.Kind.Descriptor, attack) ?? target.Life;
             target.Life = Math.Max(0, target.Life - damage);
             if (target.Life == 0)
             {
                 Kill(target);
-                unit.Target = null;
+            }
+        }
+
+        /// <summary>A shot lands at a point: it hits the units standing there, whoever they are, but not the one that fired it.</summary>
+        private void Land(FieldUnitView attacker, string attack, Point where)
+        {
+            var struck = _fieldUnits
+                .Where(unit => !ReferenceEquals(unit, attacker) && !unit.IsDead
+                               && FieldPath.GroundDistance(unit.Movement.Position, where) <= RadiusOf(unit) + HitSlack)
+                .ToList();
+
+            foreach (var unit in struck)
+            {
+                Hit(attacker.Kind, attack, unit);
+            }
+        }
+
+        /// <summary>Lands the shots whose time has come.</summary>
+        private void LandShots()
+        {
+            for (var i = _shotsInFlight.Count - 1; i >= 0; i--)
+            {
+                var shot = _shotsInFlight[i];
+                if (shot.TicksLeft > 1)
+                {
+                    _shotsInFlight[i] = shot with { TicksLeft = shot.TicksLeft - 1 };
+                    continue;
+                }
+
+                _shotsInFlight.RemoveAt(i);
+                Land(shot.Attacker, shot.Attack, shot.Where);
             }
         }
 
@@ -471,9 +509,11 @@ namespace Viewer
                     unit.PauseTicksLeft = unit.Kind.Descriptor.AttackPauseOf(unit.State.Code) ?? 0;
                 }
 
-                if (!unit.IsDead && unit.Target is { IsDead: false } hit)
+                // A blow lands as the attack ends; a shot does its damage where and when it lands.
+                var fires = _catalog.ShotsOf(unit.Kind, unit.State).Count > 0;
+                if (!unit.IsDead && !fires && unit.Target is { IsDead: false } hit)
                 {
-                    Hit(unit, hit);
+                    Hit(unit.Kind, unit.State.Code, hit);
                 }
 
                 SetFieldState(unit, unit.IsDead ? StateOf(unit.Kind, "DEATHLIE") ?? unit.State : StandStateOf(unit.Kind));
@@ -531,6 +571,7 @@ namespace Viewer
 
             PlayImpacts();
             AdvanceEffects();
+            LandShots();
 
             foreach (var unit in _fieldUnits.ToList())
             {
@@ -688,6 +729,7 @@ namespace Viewer
 
             _effects.Clear();
             _impactEffects.Clear();
+            _shotsInFlight.Clear();
             _stateShots.Clear();
             _attackBoxKind = null;
             _stateSounds.Clear();
@@ -1078,9 +1120,12 @@ namespace Viewer
                     AddEffect(animation, from, unit.Movement.Heading);
                 }
 
+                // What flies or bursts takes its time to get there; a bullet is there at once.
+                var takesTime = flying.Count > 0 || impact.Count > 0;
                 var heading = unit.Movement.Heading * Math.PI / 180;
-                var where = unit.Target?.Movement.Position
-                            ?? ClampToField(unit.Movement.Position + new Vector(-Math.Sin(heading), Math.Cos(heading)) * ShotReach);
+                var where = unit.Target != null
+                    ? AimAt(unit.Target, takesTime ? TicksToImpact : 0)
+                    : ClampToField(unit.Movement.Position + new Vector(-Math.Sin(heading), Math.Cos(heading)) * ShotReach);
 
                 foreach (var flight in flying)
                 {
@@ -1097,7 +1142,39 @@ namespace Viewer
                 {
                     _impactEffects.Add((TicksToImpact, impact[_random.Next(impact.Count)], where));
                 }
+
+                if (takesTime)
+                {
+                    _shotsInFlight.Add(new ShotInFlight(
+                          TicksToImpact
+                        , unit
+                        , unit.State.Code
+                        , where
+                    ));
+                }
+                else
+                {
+                    Land(unit, unit.State.Code, where);
+                }
             }
+        }
+
+        /// <summary>
+        /// Where to shoot to hit a unit with a shot that takes some ticks to land: where the unit will be by
+        /// then if it keeps walking the way it does.
+        /// </summary>
+        private static Point AimAt(FieldUnitView target, int ticks)
+        {
+            var position = target.Movement.Position;
+            if (ticks == 0 || target.Movement.Target is not { } walkingTo)
+            {
+                return position;
+            }
+
+            var way = walkingTo - position;
+            var length = Math.Sqrt(way.X * way.X + way.Y * way.Y);
+            var walked = Math.Min(length, target.Movement.StepLength * ticks);
+            return length < 0.5 ? position : position + way * (walked / length);
         }
 
         /// <summary>
