@@ -267,7 +267,13 @@ namespace Viewer
 
             try
             {
-                var catalog = await Task.Run(() => OpenGameData(path));
+                var (catalog, first) = await Task.Run(() =>
+                {
+                    var opened = OpenGameData(path);
+                    // Start with a unit that can be drawn: some use sprites that are missing or not GP files.
+                    var drawable = opened?.Units.FirstOrDefault(unit => HasSprites(opened, unit, StandStateOf(unit)));
+                    return (opened, drawable ?? opened?.Units.FirstOrDefault());
+                });
                 if (version != _loadVersion)
                 {
                     catalog?.Dispose();
@@ -285,7 +291,6 @@ namespace Viewer
                 Title = "GP Viewer - " + Path.GetFileName(catalog.Files.Source);
                 FileNameText.Text = Path.GetFileName(catalog.Files.Source);
 
-                var first = catalog.Units.FirstOrDefault();
                 if (first == null)
                 {
                     StatusText.Text = "No units found in " + path;
@@ -304,6 +309,15 @@ namespace Viewer
                     StatusText.Text = "Failed to open " + path + ": " + ex.Message;
                 }
             }
+        }
+
+        /// <summary>Whether every sprite a state uses is there.</summary>
+        private static bool HasSprites(GameCatalog catalog, GameObject unit, GameObjectState state)
+        {
+            return state.Frames
+                .Select(frame => frame.Sprite)
+                .Distinct()
+                .All(index => unit.Sprite(index) is { } sprite && catalog.Sprite(sprite.FileName) != null);
         }
 
         private void SetCatalog(GameCatalog catalog)

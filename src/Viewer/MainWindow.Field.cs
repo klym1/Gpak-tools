@@ -482,6 +482,12 @@ namespace Viewer
                     return;
                 }
 
+                var status = StatusOf(results);
+                if (status.Length > 0)
+                {
+                    StatusText.Text = request.Unit.Label + ", " + request.State.Label + ": " + status;
+                }
+
                 _readyFrames[key] = new FieldFrames(
                     results
                         .Where(result => result.Image != null)

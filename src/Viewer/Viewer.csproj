@@ -26,7 +26,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\..\gp\test.gp" Link="gp\test.gp" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\palette\0\agew_1.pal" Link="palette\0\agew_1.pal" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
