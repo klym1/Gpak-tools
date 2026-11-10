@@ -748,6 +748,98 @@ namespace ViewerTests
             }
         }
 
+        [AvaloniaTest]
+        public async Task PlaysTheAnimationsAroundAttackingRestingAndDying()
+        {
+            var folder = Path.Combine(Path.GetTempPath(), "viewer-veteran-" + Guid.NewGuid());
+            Directory.CreateDirectory(folder);
+            foreach (var (name, content) in UnitTests.GpTestFiles.UnitGameData())
+            {
+                File.WriteAllBytes(Path.Combine(folder, name), content);
+            }
+
+            // A unit that brings its weapon up before an attack and lowers it after, rests, and decays in two stages.
+            File.WriteAllText(Path.Combine(folder, "VET.MD"), string.Join("\r\n",
+                "NAME Veteran",
+                "USERLC 0 tsts SHADOW -20 -10",
+                "USERLC 1 tstg SHADOW -30 -15",
+                "#STAND     9 1 0 0",
+                "@MOTION_L  9 1 0 2",
+                "@PATTACK   9 1 0 2",
+                "#PSTAND    9 1 1 1",
+                "@ATTACK    9 1 0 3",
+                "@UATTACK   9 1 2 0",
+                "@REST      9 1 0 4",
+                "@DEATH     9 1 1 3",
+                "#DEATHLIE1 9 1 1 3",
+                "#DEATHLIE2 9 1 1 2",
+                "DAMAGE 0 30",
+                "ATTACK_PAUSE 0 3",
+                "LIFE 500",
+                ""));
+
+            try
+            {
+                var window = new MainWindow(folder) { SoundPlayer = new RecordingSoundPlayer() };
+                window.Show();
+                await window.RenderingCompleted;
+                window.Pause();
+                window.UpdateLayout();
+                window.RemoveSelectedFromField();
+
+                var veteran = window.AddToField("VET", new Point(300, 200));
+                string[] StatesOver(int ticks)
+                {
+                    var states = new System.Collections.Generic.List<string>();
+                    for (var i = 0; i < ticks; i++)
+                    {
+                        window.Tick();
+                        if (states.LastOrDefault() != veteran.State.Code)
+                        {
+                            states.Add(veteran.State.Code);
+                        }
+                    }
+
+                    return states.ToArray();
+                }
+
+                // An attack on nobody: weapon up, attack, weapon down, at ease.
+                window.AttackWithSelected();
+                Assert.That(veteran.State.Code, Is.EqualTo("PATTACK"));
+                Assert.That(StatesOver(10), Is.EqualTo(new[] { "PATTACK", "ATTACK", "UATTACK", "STAND" }));
+
+                // Against an enemy it keeps the weapon up between attacks (PSTAND while it rests for its pause),
+                // and lowers it when the enemy has fallen.
+                Click(window, new Point(600, 50), MouseButton.Left);
+                await window.SetPlayerColor(NationColorOffset.Red);
+                var enemy = window.AddToField("TST", new Point(330, 200));
+                enemy.StandsGround = true;
+                Click(window, veteran.Movement.Position, MouseButton.Left);
+                Click(window, enemy.Movement.Position, MouseButton.Right);
+                var fight = StatesOver(40);
+                Assert.That(enemy.IsDead, Is.True);
+                Assert.That(fight.Take(4), Is.EqualTo(new[] { "PATTACK", "ATTACK", "PSTAND", "ATTACK" }));
+                Assert.That(fight.Count(state => state == "PATTACK"), Is.EqualTo(1), "the weapon stays up between attacks");
+                Assert.That(fight.TakeLast(2), Is.EqualTo(new[] { "UATTACK", "STAND" }));
+
+                // Left alone it takes a rest now and then.
+                Assert.That(StatesOver(450), Does.Contain("REST"));
+
+                // Killed, it falls, lies, decays to its second stage and is gone.
+                Click(window, veteran.Movement.Position, MouseButton.Left);
+                window.KillSelected();
+                var death = StatesOver(250);
+                Assert.That(death, Is.EqualTo(new[] { "DEATH", "DEATHLIE1", "DEATHLIE2" }));
+                Assert.That(window.FieldUnits, Has.No.Member(veteran));
+
+                window.Close();
+            }
+            finally
+            {
+                Directory.Delete(folder, true);
+            }
+        }
+
         private sealed class RecordingSoundPlayer : ISoundPlayer
         {
             public System.Collections.Generic.List<string> Played { get; } = new System.Collections.Generic.List<string>();

@@ -53,6 +53,10 @@ namespace Viewer
 
         private const double LifeBarWidth = 30;
 
+        /// <summary>How long, in ticks, a unit stands idle before it takes a rest: somewhere between these.</summary>
+        private const int MinTicksToRest = 150;
+        private const int MaxTicksToRest = 400;
+
         /// <summary>The <c>GEOMETRY</c> step of a foot soldier, who walks <see cref="FieldUnit.DefaultStepLength"/> a frame.</summary>
         private const double FootStepSize = 32;
 
@@ -210,7 +214,7 @@ namespace Viewer
 
                 unit.Target = null;
                 Halt(unit);
-                PlayOnce(unit, attack);
+                BeginAttack(unit, attack);
             }
 
             UpdateFieldView();
@@ -265,6 +269,7 @@ namespace Viewer
         private void Kill(FieldUnitView unit)
         {
             Halt(unit);
+            unit.Next.Clear();
             unit.Target = null;
             unit.IsDead = true;
             unit.IsSelected = false;
@@ -600,7 +605,7 @@ namespace Viewer
             {
                 unit.Target = null;
                 Halt(unit);
-                SetFieldState(unit, StandStateOf(unit.Kind));
+                Unready(unit);
                 return;
             }
 
@@ -618,18 +623,18 @@ namespace Viewer
                 var turning = unit.Movement.Turn();
                 if (attack == null || resting || turning)
                 {
-                    SetFieldState(unit, StandStateOf(unit.Kind));
+                    SetFieldState(unit, IdleStateOf(unit));
                     return;
                 }
 
-                PlayOnce(unit, attack);
+                BeginAttack(unit, attack);
                 FightBack(target, unit);
             }
             else if (unit.StandsGround && !unit.TargetIsOrdered)
             {
                 unit.Target = null;
                 Halt(unit);
-                SetFieldState(unit, StandStateOf(unit.Kind));
+                Unready(unit);
             }
             else
             {
@@ -652,6 +657,99 @@ namespace Viewer
             _fieldUnits.Remove(unit);
         }
 
+        private static bool IsAttack(GameObjectState state) => state.Code.StartsWith("ATTACK", StringComparison.Ordinal);
+
+        /// <summary>
+        /// The state that goes with an attack: PATTACK1, PSTAND1 and UATTACK1 for ATTACK1. The first attack is
+        /// ATTACK or ATTACK0, and its states carry no number. Null if the unit has none.
+        /// </summary>
+        private static GameObjectState StateFor(GameObject kind, string prefix, string attack)
+        {
+            var number = attack.Substring("ATTACK".Length);
+            return kind.States.FirstOrDefault(state => state.Code == prefix + number)
+                   ?? (number == "0" ? kind.States.FirstOrDefault(state => state.Code == prefix) : null);
+        }
+
+        /// <summary>Starts an attack: the unit first brings its weapon up, if it has that and is not ready yet.</summary>
+        private void BeginAttack(FieldUnitView unit, GameObjectState attack)
+        {
+            unit.Next.Clear();
+            var prepare = unit.ReadyFor == attack.Code ? null : StateFor(unit.Kind, "PATTACK", attack.Code);
+            unit.ReadyFor = attack.Code;
+
+            if (prepare == null)
+            {
+                PlayOnce(unit, attack);
+                return;
+            }
+
+            unit.Next.Enqueue(attack);
+            PlayOnce(unit, prepare);
+        }
+
+        /// <summary>How the unit stands between attacks: weapon ready (PSTAND) if it is, else at ease.</summary>
+        private static GameObjectState IdleStateOf(FieldUnitView unit)
+        {
+            var ready = unit.ReadyFor == null ? null : StateFor(unit.Kind, "PSTAND", unit.ReadyFor);
+            return ready ?? StandStateOf(unit.Kind);
+        }
+
+        /// <summary>The unit lowers its weapon (UATTACK), if it had it ready, and stands at ease.</summary>
+        private void Unready(FieldUnitView unit)
+        {
+            unit.Next.Clear();
+            var lower = unit.ReadyFor == null ? null : StateFor(unit.Kind, "UATTACK", unit.ReadyFor);
+            unit.ReadyFor = null;
+
+            if (lower != null)
+            {
+                PlayOnce(unit, lower);
+            }
+            else
+            {
+                SetFieldState(unit, StandStateOf(unit.Kind));
+            }
+        }
+
+        /// <summary>The next stage of a body lying dead: DEATHLIE2 after DEATHLIE1; null after the last.</summary>
+        private static GameObjectState NextCorpseOf(FieldUnitView unit)
+        {
+            const string corpse = "DEATHLIE";
+            return unit.State.Code.StartsWith(corpse, StringComparison.Ordinal) && int.TryParse(unit.State.Code.Substring(corpse.Length), out var stage)
+                ? unit.Kind.States.FirstOrDefault(state => state.Code == corpse + (stage + 1))
+                : null;
+        }
+
+        /// <summary>A unit standing at ease with nothing to do takes a rest (REST) now and then, if it has one.</summary>
+        private void RestWhenIdle(FieldUnitView unit)
+        {
+            var idle = !unit.PlaysOnce && !unit.Movement.IsWalking && unit.Target == null
+                       && ReferenceEquals(unit.State, StandStateOf(unit.Kind));
+            if (!idle)
+            {
+                unit.IdleTicks = 0;
+                return;
+            }
+
+            if (unit.RestAfter == 0)
+            {
+                unit.RestAfter = _random.Next(MinTicksToRest, MaxTicksToRest);
+            }
+
+            if (++unit.IdleTicks < unit.RestAfter)
+            {
+                return;
+            }
+
+            unit.IdleTicks = 0;
+            unit.RestAfter = 0;
+            var rest = unit.Kind.States.FirstOrDefault(state => state.Code == "REST");
+            if (rest != null)
+            {
+                PlayOnce(unit, rest);
+            }
+        }
+
         private void PlayOnce(FieldUnitView unit, GameObjectState state)
         {
             unit.State = state;
@@ -666,8 +764,24 @@ namespace Viewer
         {
             if (unit.IsDead && !unit.PlaysOnce)
             {
-                return ++unit.TicksLyingDead <= TicksLyingDead;
+                if (++unit.TicksLyingDead <= TicksLyingDead)
+                {
+                    return true;
+                }
+
+                // The body decays through the stages the unit has (DEATHLIE1, DEATHLIE2, …), then it is gone.
+                var decayed = NextCorpseOf(unit);
+                if (decayed == null)
+                {
+                    return false;
+                }
+
+                SetFieldState(unit, decayed);
+                unit.TicksLyingDead = 0;
+                return true;
             }
+
+            RestWhenIdle(unit);
 
             var resting = unit.PauseTicksLeft > 0;
             if (resting)
@@ -689,7 +803,8 @@ namespace Viewer
             if (unit.PlaysOnce && unit.Pose >= unit.State.Frames.Count)
             {
                 // The attack is over (its target is hit, and the unit rests), or the unit has fallen and now lies dead.
-                if (!unit.IsDead)
+                var wasAttack = IsAttack(unit.State);
+                if (!unit.IsDead && wasAttack)
                 {
                     unit.PauseTicks = unit.Kind.Descriptor.AttackPauseOf(unit.State.Code) ?? 0;
                     unit.PauseTicksLeft = unit.PauseTicks;
@@ -697,13 +812,31 @@ namespace Viewer
 
                 // A blow lands as the attack ends; a shot does its damage where and when it lands.
                 var fires = _catalog.ShotsOf(unit.Kind, unit.State).Count > 0;
-                if (!unit.IsDead && !fires && unit.Target is { IsDead: false } hit)
+                if (!unit.IsDead && wasAttack && !fires && unit.Target is { IsDead: false } hit)
                 {
                     Hit(unit.Kind, unit.State.Code, hit);
                 }
 
-                SetFieldState(unit, unit.IsDead ? StateOf(unit.Kind, "DEATHLIE") ?? unit.State : StandStateOf(unit.Kind));
-                unit.Pose = unit.IsDead ? unit.State.Frames.Count - 1 : 0;
+                if (unit.IsDead)
+                {
+                    SetFieldState(unit, StateOf(unit.Kind, "DEATHLIE") ?? unit.State);
+                    unit.Pose = unit.State.Frames.Count - 1;
+                }
+                else if (unit.Next.Count > 0)
+                {
+                    PlayOnce(unit, unit.Next.Dequeue());
+                }
+                else if (wasAttack && unit.Target == null)
+                {
+                    // Nobody to fight: the weapon is lowered again.
+                    Unready(unit);
+                }
+                else
+                {
+                    SetFieldState(unit, IdleStateOf(unit));
+                    unit.Pose = 0;
+                }
+
                 return true;
             }
 
@@ -738,6 +871,8 @@ namespace Viewer
                 var unit = group[i];
                 unit.Target = null;
                 unit.Detours = 0;
+                unit.Next.Clear();
+                unit.ReadyFor = null;
                 WalkTo(unit, places[assignment[i]], group.Contains);
             }
 

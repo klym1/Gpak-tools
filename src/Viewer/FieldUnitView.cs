@@ -81,6 +81,17 @@ namespace Viewer
 
         internal int FlightAge { get; set; }
 
+        /// <summary>States to play once, in turn, after the one playing now (an attack after its preparation).</summary>
+        internal Queue<GameObjectState> Next { get; } = new Queue<GameObjectState>();
+
+        /// <summary>The attack the unit has its weapon ready for, or null when it stands at ease.</summary>
+        internal string ReadyFor { get; set; }
+
+        /// <summary>Ticks the unit has stood idle, and after how many it takes a rest.</summary>
+        internal int IdleTicks { get; set; }
+
+        internal int RestAfter { get; set; }
+
         /// <summary>The enemy the unit was sent to attack, or null.</summary>
         public FieldUnitView Target { get; internal set; }
 
