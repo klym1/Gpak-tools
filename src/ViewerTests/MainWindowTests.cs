@@ -21,10 +21,16 @@ namespace ViewerTests
     public class TestAppBuilder
     {
         // Headless platform with real Skia rendering, so frames can be captured.
-        public static AppBuilder BuildAvaloniaApp() => AppBuilder.Configure<App>()
+        public static AppBuilder BuildAvaloniaApp()
+        {
+            // Keep the tests away from the user's remembered game data.
+            ViewerSettings.File = Path.Combine(Path.GetTempPath(), "viewer-tests-" + Guid.NewGuid(), "last-game-data.txt");
+
+            return AppBuilder.Configure<App>()
             .UseSkia()
             .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false })
             .WithInterFont();
+        }
     }
 
     public class MainWindowTests
@@ -48,11 +54,13 @@ namespace ViewerTests
         [AvaloniaTest]
         public async Task ReportsMissingFile()
         {
-            var window = new MainWindow(Path.Combine(Path.GetTempPath(), "does-not-exist.gsc"));
+            var missing = Path.Combine(Path.GetTempPath(), "does-not-exist.gsc");
+            var window = new MainWindow(missing);
             window.Show();
             await window.RenderingCompleted;
 
             Assert.That(window.FindControl<TextBlock>("StatusText").Text, Does.StartWith("Failed to open"));
+            Assert.That(ViewerSettings.LastGameData, Is.Not.EqualTo(missing), "only game data that opened is remembered");
             Assert.That(window.FieldUnits, Is.Empty);
 
             window.Close();
@@ -103,7 +111,7 @@ namespace ViewerTests
 
                 Assert.That(window.FindControl<StackPanel>("UnitPanel").IsVisible, Is.True);
                 Assert.That(window.FindControl<ComboBox>("UnitBox").ItemCount, Is.EqualTo(1), "only units, not buildings");
-                Assert.That(window.PickedUnit.Label, Is.EqualTo("Тестовый воин (TST)"));
+                Assert.That(window.FindControl<Button>("AddUnitButton"), Is.Null);
                 Assert.That(window.FieldUnits.Single().Kind.Descriptor.FileName, Is.EqualTo("TST"));
                 Assert.That(window.IsPlaying, Is.True);
 
@@ -131,6 +139,7 @@ namespace ViewerTests
                 await window.RenderingCompleted;
 
                 Assert.That(window.Title, Is.EqualTo("GP Viewer - All.gsc"));
+                Assert.That(ViewerSettings.LastGameData, Is.EqualTo(archive), "remembered for the next start");
                 var unit = window.FieldUnits.Single();
                 Assert.That(unit.State.Code, Is.EqualTo("STAND"));
                 Assert.That(unit.IsSelected, Is.True);
@@ -209,9 +218,15 @@ namespace ViewerTests
                 // Two more units; the color picker recolors the selected unit and colors the ones added next.
                 var first = window.FieldUnits.Single();
                 first.Movement.PlaceAt(new Point(100, 200));
-                var second = window.AddToField(new Point(150, 210));
+                // Picking a unit in the list puts one on the field; the list clears, so it can be picked again.
+                var unitBox = window.FindControl<ComboBox>("UnitBox");
+                unitBox.SelectedIndex = 0;
+                Assert.That(unitBox.SelectedItem, Is.Null);
+                var second = window.FieldUnits[1];
+                Assert.That(second.Kind.Descriptor.FileName, Is.EqualTo("TST"));
+                second.Movement.PlaceAt(new Point(150, 210));
                 await window.SetPlayerColor(NationColorOffset.Red);
-                var third = window.AddToField(new Point(400, 200));
+                var third = window.AddToField("TST", new Point(400, 200));
                 Assert.That(window.FieldUnits, Has.Count.EqualTo(3));
                 Assert.That(window.SelectedFieldUnits, Is.EqualTo(new[] { third }), "a new unit is selected");
                 Assert.That(second.Color.Offset, Is.EqualTo(NationColorOffset.Red.Offset));

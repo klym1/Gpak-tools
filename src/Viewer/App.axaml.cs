@@ -16,7 +16,7 @@ namespace Viewer
         {
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
-                var path = desktop.Args?.FirstOrDefault();
+                var path = desktop.Args?.FirstOrDefault() ?? ViewerSettings.LastGameData;
                 desktop.MainWindow = new MainWindow(path);
             }
 

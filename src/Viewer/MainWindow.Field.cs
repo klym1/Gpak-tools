@@ -48,16 +48,19 @@ namespace Viewer
         public IReadOnlyList<FieldUnitView> SelectedFieldUnits => _fieldUnits.Where(unit => unit.IsSelected).ToList();
 
         /// <summary>
-        /// Adds the unit picked in the unit list to the field in the picked color, standing and facing the
-        /// viewer, at <paramref name="at"/> or in a free place near the middle; it becomes the selection.
+        /// Adds a unit to the field by descriptor name (e.g. <c>DR2</c>), as picking it in the unit list does:
+        /// in the picked color, standing and facing the viewer, at <paramref name="at"/> or in a free place
+        /// near the middle; it becomes the selection.
         /// </summary>
-        public FieldUnitView AddToField(Point? at = null)
+        public FieldUnitView AddToField(string descriptorName, Point? at = null)
         {
-            var kind = UnitBox.SelectedItem as GameObject ?? _catalog?.Units.FirstOrDefault();
-            if (kind == null)
-            {
-                return null;
-            }
+            var kind = _catalog?.Units.FirstOrDefault(o => o.Descriptor.FileName.Equals(descriptorName, StringComparison.OrdinalIgnoreCase))
+                       ?? throw new ArgumentException("No such unit: " + descriptorName, nameof(descriptorName));
+            return AddToField(kind, at);
+        }
+
+        private FieldUnitView AddToField(GameObject kind, Point? at = null)
+        {
 
             var unit = new FieldUnitView(kind, PlayerColor, StandStateOf(kind), new FieldUnit(at ?? FreePlace()))
             {
@@ -139,7 +142,17 @@ namespace Viewer
 
         private void InitializeField()
         {
-            AddUnitButton.Click += (sender, args) => AddToField();
+            UnitBox.SelectionChanged += (sender, args) =>
+            {
+                // Picking a unit puts one on the field; the list then clears, so the same unit can be picked again.
+                if (!_updatingControls && UnitBox.SelectedItem is GameObject kind)
+                {
+                    AddToField(kind);
+                    _updatingControls = true;
+                    UnitBox.SelectedItem = null;
+                    _updatingControls = false;
+                }
+            };
             RemoveUnitsButton.Click += (sender, args) => RemoveSelectedFromField();
             PlayerColorBox.SelectionChanged += (sender, args) =>
             {
@@ -445,7 +458,7 @@ namespace Viewer
             var selected = _fieldUnits.Count(unit => unit.IsSelected);
             RemoveUnitsButton.IsEnabled = selected > 0;
             FieldHint.Text = selected == 0
-                ? "Click a unit, or drag a box around several, to select them (Shift adds to the selection). \"Add unit\" puts another one on the field."
+                ? "Click a unit, or drag a box around several, to select them (Shift adds to the selection). Pick a unit in the list to put another one on the field."
                 : selected + (selected == 1 ? " unit" : " units") + " selected: right-click where to go. Delete removes them.";
         }
 

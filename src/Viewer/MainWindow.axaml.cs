@@ -46,9 +46,6 @@ namespace Viewer
         /// <summary>The game data whose units are on the field, or null.</summary>
         public GameCatalog Catalog => _catalog;
 
-        /// <summary>The unit picked in the unit list: the kind <see cref="AddToField"/> adds.</summary>
-        public GameObject PickedUnit => UnitBox.SelectedItem as GameObject;
-
         public bool IsPlaying => _timer.IsEnabled;
 
         /// <summary>Player color of the selected units and of units added next.</summary>
@@ -106,13 +103,6 @@ namespace Viewer
         {
             RenderingCompleted = LoadAsync(path);
             return RenderingCompleted;
-        }
-
-        /// <summary>Picks a unit to add, by descriptor name (e.g. <c>DR2</c>).</summary>
-        public void SelectUnit(string descriptorName)
-        {
-            UnitBox.SelectedItem = _catalog?.Units.FirstOrDefault(o => o.Descriptor.FileName.Equals(descriptorName, StringComparison.OrdinalIgnoreCase))
-                                   ?? throw new ArgumentException("No such unit: " + descriptorName, nameof(descriptorName));
         }
 
         /// <summary>Recolors the selected units and colors the ones added next.</summary>
@@ -288,6 +278,7 @@ namespace Viewer
 
                 SetCatalog(catalog);
                 CurrentFile = path;
+                ViewerSettings.LastGameData = Path.GetFullPath(path);
                 Title = "GP Viewer - " + Path.GetFileName(catalog.Files.Source);
                 FileNameText.Text = Path.GetFileName(catalog.Files.Source);
 
@@ -298,8 +289,7 @@ namespace Viewer
                 }
 
                 StatusText.Text = "";
-                UnitBox.SelectedItem = first;
-                AddToField();
+                AddToField(first);
                 Play();
             }
             catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is InvalidDataException)
@@ -341,7 +331,7 @@ namespace Viewer
                 UnitPanel.IsVisible = units.Count > 0;
                 ToolTip.SetTip(UnitBox, catalog == null
                     ? null
-                    : units.Count + " units described in " + catalog.Files.Source + " (type to search)");
+                    : "Pick one of the " + units.Count + " units in " + catalog.Files.Source + " to put it on the field (type to search)");
             }
             finally
             {

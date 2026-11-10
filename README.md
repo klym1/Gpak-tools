@@ -29,7 +29,7 @@ dotnet build src/GPExtractor.sln
 dotnet test src/GPExtractor.sln
 ```
 
-Put the game's units on a field: open the game's `All.gsc` (or a folder extracted from it; both can also be dropped on the window). **Add unit** puts the picked unit there in the picked color. Click a unit, or drag a box around several, to select them (Shift adds to the selection; Delete or **Remove** takes them off), then right-click to send them somewhere: each turns to the nearest direction, walks (one step of a few pixels per animation frame) to its own place in a block around the point and stands again when it arrives:
+Put the game's units on a field: open the game's `All.gsc` (or a folder extracted from it; both can also be dropped on the window); the viewer opens it again the next time it starts. Picking a unit in the **Add unit** list puts it there in the picked color. Click a unit, or drag a box around several, to select them (Shift adds to the selection; Delete or **Remove** takes them off), then right-click to send them somewhere: each turns to the nearest direction, walks (one step of a few pixels per animation frame) to its own place in a block around the point and stands again when it arrives:
 
 ```
 dotnet run --project src/Viewer -- [All.gsc | extracted-folder]

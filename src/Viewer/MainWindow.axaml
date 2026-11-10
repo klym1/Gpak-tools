@@ -17,11 +17,9 @@
 
       <!-- Shown once game data with units is open -->
       <StackPanel x:Name="UnitPanel" Orientation="Horizontal" Spacing="8" IsVisible="False">
-        <TextBlock Text="Unit" VerticalAlignment="Center" />
+        <TextBlock Text="Add unit" VerticalAlignment="Center" />
         <ComboBox x:Name="UnitBox" Width="260" MaxDropDownHeight="520" IsTextSearchEnabled="True"
-                  PlaceholderText="Pick a unit…" ToolTip.Tip="Units described in the game data (type to search)" />
-        <Button x:Name="AddUnitButton" Content="Add unit"
-                ToolTip.Tip="Add the picked unit to the field, in the picked color" />
+                  PlaceholderText="Pick a unit…" ToolTip.Tip="Pick a unit to put it on the field, in the picked color" />
         <Button x:Name="RemoveUnitsButton" Content="Remove" IsEnabled="False"
                 ToolTip.Tip="Remove the selected units from the field (Delete)" />
       </StackPanel>
