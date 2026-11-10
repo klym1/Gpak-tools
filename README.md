@@ -35,14 +35,6 @@ View and animate a `.gp` file (defaults to `gp/test.gp`; files can also be opene
 dotnet run --project src/Viewer -- [gp-file | All.gsc | extracted-folder]
 ```
 
-Convert every frame of every `.gp` file in a folder to PNG (`<name>_<frame>.png`, transparent background):
-
-```
-dotnet run --project src/ConsoleBatchConverter -- <gp-folder> <png-output-folder> [palette-file]
-```
-
-The palette defaults to `palette/0/agew_1.pal`.
-
 Extract the game's `.gsc` archives (e.g. `All.gsc` from Cossacks), optionally keeping only paths that contain a filter such as `.gp`:
 
 ```
@@ -50,19 +42,16 @@ dotnet run --project src/GscExtractor -- <archive.gsc> <output-folder> [name-fil
 dotnet run --project src/GscExtractor -- --list <archive.gsc> [name-filter]
 ```
 
-The extracted `.gp` files can be passed straight to `ConsoleBatchConverter`.
-
 | Project | Purpose |
 |---|---|
 | `GPExtractor` | GP file decoding (`GpFile`), `.gsc` archive reading (`GscArchive`) |
 | `ImageRenderer` | Compositing frames to RGBA (`GpRenderer`), palettes, built-in PNG encoder |
 | `Types` | `ImageView` pixel buffer |
-| `ConsoleBatchConverter` | Batch `.gp` → PNG conversion |
 | `GscExtractor` | Extracts `.gsc` game archives (`GscArchive` in `GPExtractor` does the reading) |
 | `Viewer` | Desktop image viewer ([Avalonia](https://avaloniaui.net/)) |
 | `UnitTests`, `ViewerTests` | Tests; `ViewerTests` run the viewer headlessly |
 
-The core library and converter have no native or imaging dependencies. The tests decode synthetic GP data for every encoding and include pixel-exact regression checks of `gp/test.gp`.
+The core library has no native or imaging dependencies. The tests decode synthetic GP data for every encoding and include pixel-exact regression checks of `gp/test.gp`.
 
 On Linux the viewer (and `ViewerTests`) need fontconfig (`libfontconfig1`), which desktop distributions already include.
 
