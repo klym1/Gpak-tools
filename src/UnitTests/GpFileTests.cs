@@ -102,10 +102,22 @@ namespace UnitTests
         [Test]
         public void ReportsUnsupportedTypes()
         {
-            var part = SinglePart(new GpTestFiles.Part(GpPartType.Unknown42, 1, new byte[] { 0x01, 0, 1 }, 1, new byte[] { 1 }));
+            var part = SinglePart(new GpTestFiles.Part((GpPartType) 99, 1, new byte[] { 0x01, 0, 1 }, 1, new byte[] { 1 }));
 
             part.IsSupported.Should().BeFalse();
             part.Invoking(p => p.DecodePixels(Dictionary)).Should().Throw<NotSupportedException>();
+        }
+
+        [Test]
+        public void DecodesPartsCompressedAgainstThemselves()
+        {
+            // Control 0b00011000, lowest bit first: three pixels, a copy of 4 from 2 back ((1 << 5) -> 1 + 3; it
+            // runs into its own pixels), a copy of 3 from 7 back, and one more pixel.
+            var colors = new byte[] { 0b0001_1000, 10, 11, 12, 1, 1 << 5, 6, 0, 13 };
+            var part = SinglePart(new GpTestFiles.Part(GpPartType.SelfCompressed, 1, new byte[] { 0x01, 0, 11 }, 11, colors, Width: 11));
+
+            part.IsSupported.Should().BeTrue();
+            part.DecodePixels(Dictionary).Should().Equal(10, 11, 12, 11, 12, 11, 12, 10, 11, 12, 13);
         }
 
         [Test]

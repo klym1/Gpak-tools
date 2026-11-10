@@ -8,7 +8,7 @@
 
 C# library for reading **GPAK** files (have *.gp* extension) which were utilized for storing graphical data in some old games (such as **Cossacks** and **American Conquest** from **GSC Game World** company). Library produces Bitmap objects which can be saved using ordinary image format (e.g. *PNG*).
 
-Format specs were reverse engineered completely from scratch. All GP files of Cossacks: European Wars decode, except for one rare part encoding (type 42, see below).
+Format specs were reverse engineered completely from scratch. All GP files of Cossacks: European Wars decode.
 
 ## Goals
 
@@ -95,7 +95,7 @@ After the rows comes one unused byte, then the color data. The pixel values fill
 | 5 | Shadow | None |
 | 7 | Light: smoke, explosions, splashes | One value per pixel: brightness level × 8 + step, a row of the light table (below) |
 | 39 | Interface graphics and fonts | One palette index per pixel |
-| 42 | Unknown | Not decoded yet; skipped when rendering |
+| 42 | Opaque pixels of large pictures (buildings, borders) | As type 0, but from the control byte's lowest bit up, and bit 1 is two bytes `a`, `b`: copy (`b` >> 5) + 3 pixels, starting (`a` \| (`b` & 31) << 8) + 1 pixels back in what this part has produced so far |
 | 255 | Empty frame | None |
 
 The opacity of types 2, 3 and 4 is not stored in the file. The renderer uses 25 %, 50 % and 75 %; the game's 256-row tables `AGEW_TR4.GRD` and `AGEW_TR.GRD` mix two palette colors 1:3 and 1:1, which fits. Type 7 goes through the light table `ALPHAW.GRD`: of its rows 0-159, row level × 8 + step maps every background color to that color dimmed to (7 − step) / 8 plus the gray of the level (20 levels, 0 to 216). So step 0 is a faint glow and step 7 solid gray; the renderer draws the same as a gray at an opacity of (step + 1) / 8.

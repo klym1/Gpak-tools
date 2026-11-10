@@ -146,9 +146,21 @@ namespace GPExtractor
         /// </summary>
         public IReadOnlyDictionary<int, IReadOnlySet<string>> AttackMasks { get; private init; } = new Dictionary<int, IReadOnlySet<string>>();
 
-        /// <summary>Whether an attack animation is made on another object: always, unless its <c>ATTMASK</c> leaves out what that is made of.</summary>
-        public bool CanAttack(GpDescriptor target, string animation) =>
-            !AttackMasks.TryGetValue(AttackNumberOf(animation), out var mask) || mask.Overlaps(target.Materials);
+        /// <summary>
+        /// The <c>CANKILL count materials…</c> line: the materials the object's attacks are made on, except the
+        /// attacks with an <c>ATTMASK</c> of their own; empty if there is none.
+        /// </summary>
+        public IReadOnlySet<string> CanKill { get; private init; } = new HashSet<string>();
+
+        /// <summary>
+        /// Whether an attack animation is made on another object: only if that is made of a material in the
+        /// attack's <c>ATTMASK</c> or, without one, in <c>CANKILL</c>; always, if the object has neither.
+        /// </summary>
+        public bool CanAttack(GpDescriptor target, string animation)
+        {
+            var materials = AttackMasks.GetValueOrDefault(AttackNumberOf(animation), CanKill);
+            return materials.Count == 0 || materials.Overlaps(target.Materials);
+        }
 
         private const string SelectSoundKey = "SELECT_SOUND";
         private const string OrderSoundKey = "ORDER_SOUND";
@@ -283,6 +295,7 @@ namespace GPExtractor
             string motionStyle = null;
             var words = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             var materials = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var canKill = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var attackMasks = new Dictionary<int, IReadOnlySet<string>>();
 
             foreach (var line in text.Split('\n'))
@@ -384,6 +397,10 @@ namespace GPExtractor
                 {
                     materials.UnionWith(tokens.Skip(2).Take(materialCount));
                 }
+                else if (tokens[0].Equals("CANKILL", StringComparison.OrdinalIgnoreCase) && TryInt(tokens[1], out var killCount))
+                {
+                    canKill.UnionWith(tokens.Skip(2).Take(killCount));
+                }
                 else if (tokens.Length >= 3 && tokens[0].Equals("ATTMASK", StringComparison.OrdinalIgnoreCase)
                          && TryInt(tokens[1], out var maskAttack) && TryInt(tokens[2], out var maskCount))
                 {
@@ -455,6 +472,7 @@ namespace GPExtractor
                 MotionStyle = motionStyle,
                 Words = words,
                 Materials = materials,
+                CanKill = canKill,
                 AttackMasks = attackMasks,
                 Radius = radius,
                 StepSize = stepSize,

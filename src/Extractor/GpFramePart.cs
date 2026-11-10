@@ -32,8 +32,11 @@ namespace GPExtractor
         /// <summary>Opaque, uncompressed: one palette index per pixel (interface graphics).</summary>
         Uncompressed = 39,
 
-        /// <summary>Unknown compression, not supported yet.</summary>
-        Unknown42 = 42,
+        /// <summary>
+        /// Opaque, compressed against itself: like <see cref="Normal"/>, but a reference copies pixels the
+        /// part has already produced instead of the file's dictionary (large pictures: buildings, borders).
+        /// </summary>
+        SelfCompressed = 42,
 
         /// <summary>Empty placeholder.</summary>
         Empty = 255,
@@ -100,7 +103,7 @@ namespace GPExtractor
 
         public int RowCount { get; }
 
-        public bool IsSupported => Type != GpPartType.Unknown42 && Enum.IsDefined(Type);
+        public bool IsSupported => Enum.IsDefined(Type);
 
         /// <summary>
         /// Decodes which pixels of each row are drawn.
@@ -178,6 +181,9 @@ namespace GPExtractor
                 case GpPartType.Normal:
                     return DecodeDictionaryCompressed(dictionary);
 
+                case GpPartType.SelfCompressed:
+                    return DecodeSelfCompressed();
+
                 case GpPartType.PlayerColor:
                     return DecodeTwoBitsPerPixel();
 
@@ -240,6 +246,48 @@ namespace GPExtractor
         }
 
         /// <summary>Four pixels per byte, lowest bits first.</summary>
+        /// <summary>
+        /// Groups of a control byte and 8 items, from the control byte's lowest bit up. Bit 0: one palette
+        /// index. Bit 1: two bytes a, b: copy (b >> 5) + 3 pixels, starting (a | (b &amp; 31) &lt;&lt; 8) + 1 pixels
+        /// back in what the part has produced so far (the copy may run into the pixels it makes itself).
+        /// </summary>
+        private byte[] DecodeSelfCompressed()
+        {
+            var pixels = new byte[PixelCount];
+            var count = 0;
+            var offset = ColorDataStart;
+
+            while (count < pixels.Length)
+            {
+                var control = ReadByte(ref offset);
+
+                for (var bit = 0; bit < 8 && count < pixels.Length; bit++)
+                {
+                    if ((control >> bit & 1) == 0)
+                    {
+                        pixels[count++] = ReadByte(ref offset);
+                        continue;
+                    }
+
+                    var a = ReadByte(ref offset);
+                    var b = ReadByte(ref offset);
+                    var back = (a | (b & 0x1F) << 8) + 1;
+                    var length = (b >> 5) + 3;
+                    if (back > count)
+                    {
+                        throw new InvalidDataException("Corrupt GP file: a part copies pixels from before its start.");
+                    }
+
+                    for (var i = 0; i < length && count < pixels.Length; i++, count++)
+                    {
+                        pixels[count] = pixels[count - back];
+                    }
+                }
+            }
+
+            return pixels;
+        }
+
         private byte[] DecodeTwoBitsPerPixel()
         {
             var data = Slice(ColorDataStart, (PixelCount + 3) / 4);
