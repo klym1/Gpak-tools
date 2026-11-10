@@ -43,6 +43,9 @@ namespace Viewer
 
         internal int TicksLyingDead { get; set; }
 
+        /// <summary>The enemy the unit was sent to attack, or null.</summary>
+        public FieldUnitView Target { get; internal set; }
+
         /// <summary>Directions of the current state, or null if it is drawn from one direction only.</summary>
         public GpDirections Directions => State.Directions > 1
             ? new GpDirections(State.Directions, 1, 0, GpDirectionsSource.Descriptor, Kind.Descriptor.FileName)

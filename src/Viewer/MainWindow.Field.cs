@@ -38,6 +38,10 @@ namespace Viewer
         // The unit kind whose attacks the attack list shows.
         private GameObject _attackBoxKind;
 
+        /// <summary>How near, in pixels, a unit comes to an enemy to hit it by hand, and to fire at it.</summary>
+        private const double MeleeReach = 40;
+        private const double ShotReach = 300;
+
         /// <summary>How long after the shot a weapon lands, in ticks.</summary>
         private const int TicksToImpact = 20;
 
@@ -122,6 +126,7 @@ namespace Viewer
                     continue;
                 }
 
+                unit.Target = null;
                 unit.Movement.Stop();
                 PlayOnce(unit, attack);
             }
@@ -137,18 +142,89 @@ namespace Viewer
         {
             foreach (var unit in SelectedFieldUnits)
             {
-                unit.Movement.Stop();
-                unit.IsDead = true;
-                unit.IsSelected = false;
-
-                var death = StateOf(unit.Kind, "DEATH");
-                if (death != null)
-                {
-                    PlayOnce(unit, death);
-                }
+                Kill(unit);
             }
 
             UpdateFieldView();
+        }
+
+        /// <summary>
+        /// Sends the selected units of another color against a unit: each comes within reach of its attack
+        /// (the one picked in the attack list, if it has it), turns to the enemy and attacks, which kills it.
+        /// </summary>
+        public void AttackUnit(FieldUnitView target)
+        {
+            foreach (var unit in SelectedFieldUnits.Where(unit => IsEnemy(unit, target)))
+            {
+                unit.Target = target;
+            }
+
+            UpdateFieldView();
+        }
+
+        private static bool IsEnemy(FieldUnitView unit, FieldUnitView other) =>
+            !ReferenceEquals(unit, other) && unit.Color.Offset != other.Color.Offset;
+
+        private void Kill(FieldUnitView unit)
+        {
+            unit.Movement.Stop();
+            unit.Target = null;
+            unit.IsDead = true;
+            unit.IsSelected = false;
+
+            var death = StateOf(unit.Kind, "DEATH");
+            if (death != null)
+            {
+                PlayOnce(unit, death);
+            }
+        }
+
+        /// <summary>The attack a unit uses on an enemy: the one picked in the attack list, or its first choice.</summary>
+        private GameObjectState ChosenAttackOf(GameObject kind)
+        {
+            var code = (AttackBox.SelectedItem as AttackOption)?.State.Code;
+            return AttacksOf(kind).FirstOrDefault(state => state.Code == code) ?? AttackStateOf(kind);
+        }
+
+        /// <summary>How near a unit must be to hit with an attack: far for one that fires a weapon.</summary>
+        private static double ReachOf(GameObject kind, GameObjectState attack)
+        {
+            var fires = kind.Descriptor.Weapons.Any(weapon => GameCatalog.SameAnimation(weapon.Animation, attack.Code));
+            return fires ? ShotReach : MeleeReach;
+        }
+
+        /// <summary>
+        /// Goes after the unit's target: walks until it is within reach, then turns to it and attacks.
+        /// </summary>
+        private void Pursue(FieldUnitView unit)
+        {
+            var target = unit.Target;
+            var attack = ChosenAttackOf(unit.Kind);
+            if (target.IsDead || !_fieldUnits.Contains(target) || attack == null)
+            {
+                unit.Target = null;
+                unit.Movement.Stop();
+                SetFieldState(unit, StandStateOf(unit.Kind));
+                return;
+            }
+
+            if (unit.PlaysOnce)
+            {
+                return;
+            }
+
+            var way = target.Movement.Position - unit.Movement.Position;
+            if (Distance(target.Movement.Position, unit.Movement.Position) <= ReachOf(unit.Kind, attack))
+            {
+                unit.Movement.Stop();
+                unit.Movement.TurnTo(FieldUnit.HeadingOf(way));
+                PlayOnce(unit, attack);
+            }
+            else
+            {
+                unit.Movement.MoveTo(target.Movement.Position);
+                SetFieldState(unit, WalkStateOf(unit.Kind));
+            }
         }
 
         private void RemoveFromField(FieldUnitView unit)
@@ -175,10 +251,21 @@ namespace Viewer
                 return ++unit.TicksLyingDead <= TicksLyingDead;
             }
 
+            if (unit.Target != null)
+            {
+                Pursue(unit);
+            }
+
             unit.Pose++;
             if (unit.PlaysOnce && unit.Pose >= unit.State.Frames.Count)
             {
-                // The attack is over, or the unit has fallen and now lies dead.
+                // The attack is over (and its target falls), or the unit has fallen and now lies dead.
+                if (!unit.IsDead && unit.Target is { IsDead: false } hit)
+                {
+                    Kill(hit);
+                    unit.Target = null;
+                }
+
                 SetFieldState(unit, unit.IsDead ? StateOf(unit.Kind, "DEATHLIE") ?? unit.State : StandStateOf(unit.Kind));
                 unit.Pose = unit.IsDead ? unit.State.Frames.Count - 1 : 0;
                 return true;
@@ -212,6 +299,7 @@ namespace Viewer
             for (var i = 0; i < group.Count; i++)
             {
                 var unit = group[i];
+                unit.Target = null;
                 unit.Movement.MoveTo(places[assignment[i]]);
                 SetFieldState(unit, unit.Movement.IsWalking ? WalkStateOf(unit.Kind) : StandStateOf(unit.Kind));
             }
@@ -555,7 +643,17 @@ namespace Viewer
             }
             else if (point.Properties.IsRightButtonPressed)
             {
-                SendSelectedTo(point.Position);
+                // Right-click an enemy to attack it, anything else to go there.
+                var enemy = UnitAt(point.Position);
+                if (enemy != null && _fieldUnits.Any(unit => unit.IsSelected && IsEnemy(unit, enemy)))
+                {
+                    AttackUnit(enemy);
+                }
+                else
+                {
+                    SendSelectedTo(point.Position);
+                }
+
                 e.Handled = true;
             }
         }
@@ -702,7 +800,7 @@ namespace Viewer
             UpdateAttackBox();
             FieldHint.Text = selected == 0
                 ? "Click a unit, or drag a box around several, to select them (Shift adds to the selection). Pick a unit in the list to put another one on the field."
-                : selected + (selected == 1 ? " unit" : " units") + " selected: right-click where to go. Delete removes them.";
+                : selected + (selected == 1 ? " unit" : " units") + " selected: right-click where to go, or an enemy (a unit of another color) to attack it. Delete removes them.";
         }
 
         /// <summary>Renders the frames for a unit's state and direction in the background, then draws again.</summary>

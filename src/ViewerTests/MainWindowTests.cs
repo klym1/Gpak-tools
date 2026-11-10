@@ -305,6 +305,71 @@ namespace ViewerTests
             }
         }
 
+        [AvaloniaTest]
+        public async Task AttacksAnEnemyOnRightClick()
+        {
+            var folder = UnitArchiveFolder(out var archive);
+            try
+            {
+                var window = new MainWindow(archive) { SoundPlayer = new RecordingSoundPlayer() };
+                window.Show();
+                await window.RenderingCompleted;
+                window.Pause();
+                window.UpdateLayout();
+
+                // A blue unit, a blue friend, and a red enemy far to the east.
+                var unit = window.FieldUnits.Single();
+                unit.Movement.PlaceAt(new Point(100, 200));
+                var friend = window.AddToField("TST", new Point(100, 300));
+                Click(window, new Point(300, 50), MouseButton.Left); // deselect, so the friend stays blue
+                await window.SetPlayerColor(NationColorOffset.Red);
+                var enemy = window.AddToField("TST", new Point(600, 200));
+                window.Tick();
+                await window.RenderingCompleted;
+                window.Tick();
+
+                // Right-clicking a friend just goes there.
+                Click(window, unit.Movement.Position, MouseButton.Left);
+                Click(window, friend.Movement.Position, MouseButton.Right);
+                Assert.That(unit.Target, Is.Null);
+                Assert.That(unit.Movement.IsWalking, Is.True);
+                unit.Movement.PlaceAt(new Point(100, 200));
+
+                // Right-clicking the enemy: the unit walks until its cannon reaches (300 pixels), ...
+                Click(window, enemy.Movement.Position, MouseButton.Right);
+                Assert.That(unit.Target, Is.SameAs(enemy));
+                window.Tick();
+                Assert.That(unit.State.Code, Is.EqualTo("MOTION_L+MOTION_R"));
+                Assert.That(unit.Direction, Is.EqualTo(12), "east");
+                for (var i = 0; i < 100 && unit.State.Code != "ATTACK"; i++)
+                {
+                    window.Tick();
+                }
+
+                // ... stops and fires, facing it, ...
+                Assert.That(unit.State.Code, Is.EqualTo("ATTACK"));
+                Assert.That(unit.Movement.IsWalking, Is.False);
+                Assert.That(enemy.Movement.Position.X - unit.Movement.Position.X, Is.InRange(296.0, 300.0));
+                Assert.That(unit.Direction, Is.EqualTo(12));
+                Assert.That(enemy.IsDead, Is.False);
+
+                // ... and when the attack is over the enemy falls and the unit stands again.
+                window.Tick();
+                window.Tick();
+                Assert.That(enemy.IsDead, Is.True);
+                Assert.That(enemy.State.Code, Is.EqualTo("DEATH"));
+                Assert.That(unit.State.Code, Is.EqualTo("STAND"));
+                Assert.That(unit.Target, Is.Null);
+                Assert.That(friend.State.Code, Is.EqualTo("STAND"), "units that were not selected stay out of it");
+
+                window.Close();
+            }
+            finally
+            {
+                Directory.Delete(folder, true);
+            }
+        }
+
         private sealed class RecordingSoundPlayer : ISoundPlayer
         {
             public System.Collections.Generic.List<string> Played { get; } = new System.Collections.Generic.List<string>();
