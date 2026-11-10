@@ -55,6 +55,14 @@ namespace Viewer
         private const int TicksToImpact = 20;
 
         private readonly List<(int TicksLeft, GameSound Sound)> _impacts = new();
+
+        // Weapon animations playing on the field (smoke, explosions), and those still to appear where a shot lands.
+        private readonly List<FieldUnitView> _effects = new();
+        private readonly List<(int TicksLeft, string Animation, Point Where)> _impactEffects = new();
+        private readonly Dictionary<(GameObject, GameObjectState), IReadOnlyList<GameObjectShot>> _stateShots = new();
+
+        /// <summary>The weapon animations playing on the field now.</summary>
+        public IReadOnlyList<FieldUnitView> Effects => _effects;
         private readonly Random _random = new Random();
 
         /// <summary>What plays the units' sounds.</summary>
@@ -432,6 +440,7 @@ namespace Viewer
             unit.Pose = 0;
             unit.PlaysOnce = true;
             PlaySounds(unit);
+            Fire(unit);
         }
 
         /// <summary>The unit's next frame; false when it has lain dead long enough and leaves the field.</summary>
@@ -473,6 +482,7 @@ namespace Viewer
             }
 
             PlaySounds(unit);
+            Fire(unit);
             if (unit.Movement.IsWalking)
             {
                 StepAlongRoute(unit);
@@ -520,6 +530,7 @@ namespace Viewer
             }
 
             PlayImpacts();
+            AdvanceEffects();
 
             foreach (var unit in _fieldUnits.ToList())
             {
@@ -670,6 +681,14 @@ namespace Viewer
             _fieldUnits.Clear();
             _readyFrames.Clear();
             _renderingFrames.Clear();
+            foreach (var effect in _effects)
+            {
+                Field.Children.Remove(effect.Image);
+            }
+
+            _effects.Clear();
+            _impactEffects.Clear();
+            _stateShots.Clear();
             _attackBoxKind = null;
             _stateSounds.Clear();
             _impacts.Clear();
@@ -944,32 +963,17 @@ namespace Viewer
                 return;
             }
 
+            foreach (var effect in _effects)
+            {
+                DrawSprite(effect);
+                effect.Image.ZIndex++;
+            }
+
             foreach (var unit in _fieldUnits)
             {
-                var key = new FieldFramesKey(unit.Kind, unit.State, unit.Direction, unit.Color.Offset);
-                if (_readyFrames.TryGetValue(key, out var frames))
-                {
-                    unit.Shown = frames;
-                }
-                else
-                {
-                    StartRendering(key, unit);
-                }
+                var feet = DrawSprite(unit);
 
-                var shown = unit.Shown;
-                unit.Frame = shown != null && shown.Images.Count > 0 ? shown.Images[unit.Pose % shown.Images.Count] : null;
-                unit.Image.Source = unit.Frame?.Bitmap;
-
-                var feet = new Point(Math.Round(unit.Movement.Position.X), Math.Round(unit.Movement.Position.Y));
-                if (shown != null)
-                {
-                    unit.Origin = new Point(feet.X - shown.Anchor.X, feet.Y - shown.Anchor.Y);
-                    Canvas.SetLeft(unit.Image, unit.Origin.X);
-                    Canvas.SetTop(unit.Image, unit.Origin.Y);
-                }
-
-                // Units further down the field are in front; a unit's ring is just behind it, over the units behind.
-                unit.Image.ZIndex = 2 * (1000 + (int) feet.Y);
+                // A unit's ring is just behind it, over the units behind.
                 unit.Ring.ZIndex = unit.Image.ZIndex - 1;
                 unit.Marker.ZIndex = 1;
 
@@ -1012,6 +1016,142 @@ namespace Viewer
             FieldHint.Text = selected == 0
                 ? "Click a unit, or drag a box around several, to select them (Shift adds to the selection). Pick a unit in the list to put another one on the field."
                 : selected + (selected == 1 ? " unit" : " units") + " selected: right-click where to go, or an enemy (a unit of another color) to attack it. Delete removes them.";
+        }
+
+        /// <summary>
+        /// Draws the current frame of a unit or an effect with its anchor at its position, in front of those
+        /// further up the field. Returns that position in whole pixels.
+        /// </summary>
+        private Point DrawSprite(FieldUnitView unit)
+        {
+            var key = new FieldFramesKey(unit.Kind, unit.State, unit.Direction, unit.Color.Offset);
+            if (_readyFrames.TryGetValue(key, out var frames))
+            {
+                unit.Shown = frames;
+            }
+            else
+            {
+                StartRendering(key, unit);
+            }
+
+            var shown = unit.Shown;
+            unit.Frame = shown != null && shown.Images.Count > 0 ? shown.Images[unit.Pose % shown.Images.Count] : null;
+            unit.Image.Source = unit.Frame?.Bitmap;
+
+            var feet = new Point(Math.Round(unit.Movement.Position.X), Math.Round(unit.Movement.Position.Y));
+            if (shown != null)
+            {
+                unit.Origin = new Point(feet.X - shown.Anchor.X, feet.Y - shown.Anchor.Y);
+                Canvas.SetLeft(unit.Image, unit.Origin.X);
+                Canvas.SetTop(unit.Image, unit.Origin.Y);
+            }
+
+            unit.Image.ZIndex = 2 * (1000 + (int) feet.Y);
+            return feet;
+        }
+
+        /// <summary>
+        /// Shows what the unit's state fires at the frame it is in: smoke at the weapon, and a while later
+        /// what the shot does where it lands: on the unit's enemy, or as far ahead as a shot reaches.
+        /// </summary>
+        private void Fire(FieldUnitView unit)
+        {
+            if (unit.State.Frames.Count == 0)
+            {
+                return;
+            }
+
+            var key = (unit.Kind, unit.State);
+            if (!_stateShots.TryGetValue(key, out var shots))
+            {
+                shots = _catalog.ShotsOf(unit.Kind, unit.State);
+                _stateShots[key] = shots;
+            }
+
+            var frame = unit.Pose % unit.State.Frames.Count;
+            foreach (var shot in shots.Where(shot => shot.Frame == frame))
+            {
+                var (muzzle, impact) = _catalog.Weapons.EffectsOf(shot.Weapon);
+                var from = WeaponPositionOf(unit, shot, frame);
+                foreach (var animation in muzzle)
+                {
+                    AddEffect(animation, from, unit.Movement.Heading);
+                }
+
+                if (impact.Count > 0)
+                {
+                    var heading = unit.Movement.Heading * Math.PI / 180;
+                    var where = unit.Target?.Movement.Position
+                                ?? ClampToField(unit.Movement.Position + new Vector(-Math.Sin(heading), Math.Cos(heading)) * ShotReach);
+                    _impactEffects.Add((TicksToImpact, impact[_random.Next(impact.Count)], where));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Where the unit's weapon is on the field: the shot's point for the direction the unit faces, taken
+        /// from the anchor of the sprite it is drawn from, and mirrored like the sprite.
+        /// </summary>
+        private static Point WeaponPositionOf(FieldUnitView unit, GameObjectShot shot, int frame)
+        {
+            var sprite = unit.Kind.Sprite(unit.State.Frames[frame].Sprite);
+            if (shot.Points.Count == 0 || sprite?.AnchorX == null)
+            {
+                return unit.Movement.Position;
+            }
+
+            var directions = unit.Directions;
+            var mirrored = directions != null && unit.Direction >= directions.StoredDirections;
+            var stored = mirrored ? directions.Count - unit.Direction : unit.Direction;
+            var point = shot.Points[Math.Min(stored, shot.Points.Count - 1)];
+
+            var aside = point.X - sprite.AnchorX.Value;
+            return unit.Movement.Position + new Vector(mirrored ? -aside : aside, point.Y - (sprite.AnchorY ?? 0));
+        }
+
+        /// <summary>Puts a weapon animation on the field, to play once.</summary>
+        private void AddEffect(string animation, Point position, double heading)
+        {
+            var kind = _catalog.Effect(animation);
+            if (kind == null)
+            {
+                return;
+            }
+
+            var effect = new FieldUnitView(
+                  kind
+                , NationColorOffset.Red
+                , kind.States[0]
+                , new FieldUnit(position, heading)
+            );
+            Field.Children.Add(effect.Image);
+            _effects.Add(effect);
+        }
+
+        /// <summary>Plays the effects on, removes those that are over, and shows the impacts whose time has come.</summary>
+        private void AdvanceEffects()
+        {
+            foreach (var effect in _effects.ToList())
+            {
+                if (++effect.Pose >= effect.State.Frames.Count)
+                {
+                    Field.Children.Remove(effect.Image);
+                    _effects.Remove(effect);
+                }
+            }
+
+            for (var i = _impactEffects.Count - 1; i >= 0; i--)
+            {
+                var (ticksLeft, animation, where) = _impactEffects[i];
+                if (ticksLeft > 1)
+                {
+                    _impactEffects[i] = (ticksLeft - 1, animation, where);
+                    continue;
+                }
+
+                _impactEffects.RemoveAt(i);
+                AddEffect(animation, where, 0);
+            }
         }
 
         /// <summary>Renders the frames for a unit's state and direction in the background, then draws again.</summary>

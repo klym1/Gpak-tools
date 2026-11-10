@@ -66,6 +66,9 @@ namespace GPExtractor
         /// </summary>
         public IReadOnlyList<(string Animation, int Frame)> FiringFrames { get; private init; } = Array.Empty<(string, int)>();
 
+        /// <summary>The <c>SETACTIVEPOINT</c> lines with their points: where the weapon is, e.g. the muzzle.</summary>
+        public IReadOnlyList<GpDescriptorActivePoint> ActivePoints { get; private init; } = Array.Empty<GpDescriptorActivePoint>();
+
         /// <summary>The <c>LIFE</c> line: how much damage the object takes before it dies; null if it has none.</summary>
         public int? Life { get; private init; }
 
@@ -155,6 +158,7 @@ namespace GPExtractor
             var sounds = new List<GpDescriptorSound>();
             var weapons = new List<GpDescriptorWeapon>();
             var firingFrames = new List<(string Animation, int Frame)>();
+            var activePoints = new List<GpDescriptorActivePoint>();
             var damages = new List<(int Attack, int Value)>();
             var attackPauses = new List<(int Attack, int Value)>();
             var weaponKinds = new List<(int Attack, string Kind)>();
@@ -182,8 +186,8 @@ namespace GPExtractor
                 else if (tokens.Length >= 3 && tokens[0].Equals("USERLC", StringComparison.OrdinalIgnoreCase) && TryInt(tokens[1], out var index))
                 {
                     int? anchorX = null, anchorY = null;
-                    if (tokens.Length >= 6 && tokens[3].Equals("SHADOW", StringComparison.OrdinalIgnoreCase)
-                        && TryInt(tokens[4], out var shadowX) && TryInt(tokens[5], out var shadowY))
+                    // The word before the anchor is SHADOW for units and NONE for weapon effects.
+                    if (tokens.Length >= 6 && TryInt(tokens[4], out var shadowX) && TryInt(tokens[5], out var shadowY))
                     {
                         anchorX = -shadowX;
                         anchorY = -shadowY;
@@ -205,6 +209,14 @@ namespace GPExtractor
                          && tokens[1].StartsWith('#') && TryInt(tokens[2], out var firingFrame))
                 {
                     firingFrames.Add((tokens[1].Substring(1), firingFrame));
+
+                    var points = new List<(int X, int Y)>();
+                    for (var i = 3; i + 1 < tokens.Length && TryInt(tokens[i], out var pointX) && TryInt(tokens[i + 1], out var pointY); i += 2)
+                    {
+                        points.Add((pointX, pointY));
+                    }
+
+                    activePoints.Add(new GpDescriptorActivePoint(tokens[1].Substring(1), firingFrame, points));
                 }
                 else if (tokens[0].Equals("LIFE", StringComparison.OrdinalIgnoreCase) && TryInt(tokens[1], out var lifeValue))
                 {
@@ -266,6 +278,7 @@ namespace GPExtractor
                 Sounds = sounds,
                 Weapons = weapons,
                 FiringFrames = firingFrames,
+                ActivePoints = activePoints,
                 Life = life,
                 Damages = damages,
                 AttackPauses = attackPauses,
@@ -331,6 +344,12 @@ namespace GPExtractor
     {
         public string Animation => Attack == 0 ? "ATTACK" : "ATTACK" + Attack;
     }
+
+    /// <summary>
+    /// Where the weapon of an attack is at the frame it fires: one point per stored direction, in the
+    /// coordinates of the sprite (like its anchor).
+    /// </summary>
+    public sealed record GpDescriptorActivePoint(string Animation, int Frame, IReadOnlyList<(int X, int Y)> Points);
 
     public sealed record GpDescriptorAnimation(string Name, int Directions, IReadOnlyList<(int Sprite, int Pose)> Frames);
 }

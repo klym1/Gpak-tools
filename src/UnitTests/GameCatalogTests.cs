@@ -183,6 +183,37 @@ namespace UnitTests
             catalog.SoundsOf(unit, unit.States.Single(state => state.Code == "STAND")).Should().BeEmpty();
         }
 
+        [TestCase(false)]
+        [TestCase(true)]
+        public void FindsTheEffectsOfFiringAWeapon(bool archive)
+        {
+            using var catalog = GameCatalog.Load(archive ? Archive() : ExtractedFolder());
+            var unit = catalog.Units.Single();
+
+            // The attack fires its cannon at frame 2, from a point given for each stored direction.
+            var shot = catalog.ShotsOf(unit, unit.States.Single(state => state.Code == "ATTACK")).Should().ContainSingle().Subject;
+            (shot.Frame, shot.Weapon).Should().Be((2, "CANNON"));
+            shot.Points.Should().Equal((1, 1), (1, 1));
+            catalog.ShotsOf(unit, unit.States.Single(state => state.Code == "STAND")).Should().BeEmpty();
+
+            // The cannon leaves smoke where it stands (itself it flies for one cycle only, so it goes nowhere);
+            // its ball flies as far as it takes, and where it lands there is a bang.
+            var (muzzle, impact) = catalog.Weapons.EffectsOf("CANNON");
+            muzzle.Should().Equal("SMOKE");
+            impact.Should().Equal("BANG");
+            var nothing = catalog.Weapons.EffectsOf("NOTHING");
+            nothing.Muzzle.Should().BeEmpty("an unknown weapon shows nothing");
+            nothing.Impact.Should().BeEmpty();
+
+            // The animations come from WEAPON.ADS, as objects with one state.
+            catalog.WeaponAnimations.Sprites.Should().Equal(new GpDescriptorSprite(0, "tstg", 30, 15));
+            var smoke = catalog.Effect("smoke");
+            smoke.States.Should().ContainSingle();
+            (smoke.States[0].Code, smoke.States[0].Directions, smoke.States[0].Frames.Count).Should().Be(("SMOKE", 9, 2));
+            catalog.Effect("BANG").States[0].Directions.Should().Be(1);
+            catalog.Effect("FOG").Should().BeNull();
+        }
+
         [Test]
         public void LoadsRlcSpritesByName()
         {

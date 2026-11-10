@@ -515,6 +515,72 @@ namespace ViewerTests
             }
         }
 
+        [AvaloniaTest]
+        public async Task ShowsSmokeAtTheWeaponAndABangWhereTheShotLands()
+        {
+            var folder = UnitArchiveFolder(out var archive);
+            try
+            {
+                var window = new MainWindow(archive) { SoundPlayer = new RecordingSoundPlayer() };
+                window.Show();
+                await window.RenderingCompleted;
+                window.Pause();
+                window.UpdateLayout();
+
+                var unit = window.FieldUnits.Single();
+                var feet = new Point(400, 300);
+                unit.Movement.PlaceAt(feet);
+                unit.Movement.TurnTo(90); // west
+                window.Tick();
+                await window.RenderingCompleted;
+
+                // The attack fires its cannon at frame 2: smoke appears at the weapon's point, (1, 1) in the
+                // sprite anchored at (30, 15), facing the way the unit faces.
+                window.AttackWithSelected();
+                window.Tick();
+                Assert.That(window.Effects, Is.Empty);
+                window.Tick();
+                var smoke = window.Effects.Single();
+                Assert.That(smoke.State.Code, Is.EqualTo("SMOKE"));
+                Assert.That(smoke.Movement.Position, Is.EqualTo(feet + new Vector(1 - 30, 1 - 15)));
+                Assert.That(smoke.Direction, Is.EqualTo(4), "west, like the unit");
+                await window.RenderingCompleted;
+                window.Tick();
+                Assert.That(smoke.Image.Source, Is.Not.Null, "it is drawn");
+
+                // The smoke plays once (2 frames) and is gone.
+                window.Tick();
+                Assert.That(window.Effects, Is.Empty);
+
+                // A while later the ball lands as far west as a shot reaches, with a bang.
+                for (var i = 0; i < 30 && window.Effects.Count == 0; i++)
+                {
+                    window.Tick();
+                }
+
+                var bang = window.Effects.Single();
+                Assert.That(bang.State.Code, Is.EqualTo("BANG"));
+                Assert.That(bang.Movement.Position.X, Is.EqualTo(feet.X - 300).Within(1e-6));
+                Assert.That(bang.Movement.Position.Y, Is.EqualTo(feet.Y).Within(1e-6));
+                window.Tick();
+                window.Tick();
+                Assert.That(window.Effects, Is.Empty);
+
+                // East of the unit the sprite is mirrored, and the weapon's point with it.
+                unit.Movement.TurnTo(270);
+                window.AttackWithSelected();
+                window.Tick();
+                window.Tick();
+                Assert.That(window.Effects.Single().Movement.Position, Is.EqualTo(feet + new Vector(30 - 1, 1 - 15)));
+
+                window.Close();
+            }
+            finally
+            {
+                Directory.Delete(folder, true);
+            }
+        }
+
         private sealed class RecordingSoundPlayer : ISoundPlayer
         {
             public System.Collections.Generic.List<string> Played { get; } = new System.Collections.Generic.List<string>();

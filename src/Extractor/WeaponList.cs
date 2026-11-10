@@ -8,7 +8,8 @@ namespace GPExtractor
     /// The game's weapons (<c>WEAPON.NDS</c>), as far as their sounds go. The file has sections like
     /// <c>[SOUND]</c> (lines <c>weapon sound</c>), <c>[SYNCWEAPON]</c> (lines <c>weapon count weapons…</c>:
     /// weapons launched together with one) and <c>[CHILDWEAPON]</c> (lines <c>weapon min max frame count
-    /// weapons…</c>: weapons born when one explodes), and <c>//</c> comments.
+    /// weapons…</c>: weapons born when one explodes), <c>[MEMBERS]</c> (lines <c>weapon #animation damage
+    /// radius transparency gravity propagation speed cycles</c>), and <c>//</c> comments.
     /// </summary>
     public sealed class WeaponList
     {
@@ -19,6 +20,15 @@ namespace GPExtractor
         );
 
         private const int MaxDepth = 8;
+
+        // Weapons that stay where they appear (smoke, explosions); the others fly.
+        private static readonly string[] StationaryPropagations = { "STAND", "SLIGHTUP", "IMMEDIATE" };
+
+        // The animation of weapons that are not drawn.
+        private const string NoAnimation = "POINT";
+
+        private Dictionary<string, (string Animation, bool Stays, bool Travels)> Members { get; init; } =
+            new Dictionary<string, (string, bool, bool)>(StringComparer.OrdinalIgnoreCase);
 
         private readonly Dictionary<string, string> _sounds;
         private readonly Dictionary<string, IReadOnlyList<string>> _launchedTogether;
@@ -62,6 +72,45 @@ namespace GPExtractor
             );
         }
 
+        /// <summary>
+        /// The animations (in <c>WEAPON.ADS</c>) shown when a weapon is fired: at the muzzle, those of the
+        /// weapon and of weapons launched with it that stay in place (smoke); at the impact, those of the
+        /// nearest such weapons that a travelling one leads to (explosions, of which the game shows one).
+        /// A weapon travels if it flies for as long as it takes; one that flies for a set number of cycles
+        /// ends about where it started.
+        /// </summary>
+        public (IReadOnlyList<string> Muzzle, IReadOnlyList<string> Impact) EffectsOf(string weapon)
+        {
+            var muzzle = new List<string>();
+            var impact = new List<string>();
+            var level = new List<(string Weapon, bool Landed)> { (weapon, false) };
+
+            for (var depth = 0; depth < MaxDepth && level.Count > 0 && impact.Count == 0; depth++)
+            {
+                var next = new List<(string Weapon, bool Landed)>();
+                foreach (var (name, landed) in level)
+                {
+                    var travels = false;
+                    if (Members.TryGetValue(name, out var member))
+                    {
+                        travels = member.Travels;
+                        if (member.Stays && !member.Animation.Equals(NoAnimation, StringComparison.OrdinalIgnoreCase))
+                        {
+                            (landed ? impact : muzzle).Add(member.Animation);
+                        }
+                    }
+
+                    next.AddRange((_launchedTogether.GetValueOrDefault(name) ?? Array.Empty<string>())
+                        .Concat(_bornOnExplosion.GetValueOrDefault(name) ?? Array.Empty<string>())
+                        .Select(linked => (linked, landed || travels)));
+                }
+
+                level = next;
+            }
+
+            return (muzzle.Distinct(StringComparer.OrdinalIgnoreCase).ToList(), impact.Distinct(StringComparer.OrdinalIgnoreCase).ToList());
+        }
+
         /// <summary>The sound, other than <paramref name="except"/>, of the weapon or the nearest one linked to it.</summary>
         private string NearestSound(string weapon, Func<string, IEnumerable<string>> linked, string except)
         {
@@ -87,6 +136,7 @@ namespace GPExtractor
             var sounds = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             var launchedTogether = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase);
             var bornOnExplosion = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase);
+            var members = new Dictionary<string, (string Animation, bool Stays, bool Travels)>(StringComparer.OrdinalIgnoreCase);
             var section = "";
 
             foreach (var rawLine in text.Split('\n'))
@@ -104,7 +154,13 @@ namespace GPExtractor
                 }
 
                 var tokens = line.Split((char[]) null, StringSplitOptions.RemoveEmptyEntries);
-                if (section == "SOUND" && tokens.Length >= 2)
+                if (section == "MEMBERS" && tokens.Length >= 7 && tokens[1].StartsWith('#'))
+                {
+                    var stays = StationaryPropagations.Contains(tokens[6], StringComparer.OrdinalIgnoreCase);
+                    var endless = tokens.Length >= 9 && int.TryParse(tokens[8], out var cycles) && cycles < 0;
+                    members.TryAdd(tokens[0], (tokens[1].Substring(1), stays, !stays && endless));
+                }
+                else if (section == "SOUND" && tokens.Length >= 2)
                 {
                     sounds.TryAdd(tokens[0], tokens[1]);
                 }
@@ -122,7 +178,10 @@ namespace GPExtractor
                   sounds
                 , launchedTogether
                 , bornOnExplosion
-            );
+            )
+            {
+                Members = members,
+            };
         }
     }
 }

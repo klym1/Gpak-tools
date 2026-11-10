@@ -49,6 +49,9 @@ namespace GPExtractor
     /// <param name="Impact">Whether it is the sound of a weapon landing, some time after the frame it is fired at.</param>
     public sealed record GameObjectSound(string Animation, int Frame, GameSound Sound, bool Impact = false);
 
+    /// <summary>A weapon fired at a frame of a state, from one of the points (see <see cref="GameCatalog.ShotsOf"/>).</summary>
+    public sealed record GameObjectShot(int Frame, string Weapon, IReadOnlyList<(int X, int Y)> Points);
+
     public sealed class GameCatalog : IDisposable
     {
         private static readonly Dictionary<string, string> KnownStates = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -67,6 +70,7 @@ namespace GPExtractor
         };
 
         private readonly ConcurrentDictionary<string, GpFile> _sprites = new ConcurrentDictionary<string, GpFile>(StringComparer.OrdinalIgnoreCase);
+        private readonly ConcurrentDictionary<string, GameObject> _effects = new ConcurrentDictionary<string, GameObject>(StringComparer.OrdinalIgnoreCase);
         private readonly ConcurrentDictionary<string, RlcFile> _rlcSprites = new ConcurrentDictionary<string, RlcFile>(StringComparer.OrdinalIgnoreCase);
 
         private GameCatalog(GameFiles files, IReadOnlyList<GameObject> objects)
@@ -79,6 +83,60 @@ namespace GPExtractor
 
             var weaponList = files.Find("WEAPON", ".NDS");
             Weapons = weaponList == null ? WeaponList.Empty : WeaponList.Parse(Encoding.Latin1.GetString(files.Read(weaponList)));
+
+            var weaponAnimations = files.Find("WEAPON", ".ADS");
+            WeaponAnimations = weaponAnimations == null ? null : GpDescriptor.Parse("WEAPON", files.Read(weaponAnimations));
+        }
+
+        /// <summary>
+        /// The animations of weapons (smoke, explosions), from <c>WEAPON.ADS</c>, which is written like a
+        /// descriptor; null if the game files have none.
+        /// </summary>
+        public GpDescriptor WeaponAnimations { get; }
+
+        /// <summary>
+        /// A weapon animation (e.g. <c>DIM32</c>, the smoke of a cannon) as an object with that one state, so
+        /// it can be drawn like a unit; null if there is no such animation.
+        /// </summary>
+        public GameObject Effect(string animation)
+        {
+            return _effects.GetOrAdd(animation, name =>
+            {
+                var state = WeaponAnimations == null
+                    ? null
+                    : StatesOf(WeaponAnimations).FirstOrDefault(s => s.Code.Equals(name, StringComparison.OrdinalIgnoreCase) && s.Frames.Count > 0);
+
+                return state == null ? null : new GameObject(WeaponAnimations, "WEAPON.ADS", new[] { state });
+            });
+        }
+
+        /// <summary>
+        /// The weapons a state fires: at which frame, and where the weapon is then (one point per stored
+        /// direction, in the coordinates of the state's sprite; empty if the descriptor gives none).
+        /// </summary>
+        public IReadOnlyList<GameObjectShot> ShotsOf(GameObject gameObject, GameObjectState state)
+        {
+            var descriptor = gameObject.Descriptor;
+            return descriptor.Weapons
+                .Where(weapon => SameAnimation(weapon.Animation, state.Code))
+                .Select(weapon => new GameObjectShot(
+                      FiringFrameOf(descriptor, weapon.Animation)
+                    , weapon.Weapon
+                    , descriptor.ActivePoints
+                        .Where(point => SameAnimation(point.Animation, weapon.Animation))
+                        .Select(point => point.Points)
+                        .FirstOrDefault() ?? Array.Empty<(int X, int Y)>()
+                ))
+                .ToList();
+        }
+
+        /// <summary>The frame an attack fires at, or its first frame if the descriptor gives none.</summary>
+        private static int FiringFrameOf(GpDescriptor descriptor, string animation)
+        {
+            return descriptor.FiringFrames
+                .Where(firing => SameAnimation(firing.Animation, animation))
+                .Select(firing => firing.Frame)
+                .FirstOrDefault();
         }
 
         /// <summary>The weapons of <c>WEAPON.NDS</c>; empty if the game files have none.</summary>
@@ -127,13 +185,10 @@ namespace GPExtractor
         {
             var descriptor = gameObject.Descriptor;
 
-            // A weapon sounds when it fires: at the attack's firing frame, or its first frame if none is given.
+            // A weapon sounds when it fires.
             var shots = descriptor.Weapons.SelectMany(weapon =>
             {
-                var frame = descriptor.FiringFrames
-                    .Where(firing => SameAnimation(firing.Animation, weapon.Animation))
-                    .Select(firing => firing.Frame)
-                    .FirstOrDefault();
+                var frame = FiringFrameOf(descriptor, weapon.Animation);
 
                 return new[]
                 {
