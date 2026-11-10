@@ -64,6 +64,11 @@ namespace Viewer
 
         internal int Detours { get; set; }
 
+        /// <summary>For a projectile: where it flies from and to on the ground, how high and for how long.</summary>
+        internal (Point From, Point To, double Height, int Ticks)? Flight { get; set; }
+
+        internal int FlightAge { get; set; }
+
         /// <summary>The enemy the unit was sent to attack, or null.</summary>
         public FieldUnitView Target { get; internal set; }
 

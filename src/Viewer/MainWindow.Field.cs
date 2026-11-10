@@ -1071,18 +1071,30 @@ namespace Viewer
             var frame = unit.Pose % unit.State.Frames.Count;
             foreach (var shot in shots.Where(shot => shot.Frame == frame))
             {
-                var (muzzle, impact) = _catalog.Weapons.EffectsOf(shot.Weapon);
+                var (muzzle, impact, flying) = _catalog.Weapons.EffectsOf(shot.Weapon);
                 var from = WeaponPositionOf(unit, shot, frame);
                 foreach (var animation in muzzle)
                 {
                     AddEffect(animation, from, unit.Movement.Heading);
                 }
 
+                var heading = unit.Movement.Heading * Math.PI / 180;
+                var where = unit.Target?.Movement.Position
+                            ?? ClampToField(unit.Movement.Position + new Vector(-Math.Sin(heading), Math.Cos(heading)) * ShotReach);
+
+                foreach (var flight in flying)
+                {
+                    // The top of a throw is a quarter of its length times the tangent of the launch angle.
+                    var height = Distance(from, where) * Math.Tan(flight.LaunchAngle * Math.PI / 180) / 4;
+                    var projectile = AddEffect(flight.Animation, from, FieldUnit.HeadingOf(where - from));
+                    if (projectile != null)
+                    {
+                        projectile.Flight = (from, where, height, TicksToImpact);
+                    }
+                }
+
                 if (impact.Count > 0)
                 {
-                    var heading = unit.Movement.Heading * Math.PI / 180;
-                    var where = unit.Target?.Movement.Position
-                                ?? ClampToField(unit.Movement.Position + new Vector(-Math.Sin(heading), Math.Cos(heading)) * ShotReach);
                     _impactEffects.Add((TicksToImpact, impact[_random.Next(impact.Count)], where));
                 }
             }
@@ -1109,13 +1121,13 @@ namespace Viewer
             return unit.Movement.Position + new Vector(mirrored ? -aside : aside, point.Y - (sprite.AnchorY ?? 0));
         }
 
-        /// <summary>Puts a weapon animation on the field, to play once.</summary>
-        private void AddEffect(string animation, Point position, double heading)
+        /// <summary>Puts a weapon animation on the field, to play once; null if there is no such animation.</summary>
+        private FieldUnitView AddEffect(string animation, Point position, double heading)
         {
             var kind = _catalog.Effect(animation);
             if (kind == null)
             {
-                return;
+                return null;
             }
 
             var effect = new FieldUnitView(
@@ -1126,6 +1138,7 @@ namespace Viewer
             );
             Field.Children.Add(effect.Image);
             _effects.Add(effect);
+            return effect;
         }
 
         /// <summary>Plays the effects on, removes those that are over, and shows the impacts whose time has come.</summary>
@@ -1133,7 +1146,18 @@ namespace Viewer
         {
             foreach (var effect in _effects.ToList())
             {
-                if (++effect.Pose >= effect.State.Frames.Count)
+                effect.Pose++;
+
+                // A projectile flies its arc, its animation looping, and is gone when it lands.
+                var over = effect.Pose >= effect.State.Frames.Count;
+                if (effect.Flight is { } flight)
+                {
+                    var done = ++effect.FlightAge / (double) flight.Ticks;
+                    effect.Movement.PlaceAt(flight.From + (flight.To - flight.From) * done + new Vector(0, -4 * flight.Height * done * (1 - done)));
+                    over = effect.FlightAge >= flight.Ticks;
+                }
+
+                if (over)
                 {
                     Field.Children.Remove(effect.Image);
                     _effects.Remove(effect);

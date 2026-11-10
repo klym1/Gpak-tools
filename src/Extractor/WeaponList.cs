@@ -11,6 +11,9 @@ namespace GPExtractor
     /// weapons…</c>: weapons born when one explodes), <c>[MEMBERS]</c> (lines <c>weapon #animation damage
     /// radius transparency gravity propagation speed cycles</c>), and <c>//</c> comments.
     /// </summary>
+    /// <summary>A weapon in flight: its animation and the angle above the ground it is launched at, in degrees.</summary>
+    public sealed record WeaponFlight(string Animation, double LaunchAngle);
+
     public sealed class WeaponList
     {
         public static readonly WeaponList Empty = new WeaponList(
@@ -27,8 +30,11 @@ namespace GPExtractor
         // The animation of weapons that are not drawn.
         private const string NoAnimation = "POINT";
 
-        private Dictionary<string, (string Animation, bool Stays, bool Travels)> Members { get; init; } =
-            new Dictionary<string, (string, bool, bool)>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, (string Animation, bool Stays, bool Travels, double LaunchAngle)> Members { get; init; } =
+            new Dictionary<string, (string, bool, bool, double)>(StringComparer.OrdinalIgnoreCase);
+
+        // The angle a weapon is taken to be launched at when the file gives its speed instead: an arrow's.
+        private const double DefaultLaunchAngle = 15;
 
         private readonly Dictionary<string, string> _sounds;
         private readonly Dictionary<string, IReadOnlyList<string>> _launchedTogether;
@@ -79,10 +85,15 @@ namespace GPExtractor
         /// A weapon travels if it flies for as long as it takes; one that flies for a set number of cycles
         /// ends about where it started.
         /// </summary>
-        public (IReadOnlyList<string> Muzzle, IReadOnlyList<string> Impact) EffectsOf(string weapon)
+        /// <returns>
+        /// Also the weapons that travel from the muzzle to the impact and are drawn (a cannonball, an arrow),
+        /// with the angle above the ground they are launched at: 0 for one that flies straight.
+        /// </returns>
+        public (IReadOnlyList<string> Muzzle, IReadOnlyList<string> Impact, IReadOnlyList<WeaponFlight> Flying) EffectsOf(string weapon)
         {
             var muzzle = new List<string>();
             var impact = new List<string>();
+            var flying = new List<WeaponFlight>();
             var level = new List<(string Weapon, bool Landed)> { (weapon, false) };
 
             for (var depth = 0; depth < MaxDepth && level.Count > 0 && impact.Count == 0; depth++)
@@ -94,9 +105,14 @@ namespace GPExtractor
                     if (Members.TryGetValue(name, out var member))
                     {
                         travels = member.Travels;
-                        if (member.Stays && !member.Animation.Equals(NoAnimation, StringComparison.OrdinalIgnoreCase))
+                        var drawn = !member.Animation.Equals(NoAnimation, StringComparison.OrdinalIgnoreCase);
+                        if (member.Stays && drawn)
                         {
                             (landed ? impact : muzzle).Add(member.Animation);
+                        }
+                        else if (member.Travels && drawn && !landed)
+                        {
+                            flying.Add(new WeaponFlight(member.Animation, member.LaunchAngle));
                         }
                     }
 
@@ -108,7 +124,11 @@ namespace GPExtractor
                 level = next;
             }
 
-            return (muzzle.Distinct(StringComparer.OrdinalIgnoreCase).ToList(), impact.Distinct(StringComparer.OrdinalIgnoreCase).ToList());
+            return (
+                  muzzle.Distinct(StringComparer.OrdinalIgnoreCase).ToList()
+                , impact.Distinct(StringComparer.OrdinalIgnoreCase).ToList()
+                , flying.Distinct().ToList()
+            );
         }
 
         /// <summary>The sound, other than <paramref name="except"/>, of the weapon or the nearest one linked to it.</summary>
@@ -136,7 +156,7 @@ namespace GPExtractor
             var sounds = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             var launchedTogether = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase);
             var bornOnExplosion = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase);
-            var members = new Dictionary<string, (string Animation, bool Stays, bool Travels)>(StringComparer.OrdinalIgnoreCase);
+            var members = new Dictionary<string, (string Animation, bool Stays, bool Travels, double LaunchAngle)>(StringComparer.OrdinalIgnoreCase);
             var section = "";
 
             foreach (var rawLine in text.Split('\n'))
@@ -158,7 +178,19 @@ namespace GPExtractor
                 {
                     var stays = StationaryPropagations.Contains(tokens[6], StringComparer.OrdinalIgnoreCase);
                     var endless = tokens.Length >= 9 && int.TryParse(tokens[8], out var cycles) && cycles < 0;
-                    members.TryAdd(tokens[0], (tokens[1].Substring(1), stays, !stays && endless));
+
+                    // "ANGLE n" gives the launch angle; other weapons under gravity are taken to rise a little.
+                    var angle = 0.0;
+                    if (tokens[6].Equals("ANGLE", StringComparison.OrdinalIgnoreCase) && tokens.Length >= 8)
+                    {
+                        double.TryParse(tokens[7], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out angle);
+                    }
+                    else if (!tokens[5].Equals("NO_GRAVITY", StringComparison.OrdinalIgnoreCase))
+                    {
+                        angle = DefaultLaunchAngle;
+                    }
+
+                    members.TryAdd(tokens[0], (tokens[1].Substring(1), stays, !stays && endless, angle));
                 }
                 else if (section == "SOUND" && tokens.Length >= 2)
                 {

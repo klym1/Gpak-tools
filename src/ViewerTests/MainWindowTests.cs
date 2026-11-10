@@ -540,28 +540,39 @@ namespace ViewerTests
                 window.Tick();
                 Assert.That(window.Effects, Is.Empty);
                 window.Tick();
-                var smoke = window.Effects.Single();
-                Assert.That(smoke.State.Code, Is.EqualTo("SMOKE"));
-                Assert.That(smoke.Movement.Position, Is.EqualTo(feet + new Vector(1 - 30, 1 - 15)));
+                var muzzle = feet + new Vector(1 - 30, 1 - 15);
+                var smoke = window.Effects.Single(effect => effect.State.Code == "SMOKE");
+                Assert.That(smoke.Movement.Position, Is.EqualTo(muzzle));
                 Assert.That(smoke.Direction, Is.EqualTo(4), "west, like the unit");
                 await window.RenderingCompleted;
                 window.Tick();
                 Assert.That(smoke.Image.Source, Is.Not.Null, "it is drawn");
 
-                // The smoke plays once (2 frames) and is gone.
+                // The smoke plays once (2 frames) and is gone; the shell is on its way.
                 window.Tick();
-                Assert.That(window.Effects, Is.Empty);
+                var shell = window.Effects.Single();
+                Assert.That(shell.State.Code, Is.EqualTo("SHELL"));
 
-                // A while later the ball lands as far west as a shot reaches, with a bang.
-                for (var i = 0; i < 30 && window.Effects.Count == 0; i++)
+                // The shell flies from the weapon to as far west as a shot reaches, in an arc: launched at
+                // 45 degrees, it is a quarter of the way high in the middle.
+                var landing = feet + new Vector(-300, 0);
+                var way = landing - muzzle;
+                var highest = 0.0;
+                for (var i = 0; i < 30 && window.Effects.Contains(shell); i++)
                 {
+                    var position = shell.Movement.Position;
+                    var done = (position.X - muzzle.X) / way.X;
+                    highest = Math.Max(highest, muzzle.Y + way.Y * done - position.Y);
                     window.Tick();
                 }
 
+                Assert.That(highest, Is.EqualTo(Math.Sqrt(way.X * way.X + way.Y * way.Y) / 4).Within(2));
+
+                // Where it lands there is a bang.
                 var bang = window.Effects.Single();
                 Assert.That(bang.State.Code, Is.EqualTo("BANG"));
-                Assert.That(bang.Movement.Position.X, Is.EqualTo(feet.X - 300).Within(1e-6));
-                Assert.That(bang.Movement.Position.Y, Is.EqualTo(feet.Y).Within(1e-6));
+                Assert.That(bang.Movement.Position.X, Is.EqualTo(landing.X).Within(1e-6));
+                Assert.That(bang.Movement.Position.Y, Is.EqualTo(landing.Y).Within(1e-6));
                 window.Tick();
                 window.Tick();
                 Assert.That(window.Effects, Is.Empty);
@@ -571,7 +582,7 @@ namespace ViewerTests
                 window.AttackWithSelected();
                 window.Tick();
                 window.Tick();
-                Assert.That(window.Effects.Single().Movement.Position, Is.EqualTo(feet + new Vector(30 - 1, 1 - 15)));
+                Assert.That(window.Effects.Single(effect => effect.State.Code == "SMOKE").Movement.Position, Is.EqualTo(feet + new Vector(30 - 1, 1 - 15)));
 
                 window.Close();
             }

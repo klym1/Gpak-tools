@@ -118,7 +118,7 @@ A descriptor line `SOUND frame #ANIMATION name` plays a sound at a frame of an a
 
 ### Weapon effects
 
-Smoke and explosions are animations of the weapons. `WEAPON.ADS` is written like a descriptor and defines them (`@DIM32 17 26 0 25` is the smoke of a cannon, from 17 stored directions); the `[MEMBERS]` section of `WEAPON.NDS` gives each weapon its animation, how it moves and for how many cycles. A weapon that stays in place is drawn where it appears: at the unit's weapon for those launched with the shot, where the shot lands for those that a travelling weapon (one that flies without a cycle limit) leads to. The weapon's place on a unit is the point of its `SETACTIVEPOINT` line for the direction it faces. `WeaponList.EffectsOf`, `GameCatalog.ShotsOf` and `GameCatalog.Effect` give these, and the viewer plays them when a unit fires.
+Smoke and explosions are animations of the weapons. `WEAPON.ADS` is written like a descriptor and defines them (`@DIM32 17 26 0 25` is the smoke of a cannon, from 17 stored directions); the `[MEMBERS]` section of `WEAPON.NDS` gives each weapon its animation, how it moves and for how many cycles. A weapon that stays in place is drawn where it appears: at the unit's weapon for those launched with the shot, where the shot lands for those that a travelling weapon (one that flies without a cycle limit) leads to. A travelling weapon with an animation of its own (a cannonball, an arrow) is drawn flying between the two, in an arc for its launch angle (`ANGLE n`). The weapon's place on a unit is the point of its `SETACTIVEPOINT` line for the direction it faces. `WeaponList.EffectsOf`, `GameCatalog.ShotsOf` and `GameCatalog.Effect` give these, and the viewer plays them when a unit fires.
 
 ## RLC sprite format
 

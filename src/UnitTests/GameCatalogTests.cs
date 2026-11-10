@@ -198,12 +198,14 @@ namespace UnitTests
 
             // The cannon leaves smoke where it stands (itself it flies for one cycle only, so it goes nowhere);
             // its ball flies as far as it takes, and where it lands there is a bang.
-            var (muzzle, impact) = catalog.Weapons.EffectsOf("CANNON");
+            var (muzzle, impact, flying) = catalog.Weapons.EffectsOf("CANNON");
             muzzle.Should().Equal("SMOKE");
             impact.Should().Equal("BANG");
+            flying.Should().Equal(new WeaponFlight("SHELL", 45));
             var nothing = catalog.Weapons.EffectsOf("NOTHING");
             nothing.Muzzle.Should().BeEmpty("an unknown weapon shows nothing");
             nothing.Impact.Should().BeEmpty();
+            nothing.Flying.Should().BeEmpty();
 
             // The animations come from WEAPON.ADS, as objects with one state.
             catalog.WeaponAnimations.Sprites.Should().Equal(new GpDescriptorSprite(0, "tstg", 30, 15));
