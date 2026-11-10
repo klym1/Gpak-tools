@@ -63,6 +63,18 @@ namespace Viewer
             }
         }
 
+        private IReadOnlyList<GameObjectShot> ShotsOf(GameObject kind, GameObjectState state)
+        {
+            var key = (kind, state);
+            if (!_stateShots.TryGetValue(key, out var shots))
+            {
+                shots = _catalog.ShotsOf(kind, state);
+                _stateShots[key] = shots;
+            }
+
+            return shots;
+        }
+
         /// <summary>
         /// Shows what the unit's state fires at the frame it is in: smoke at the weapon, and a while later
         /// what the shot does where it lands: on the unit's enemy, or as far ahead as a shot reaches.
@@ -74,13 +86,7 @@ namespace Viewer
                 return;
             }
 
-            var key = (unit.Kind, unit.State);
-            if (!_stateShots.TryGetValue(key, out var shots))
-            {
-                shots = _catalog.ShotsOf(unit.Kind, unit.State);
-                _stateShots[key] = shots;
-            }
-
+            var shots = ShotsOf(unit.Kind, unit.State);
             var frame = unit.Pose % unit.State.Frames.Count;
             foreach (var shot in shots.Where(shot => shot.Frame == frame))
             {

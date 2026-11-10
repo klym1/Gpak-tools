@@ -262,7 +262,7 @@ namespace Viewer
                 }
 
                 // A blow lands as the attack ends; a shot does its damage where and when it lands.
-                var fires = _catalog.ShotsOf(unit.Kind, unit.State).Count > 0;
+                var fires = ShotsOf(unit.Kind, unit.State).Count > 0;
                 if (!unit.IsDead && wasAttack && !fires && unit.Target is { IsDead: false } hit)
                 {
                     Hit(unit.Kind, unit.State.Code, hit);
@@ -397,6 +397,7 @@ namespace Viewer
             _stateShots.Clear();
             _attackBoxKind = null;
             _stateSounds.Clear();
+            _attackStates.Clear();
             _impacts.Clear();
             EndDrag();
         }

@@ -52,12 +52,23 @@ namespace Viewer
             }
 
             var blocked = new bool[columns * rows];
-            for (var y = 0; y < rows; y++)
+            foreach (var obstacle in obstacles)
             {
-                for (var x = 0; x < columns; x++)
+                // Only the cells around an obstacle can lie within it.
+                var reachY = obstacle.Radius / Slant;
+                var left = Math.Max(0, (int) ((obstacle.Centre.X - obstacle.Radius) / CellSize) - 1);
+                var right = Math.Min(columns - 1, (int) ((obstacle.Centre.X + obstacle.Radius) / CellSize) + 1);
+                var top = Math.Max(0, (int) ((obstacle.Centre.Y - reachY) / CellSize) - 1);
+                var bottom = Math.Min(rows - 1, (int) ((obstacle.Centre.Y + reachY) / CellSize) + 1);
+                for (var y = top; y <= bottom; y++)
                 {
-                    var centre = CentreOf(x, y);
-                    blocked[y * columns + x] = obstacles.Any(obstacle => GroundDistance(centre, obstacle.Centre) < obstacle.Radius);
+                    for (var x = left; x <= right; x++)
+                    {
+                        if (GroundDistance(CentreOf(x, y), obstacle.Centre) < obstacle.Radius)
+                        {
+                            blocked[y * columns + x] = true;
+                        }
+                    }
                 }
             }
 

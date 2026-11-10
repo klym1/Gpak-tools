@@ -14,6 +14,18 @@ namespace Viewer
     /// <summary>The sounds of units and their weapons.</summary>
     public partial class MainWindow
     {
+        private IReadOnlyList<(int Frame, GameSound Sound, bool Impact)> SoundsOf(GameObject kind, GameObjectState state)
+        {
+            var key = (kind, state);
+            if (!_stateSounds.TryGetValue(key, out var sounds))
+            {
+                sounds = _catalog.SoundsOf(kind, state);
+                _stateSounds[key] = sounds;
+            }
+
+            return sounds;
+        }
+
         /// <summary>Plays the sounds the unit's state has at the frame it is in now.</summary>
         private void PlaySounds(FieldUnitView unit)
         {
@@ -22,13 +34,7 @@ namespace Viewer
                 return;
             }
 
-            var key = (unit.Kind, unit.State);
-            if (!_stateSounds.TryGetValue(key, out var sounds))
-            {
-                sounds = _catalog.SoundsOf(unit.Kind, unit.State);
-                _stateSounds[key] = sounds;
-            }
-
+            var sounds = SoundsOf(unit.Kind, unit.State);
             var frame = unit.Pose % unit.State.Frames.Count;
             foreach (var (_, sound, impact) in sounds.Where(sound => sound.Frame == frame))
             {

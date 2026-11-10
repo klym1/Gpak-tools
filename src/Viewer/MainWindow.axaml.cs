@@ -10,7 +10,6 @@ using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
-using Avalonia.Threading;
 using GPExtractor;
 using ImageRenderer;
 using Types;
@@ -33,7 +32,12 @@ namespace Viewer
 
         private const double RealFpsPeriodSeconds = 0.5;
 
-        private readonly DispatcherTimer _timer = new DispatcherTimer();
+        // A tick is taken on the display frame nearest its time, up to this much early.
+        private static readonly TimeSpan TickSlack = TimeSpan.FromMilliseconds(8);
+
+        private readonly Stopwatch _playClock = new Stopwatch();
+        private TimeSpan _nextTick;
+        private bool _frameRequested;
         private readonly Stopwatch _realFpsClock = new Stopwatch();
         private int _ticksCounted;
         private readonly Palette _palette = Palette.Load(PaletteFile);
@@ -51,7 +55,7 @@ namespace Viewer
         /// <summary>The game data whose units are on the field, or null.</summary>
         public GameCatalog Catalog => _catalog;
 
-        public bool IsPlaying => _timer.IsEnabled;
+        public bool IsPlaying { get; private set; }
 
         /// <summary>Player color of the selected units and of units added next.</summary>
         public NationColorOffset PlayerColor => (PlayerColorBox.SelectedItem as PlayerColorOption)?.Offset ?? NationColorOffset.Blue;
@@ -73,18 +77,10 @@ namespace Viewer
 
             OpenButton.Click += async (sender, args) => await PickFileAsync();
             PlayButton.Click += (sender, args) => TogglePlayback();
-            FramesPerSecond.ValueChanged += (sender, args) => UpdateTimerInterval();
             InitializeField();
 
             AddHandler(DragDrop.DragOverEvent, OnDragOver);
             AddHandler(DragDrop.DropEvent, OnDrop);
-
-            _timer.Tick += (sender, args) =>
-            {
-                Tick();
-                CountTick();
-            };
-            UpdateTimerInterval();
 
             Opened += (sender, args) =>
             {
@@ -99,7 +95,7 @@ namespace Viewer
             };
             Closed += (sender, args) =>
             {
-                _timer.Stop();
+                IsPlaying = false;
                 (SoundPlayer as IDisposable)?.Dispose();
                 _catalog?.Dispose();
             };
@@ -126,7 +122,10 @@ namespace Viewer
 
         public void Play()
         {
-            _timer.Start();
+            IsPlaying = true;
+            _playClock.Restart();
+            _nextTick = TickInterval;
+            RequestFrame();
             _ticksCounted = 0;
             _realFpsClock.Restart();
             PlayButton.Content = "⏸ Pause";
@@ -134,7 +133,7 @@ namespace Viewer
 
         public void Pause()
         {
-            _timer.Stop();
+            IsPlaying = false;
             RealFpsText.Text = "";
             PlayButton.Content = "▶ Play";
         }
@@ -172,10 +171,39 @@ namespace Viewer
             return new SolidColorBrush(Avalonia.Media.Color.FromRgb(c.R, c.G, c.B));
         }
 
-        private void UpdateTimerInterval()
+        private TimeSpan TickInterval =>
+            TimeSpan.FromSeconds(1 / Math.Clamp((double) (FramesPerSecond.Value ?? 25), 1, 60));
+
+        private void RequestFrame()
         {
-            var fps = (double) (FramesPerSecond.Value ?? 25);
-            _timer.Interval = TimeSpan.FromSeconds(1 / Math.Clamp(fps, 1, 60));
+            if (!_frameRequested)
+            {
+                _frameRequested = true;
+                RequestAnimationFrame(OnFrame);
+            }
+        }
+
+        /// <summary>A display frame while playing: takes the tick that is due, keeping to the clock over time.</summary>
+        private void OnFrame(TimeSpan time)
+        {
+            _frameRequested = false;
+            if (!IsPlaying)
+            {
+                return;
+            }
+
+            var now = _playClock.Elapsed;
+            if (now + TickSlack >= _nextTick)
+            {
+                Tick();
+                CountTick();
+
+                // Ticks missed are not made up for.
+                var interval = TickInterval;
+                _nextTick = _nextTick + interval + interval < now ? now + interval : _nextTick + interval;
+            }
+
+            RequestFrame();
         }
 
         private async Task PickFileAsync()

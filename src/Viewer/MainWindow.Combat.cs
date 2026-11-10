@@ -14,6 +14,11 @@ namespace Viewer
     /// <summary>What units do to each other: attacks, fighting back, life and death.</summary>
     public partial class MainWindow
     {
+        private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<GameObject, IReadOnlyList<GameObjectState>> AttacksByKind = new();
+
+        // The attack each kind of unit shows first.
+        private readonly Dictionary<GameObject, GameObjectState> _attackStates = new();
+
         /// <summary>
         /// The selected units stop and play an attack once, with its sounds, then stand again: the attack of
         /// that code (e.g. <c>ATTACK2</c>) or picked in the attack list, or else each unit's own first choice.
@@ -180,24 +185,39 @@ namespace Viewer
                 return;
             }
 
-            var enemy = _fieldUnits
-                .Where(other => IsEnemy(unit, other) && !other.IsDead && CanTakeOn(unit, other))
-                .Select(other => (Unit: other, Away: FieldPath.GroundDistance(unit.Movement.Position, other.Movement.Position)))
-                .Where(found => found.Away <= radius)
-                .OrderBy(found => found.Away)
-                .Select(found => found.Unit)
-                .FirstOrDefault();
+            if (!IsIdle(unit))
+            {
+                return;
+            }
+
+            FieldUnitView enemy = null;
+            double nearest = radius;
+            foreach (var other in _fieldUnits)
+            {
+                if (!IsEnemy(unit, other) || other.IsDead)
+                {
+                    continue;
+                }
+
+                var away = FieldPath.GroundDistance(unit.Movement.Position, other.Movement.Position);
+                if (away <= nearest && (enemy == null || away < nearest) && CanTakeOn(unit, other))
+                {
+                    enemy = other;
+                    nearest = away;
+                }
+            }
+
             if (enemy != null)
             {
                 TakeOn(unit, enemy);
             }
         }
 
-        private bool CanTakeOn(FieldUnitView unit, FieldUnitView enemy)
-        {
-            var idle = unit.Target == null && !unit.IsDead && !unit.PlaysOnce && !unit.Movement.IsWalking;
-            return idle && CanFight(unit, enemy) && (!unit.StandsGround || CanReach(unit, enemy));
-        }
+        private static bool IsIdle(FieldUnitView unit) =>
+            unit.Target == null && !unit.IsDead && !unit.PlaysOnce && !unit.Movement.IsWalking;
+
+        private bool CanTakeOn(FieldUnitView unit, FieldUnitView enemy) =>
+            IsIdle(unit) && CanFight(unit, enemy) && (!unit.StandsGround || CanReach(unit, enemy));
 
         /// <summary>Whether a unit has an attack it makes on another, made of what that is (<c>CANKILL</c>, <c>ATTMASK</c>).</summary>
         private static bool CanFight(FieldUnitView unit, FieldUnitView enemy) =>
@@ -380,15 +400,24 @@ namespace Viewer
         /// </summary>
         private GameObjectState AttackStateOf(GameObject unit)
         {
-            var attacks = AttacksOf(unit);
-            return attacks.FirstOrDefault(state => _catalog.SoundsOf(unit, state).Count > 0) ?? attacks.FirstOrDefault();
+            if (!_attackStates.TryGetValue(unit, out var attack))
+            {
+                var attacks = AttacksOf(unit);
+                attack = attacks.FirstOrDefault(state => SoundsOf(unit, state).Count > 0) ?? attacks.FirstOrDefault();
+                _attackStates[unit] = attack;
+            }
+
+            return attack;
         }
 
         private static IReadOnlyList<GameObjectState> AttacksOf(GameObject unit)
         {
-            return unit.States
-                .Where(state => state.Code.StartsWith("ATTACK", StringComparison.Ordinal) && !state.Code.Contains('+'))
-                .ToList();
+            return AttacksByKind.GetValue(
+                  unit
+                , kind => kind.States
+                    .Where(state => state.Code.StartsWith("ATTACK", StringComparison.Ordinal) && !state.Code.Contains('+'))
+                    .ToList()
+            );
         }
 
         /// <summary>Offers the attacks of the first selected unit, starting with its first choice.</summary>
