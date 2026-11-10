@@ -68,6 +68,39 @@ namespace UnitTests
         }
 
         [Test]
+        public void RendersRlcFramesInThePlayerColor()
+        {
+            var colors = new byte[768];
+            for (var i = 0; i < 256; i++)
+            {
+                colors[3 * i] = (byte) i;
+            }
+
+            var red = NationColorOffset.Red.Offset;
+            var blue = NationColorOffset.Blue.Offset;
+            var file = RlcFile.Parse(GpTestFiles.RlcOfDots(frames: 1, x: 2, y: 1, color: (byte) (red + 1)));
+            var paletteFile = Path.Combine(Path.GetTempPath(), "rlc-test-" + Guid.NewGuid() + ".pal");
+            File.WriteAllBytes(paletteFile, colors);
+            var palette = ImageRenderer.Palette.Load(paletteFile);
+            File.Delete(paletteFile);
+            var renderer = new ImageRenderer.GpRenderer(palette) { PlayerColor = NationColorOffset.Blue };
+
+            var image = renderer.Render(
+                  file.Frames[0]
+                , 6
+                , 2
+                , 0
+                , true
+                , 0
+            ).Image;
+
+            (image.Width, image.Height).Should().Be((6, 2));
+            var drawn = Enumerable.Range(0, 12).Where(i => image.Pixels[i].A != 0).ToList();
+            drawn.Should().Equal(new[] { 6 + 3 }, "mirrored around the centre of the canvas");
+            image.Pixels[9].R.Should().Be((byte) (blue + 1));
+        }
+
+        [Test]
         public void ReadsGrdRows()
         {
             var bytes = Enumerable.Range(0, 512).Select(i => (byte) (i < 256 ? i : 255 - i % 256)).ToArray();

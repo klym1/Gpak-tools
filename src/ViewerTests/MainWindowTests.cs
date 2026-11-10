@@ -124,6 +124,41 @@ namespace ViewerTests
         }
 
         [AvaloniaTest]
+        public async Task DrawsUnitsWhoseSpritesAreRlcFiles()
+        {
+            var folder = Path.Combine(Path.GetTempPath(), "viewer-rlc-" + Guid.NewGuid());
+            Directory.CreateDirectory(folder);
+            foreach (var (name, content) in UnitTests.GpTestFiles.UnitGameData().Where(file => file.Name != "TSTS.GP"))
+            {
+                File.WriteAllBytes(Path.Combine(folder, name), content);
+            }
+
+            // The stand sprite as an RLC file: one pixel at its anchor (20, 10).
+            File.WriteAllBytes(Path.Combine(folder, "TSTS.RLC"), UnitTests.GpTestFiles.RlcOfDots(frames: 9, x: 20, y: 10, color: 5));
+
+            try
+            {
+                var window = new MainWindow(folder);
+                window.Show();
+                await window.RenderingCompleted;
+                window.Pause();
+                window.Tick();
+                await window.RenderingCompleted;
+
+                var unit = window.FieldUnits.Single();
+                Assert.That(unit.State.Code, Is.EqualTo("STAND"));
+                Assert.That(window.FindControl<TextBlock>("StatusText").Text, Is.Empty);
+                Assert.That(DrawnColumnsAtFeet(unit), Is.EqualTo(new[] { 0 }));
+
+                window.Close();
+            }
+            finally
+            {
+                Directory.Delete(folder, true);
+            }
+        }
+
+        [AvaloniaTest]
         public async Task SelectsAndWalksAUnitOnTheField()
         {
             var folder = UnitArchiveFolder(out var archive);

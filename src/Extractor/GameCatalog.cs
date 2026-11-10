@@ -62,6 +62,7 @@ namespace GPExtractor
         };
 
         private readonly ConcurrentDictionary<string, GpFile> _sprites = new ConcurrentDictionary<string, GpFile>(StringComparer.OrdinalIgnoreCase);
+        private readonly ConcurrentDictionary<string, RlcFile> _rlcSprites = new ConcurrentDictionary<string, RlcFile>(StringComparer.OrdinalIgnoreCase);
 
         private GameCatalog(GameFiles files, IReadOnlyList<GameObject> objects)
         {
@@ -103,7 +104,7 @@ namespace GPExtractor
 
         /// <summary>
         /// The sprite a descriptor refers to by file name (without extension), or null if the game files
-        /// have no GP sprite of that name (some use another format, RLC).
+        /// have no GP sprite of that name (see <see cref="RlcSprite"/>).
         /// </summary>
         public GpFile Sprite(string fileName)
         {
@@ -118,6 +119,28 @@ namespace GPExtractor
                 try
                 {
                     return GpFile.Parse(Files.Read(path));
+                }
+                catch (InvalidDataException)
+                {
+                    return null;
+                }
+            });
+        }
+
+        /// <summary>The RLC sprite of that name, or null if the game files have none.</summary>
+        public RlcFile RlcSprite(string fileName)
+        {
+            return _rlcSprites.GetOrAdd(fileName, name =>
+            {
+                var path = Files.Find(name, ".rlc");
+                if (path == null)
+                {
+                    return null;
+                }
+
+                try
+                {
+                    return RlcFile.Parse(Files.Read(path));
                 }
                 catch (InvalidDataException)
                 {

@@ -123,6 +123,17 @@ namespace UnitTests
         }
 
         [Test]
+        public void LoadsRlcSpritesByName()
+        {
+            File.WriteAllBytes(Path.Combine(_folder, "OLD.RLC"), GpTestFiles.RlcOfDots(frames: 9, x: 20, y: 10, color: 5));
+            using var catalog = GameCatalog.Load(ExtractedFolder());
+
+            catalog.RlcSprite("old").Frames.Should().HaveCount(9);
+            catalog.Sprite("old").Should().BeNull("it is not a GP sprite");
+            catalog.RlcSprite("tsts").Should().BeNull();
+        }
+
+        [Test]
         public void FindPrefersFilesInTheTopFolder()
         {
             Directory.CreateDirectory(Path.Combine(_folder, "SUB"));

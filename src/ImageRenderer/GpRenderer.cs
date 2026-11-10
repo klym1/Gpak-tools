@@ -14,6 +14,8 @@ namespace ImageRenderer
     /// </summary>
     public sealed class GpRenderer
     {
+        private const int PlayerRampLength = 4;
+
         private static readonly Color ShadowColor = Color.FromArgb(0x99, 0, 0, 0);
 
         private readonly Palette _palette;
@@ -69,6 +71,53 @@ namespace ImageRenderer
             }
 
             return new RenderedFrame(image, skipped);
+        }
+
+        /// <summary>
+        /// Renders an RLC frame like a GP frame. Its pixels in the red player ramp are drawn in
+        /// <see cref="PlayerColor"/>.
+        /// </summary>
+        public RenderedFrame Render(
+              RlcFrame frame
+            , int canvasWidth
+            , int canvasHeight
+            , int offsetX = 0
+            , bool mirror = false
+            , int offsetY = 0
+        )
+        {
+            var image = new ImageView(
+                Math.Max(Math.Max(frame.Width + offsetX, canvasWidth), 1),
+                Math.Max(Math.Max(frame.Height + offsetY, canvasHeight), 1));
+            Array.Fill(image.Pixels, Background);
+
+            var red = NationColorOffset.Red.Offset;
+            for (var row = 0; row < frame.Rows.Count; row++)
+            {
+                var y = row + offsetY;
+                foreach (var run in frame.Rows[row])
+                {
+                    for (var i = 0; i < run.Pixels.Length; i++)
+                    {
+                        var x = run.X + offsetX + i;
+                        var targetX = mirror ? image.Width - 1 - x : x;
+                        if (targetX < 0 || targetX >= image.Width || y < 0 || y >= image.Height)
+                        {
+                            continue;
+                        }
+
+                        int index = run.Pixels[i];
+                        if (index >= red && index < red + PlayerRampLength)
+                        {
+                            index += PlayerColor.Offset - red;
+                        }
+
+                        image.Pixels[y * image.Width + targetX] = _palette[index];
+                    }
+                }
+            }
+
+            return new RenderedFrame(image, Array.Empty<GpFramePart>());
         }
 
         private void DrawPart(ImageView image, GpFile file, GpFramePart part, int offsetX, int offsetY, bool mirror)

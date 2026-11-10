@@ -139,6 +139,31 @@ namespace UnitTests
             return Build(frames);
         }
 
+        /// <summary>An RLC file whose frames each draw one pixel of a color at (x, y), the bottom right corner.</summary>
+        public static byte[] RlcOfDots(int frames, int x, int y, byte color)
+        {
+            var output = new MemoryStream();
+            var writer = new BinaryWriter(output);
+            var frameSize = 4 + y + 4;
+
+            writer.Write(new byte[] { (byte) 'R', (byte) 'L', (byte) 'C', 0x1B });
+            writer.Write((uint) frames);
+            for (var i = 0; i < frames; i++)
+            {
+                writer.Write((uint) (8 + 4 * frames + i * frameSize));
+            }
+
+            for (var i = 0; i < frames; i++)
+            {
+                writer.Write((ushort) (x + 1));
+                writer.Write((ushort) (y + 1));
+                writer.Write(new byte[y]);
+                writer.Write(new byte[] { 1, (byte) x, 1, color });
+            }
+
+            return output.ToArray();
+        }
+
         private static byte[] BuildFrame(Part[] parts)
         {
             var output = new MemoryStream();

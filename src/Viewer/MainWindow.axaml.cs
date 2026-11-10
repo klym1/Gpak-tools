@@ -307,7 +307,7 @@ namespace Viewer
             return state.Frames
                 .Select(frame => frame.Sprite)
                 .Distinct()
-                .All(index => unit.Sprite(index) is { } sprite && catalog.Sprite(sprite.FileName) != null);
+                .All(index => unit.Sprite(index) is { } sprite && UnitSprite.Load(catalog, sprite.FileName) != null);
         }
 
         private void SetCatalog(GameCatalog catalog)
@@ -347,7 +347,7 @@ namespace Viewer
             GpDirections Directions, int Direction, NationColorOffset Color);
 
         /// <summary>One image to render: a frame of a sprite placed on the shared canvas.</summary>
-        private sealed record FrameJob(int Number, GpFile File, int Frame, bool Mirror, int OffsetX, int OffsetY, string Error = null);
+        private sealed record FrameJob(int Number, UnitSprite File, int Frame, bool Mirror, int OffsetX, int OffsetY, string Error = null);
 
         /// <summary>
         /// Renders the frames on a transparent background; also returns where the anchor (the unit's feet) is
@@ -372,7 +372,15 @@ namespace Viewer
 
                     try
                     {
-                        var rendered = renderer.Render(job.File, job.File.Frames[job.Frame], width, height, job.OffsetX, job.Mirror, job.OffsetY);
+                        var rendered = job.File.Render(
+                              renderer
+                            , job.Frame
+                            , width
+                            , height
+                            , job.OffsetX
+                            , job.Mirror
+                            , job.OffsetY
+                        );
                         return new RenderResult(job.Number, rendered.Image, null, rendered.SkippedParts.Count, OpaqueBounds(rendered.Image));
                     }
                     catch (Exception ex) when (ex is InvalidDataException || ex is NotSupportedException)
@@ -423,18 +431,18 @@ namespace Viewer
                 .GroupBy(pair => pair.Sprite)
                 .ToDictionary(group => group.Key, group => group.Max(pair => pair.Directions));
 
-            var sprites = new Dictionary<int, (GpFile File, int AnchorX, int AnchorY)>();
+            var sprites = new Dictionary<int, (UnitSprite File, int AnchorX, int AnchorY)>();
             foreach (var (index, directions) in spriteDirections)
             {
                 var descriptor = unit.Sprite(index);
-                var file = descriptor == null ? null : catalog.Sprite(descriptor.FileName);
-                if (file == null || file.Frames.Count == 0)
+                var file = descriptor == null ? null : UnitSprite.Load(catalog, descriptor.FileName);
+                if (file == null || file.FrameCount == 0)
                 {
                     continue;
                 }
 
                 sprites[index] = (file,
-                    descriptor.AnchorX ?? GpDirections.EstimateAnchorX(file, Math.Min(directions, file.Frames.Count)),
+                    descriptor.AnchorX ?? file.EstimateAnchorX(Math.Min(directions, file.FrameCount)),
                     descriptor.AnchorY ?? 0);
             }
 
@@ -442,7 +450,7 @@ namespace Viewer
             int half = 1, top = 0, bottom = 1;
             foreach (var (file, anchorX, anchorY) in sprites.Values)
             {
-                foreach (var part in file.Frames.SelectMany(frame => frame.Parts))
+                foreach (var part in file.Bounds)
                 {
                     half = Math.Max(half, Math.Max(anchorX - part.X, part.X + part.Width - anchorX));
                     top = Math.Min(top, part.Y - anchorY);
@@ -459,7 +467,7 @@ namespace Viewer
                     var name = unit.Sprite(frame.Sprite)?.FileName ?? "#" + frame.Sprite;
                     if (!sprites.TryGetValue(frame.Sprite, out var sprite))
                     {
-                        return new FrameJob(number, null, 0, false, 0, 0, "sprite " + name + " is missing or not a GP file");
+                        return new FrameJob(number, null, 0, false, 0, 0, "sprite " + name + " is missing");
                     }
 
                     var stored = 0;
@@ -471,7 +479,7 @@ namespace Viewer
                     }
 
                     var index = frame.Pose * state.Directions + stored;
-                    if (index >= sprite.File.Frames.Count)
+                    if (index >= sprite.File.FrameCount)
                     {
                         return new FrameJob(number, null, 0, false, 0, 0, "pose " + frame.Pose + " is not in sprite " + name);
                     }
