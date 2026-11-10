@@ -1,5 +1,6 @@
 using System.IO;
 using System.Linq;
+using System.Text;
 using GPExtractor;
 
 namespace UnitTests
@@ -54,6 +55,86 @@ namespace UnitTests
         {
             var frames = Enumerable.Range(0, poses * 9)
                 .Select(frame => new[] { Line(anchorX, 0, frame % 9 + 1, (byte) (10 + frame / 9)) })
+                .ToArray();
+            return Build(frames);
+        }
+
+        /// <summary>Builds a .gsc archive in the layout of Cossacks' All.gsc.</summary>
+        public static byte[] Archive(params (string Name, byte[] Content, bool Obfuscate)[] files)
+        {
+            var output = new MemoryStream();
+            var writer = new BinaryWriter(output);
+
+            writer.Write(Encoding.ASCII.GetBytes("GSCfmt"));
+            writer.Write(new byte[] { 0x00, 0x02, 0xCD, 0x78 });
+            writer.Write((uint) files.Length);
+
+            uint offset = 0;
+            foreach (var file in files)
+            {
+                writer.Write(new byte[] { 0x95, 0x7A, 0x5E, 0xC1 });
+                var name = new byte[64];
+                Encoding.ASCII.GetBytes(file.Name).CopyTo(name, 0);
+                writer.Write(name);
+                writer.Write(~offset);
+                writer.Write((uint) file.Content.Length);
+                writer.Write(0u);
+                writer.Write((byte) 1);
+                offset += (uint) file.Content.Length;
+            }
+
+            foreach (var file in files)
+            {
+                writer.Write(file.Obfuscate ? file.Content.Select(b => (byte) (b ^ GscArchive.XorKey)).ToArray() : file.Content);
+            }
+
+            return output.ToArray();
+        }
+
+        /// <summary>An archive like the game's: everything but GP sprites obfuscated.</summary>
+        public static byte[] GameArchive(params (string Name, byte[] Content)[] files) =>
+            Archive(files.Select(file => (file.Name, file.Content, !file.Name.EndsWith(".GP", System.StringComparison.OrdinalIgnoreCase))).ToArray());
+
+        /// <summary>
+        /// Game data for one unit, "TST", and one building, "DEPO", like the game's: a unit descriptor in DOS Cyrillic and two
+        /// sprites with different anchors. The stand sprite (tsts.gp, 1 pose) is anchored at (20, 10), the walk
+        /// sprite (tstg.gp, 4 poses) at (30, 15); both draw a line starting at the anchor (see <see cref="Unit"/>).
+        /// </summary>
+        public static (string Name, byte[] Content)[] UnitGameData()
+        {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            var descriptor = Encoding.GetEncoding(866).GetBytes(string.Join("\r\n",
+                "NAME Testovyj",
+                "MESSAGE Тестовый_воин",
+                "USERLC 0 tsts  SHADOW -20 -10",
+                "USERLC 1 tstg  SHADOW -30 -15",
+                "#STAND     9 1   0 0",
+                "@MOTION_L  9 1 0 2",
+                "@MOTION_R  9 1 2 4",
+                "@MOTION_LB 9 1 3 1",
+                "LIFE 50",
+                ""));
+
+            var building = Encoding.ASCII.GetBytes(string.Join("\r\n",
+                "NAME Depo",
+                "USERLC 0 tsts",
+                "#STANDLO 1 1 0 0",
+                ""));
+
+            return new[]
+            {
+                ("TST.MD", descriptor),
+                ("TSTS.GP", UnitAt(poses: 1, anchorX: 20, anchorY: 10)),
+                ("TSTG.GP", UnitAt(poses: 4, anchorX: 30, anchorY: 15)),
+                ("DEPO.MD", building),
+            };
+        }
+
+        /// <summary>Like <see cref="Unit"/>, with the line in row <paramref name="anchorY"/>.</summary>
+        public static byte[] UnitAt(int poses, int anchorX, int anchorY)
+        {
+            var frames = Enumerable.Range(0, poses * 9)
+                .Select(frame => new[] { Line(anchorX, anchorY, frame % 9 + 1, (byte) (10 + frame / 9)) })
                 .ToArray();
             return Build(frames);
         }

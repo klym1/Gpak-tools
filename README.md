@@ -29,10 +29,10 @@ dotnet build src/GPExtractor.sln
 dotnet test src/GPExtractor.sln
 ```
 
-View and animate a `.gp` file (defaults to `gp/test.gp`; files can also be opened or dropped in the window). For units it offers a direction picker, and a player color for all sprites:
+View and animate a `.gp` file (defaults to `gp/test.gp`; files can also be opened or dropped in the window). Open the game's `All.gsc` (or a folder extracted from it) to browse its units instead: pick a unit, its state (stand, walk, attack, death, …), direction and player color:
 
 ```
-dotnet run --project src/Viewer -- [gp-file]
+dotnet run --project src/Viewer -- [gp-file | All.gsc | extracted-folder]
 ```
 
 Convert every frame of every `.gp` file in a folder to PNG (`<name>_<frame>.png`, transparent background):
@@ -118,6 +118,12 @@ The opacity of types 2, 3, 4 and 7 is not stored in the file. The renderer uses 
 Unit, ship and projectile sprites store each pose from several directions, frame-major: frame `pose × D + direction`. The descriptors (`*.MD`, next to the sprites in `All.gsc`) give *D* per animation, e.g. `#MOTION_L  9 10  1 0 1 1 ...` (9 directions, 10 poses as sprite/pose pairs), and the anchor in `USERLC 1 ba1g  SHADOW -62 -90` (x = 62).
 
 With *D* = 2^n + 1 (9, 17, 33, 65, 129), the stored directions cover half a turn, from facing the viewer (south) clockwise to facing away (north); the game mirrors them around the anchor for the eastern half, giving 2 × (*D* − 1) directions. `GpDirections` reads this from the descriptors or, for sprites without one, recognizes it from the frames, and the viewer plays the poses of a chosen direction.
+
+### Units
+
+Each descriptor (`*.MD`) describes one game object. Objects whose animations have directions are units (92 in Cossacks: European Wars); the others are mostly buildings. A unit's states are its animations, written either as (sprite, pose) pairs or as a range of poses, `@MOTION_LB 9 1 19 10` (sprite 1, poses 19 down to 11; the end is not included). `MESSAGE` holds the display name in DOS (866) or Windows (1251) Cyrillic.
+
+`GameCatalog` reads the descriptors from a folder or straight from a `.gsc` archive (`GameFiles`) and loads sprites on demand. The viewer places every sprite of a unit with its anchor at the same point, so the unit stays in place across states and directions.
 
 ## GSC archive format
 
