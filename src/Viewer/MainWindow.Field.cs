@@ -35,6 +35,9 @@ namespace Viewer
         // Sounds per unit kind and state.
         private readonly Dictionary<(GameObject, GameObjectState), IReadOnlyList<(int Frame, GameSound Sound, bool Impact)>> _stateSounds = new();
 
+        // The unit kind whose attacks the attack list shows.
+        private GameObject _attackBoxKind;
+
         /// <summary>How long after the shot a weapon lands, in ticks.</summary>
         private const int TicksToImpact = 20;
 
@@ -103,12 +106,17 @@ namespace Viewer
             UpdateFieldView();
         }
 
-        /// <summary>The selected units stop and play their attack once, with its sound, then stand again.</summary>
-        public void AttackWithSelected()
+        /// <summary>
+        /// The selected units stop and play an attack once, with its sounds, then stand again: the attack of
+        /// that code (e.g. <c>ATTACK2</c>) or picked in the attack list, or else each unit's own first choice.
+        /// </summary>
+        public void AttackWithSelected(string code = null)
         {
+            code ??= (AttackBox.SelectedItem as AttackOption)?.State.Code;
+
             foreach (var unit in SelectedFieldUnits)
             {
-                var attack = AttackStateOf(unit.Kind);
+                var attack = AttacksOf(unit.Kind).FirstOrDefault(state => state.Code == code) ?? AttackStateOf(unit.Kind);
                 if (attack == null)
                 {
                     continue;
@@ -372,6 +380,7 @@ namespace Viewer
             _fieldUnits.Clear();
             _readyFrames.Clear();
             _renderingFrames.Clear();
+            _attackBoxKind = null;
             _stateSounds.Clear();
             _impacts.Clear();
             EndDrag();
@@ -408,11 +417,39 @@ namespace Viewer
         /// </summary>
         private GameObjectState AttackStateOf(GameObject unit)
         {
-            var attacks = unit.States
+            var attacks = AttacksOf(unit);
+            return attacks.FirstOrDefault(state => _catalog.SoundsOf(unit, state).Count > 0) ?? attacks.FirstOrDefault();
+        }
+
+        private static IReadOnlyList<GameObjectState> AttacksOf(GameObject unit)
+        {
+            return unit.States
                 .Where(state => state.Code.StartsWith("ATTACK", StringComparison.Ordinal) && !state.Code.Contains('+'))
                 .ToList();
+        }
 
-            return attacks.FirstOrDefault(state => _catalog.SoundsOf(unit, state).Count > 0) ?? attacks.FirstOrDefault();
+        /// <summary>Offers the attacks of the first selected unit, starting with its first choice.</summary>
+        private void UpdateAttackBox()
+        {
+            var kind = _fieldUnits.FirstOrDefault(unit => unit.IsSelected)?.Kind;
+            if (ReferenceEquals(kind, _attackBoxKind))
+            {
+                return;
+            }
+
+            _attackBoxKind = kind;
+            var options = kind == null
+                ? new List<AttackOption>()
+                : AttacksOf(kind)
+                    .Select(state => new AttackOption(
+                          state
+                        , kind.Descriptor.Weapons.FirstOrDefault(weapon => GameCatalog.SameAnimation(weapon.Animation, state.Code))?.Weapon
+                    ))
+                    .ToList();
+
+            AttackBox.ItemsSource = options;
+            AttackBox.SelectedItem = kind == null ? null : options.FirstOrDefault(option => ReferenceEquals(option.State, AttackStateOf(kind)));
+            AttackBox.IsVisible = options.Count > 1;
         }
 
         /// <summary>The unit's state of a code, or the first whose code starts with it; null if it has none.</summary>
@@ -662,6 +699,7 @@ namespace Viewer
             RemoveUnitsButton.IsEnabled = selected > 0;
             AttackButton.IsEnabled = selected > 0;
             KillButton.IsEnabled = selected > 0;
+            UpdateAttackBox();
             FieldHint.Text = selected == 0
                 ? "Click a unit, or drag a box around several, to select them (Shift adds to the selection). Pick a unit in the list to put another one on the field."
                 : selected + (selected == 1 ? " unit" : " units") + " selected: right-click where to go. Delete removes them.";

@@ -259,6 +259,21 @@ namespace ViewerTests
                 window.Tick();
                 Assert.That(player.Played, Has.Count.EqualTo(2));
 
+                // The unit has a second attack, which can be picked in the list: a mortar, heard at once.
+                var attackBox = window.FindControl<ComboBox>("AttackBox");
+                Assert.That(attackBox.IsVisible, Is.True);
+                Assert.That(attackBox.Items.Select(item => item.ToString()), Is.EqualTo(new[] { "ATTACK  \u00b7  CANNON", "ATTACK2  \u00b7  MORTAR" }));
+                Assert.That(attackBox.SelectedIndex, Is.EqualTo(0));
+                attackBox.SelectedIndex = 1;
+                window.FindControl<Button>("AttackButton").RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+                Assert.That(unit.State.Code, Is.EqualTo("ATTACK2"));
+                Assert.That(Path.GetFileName(player.Played.Last()), Is.EqualTo("Alarm.wav"));
+                player.Played.Clear();
+                window.Tick();
+                window.Tick();
+                Assert.That(unit.State.Code, Is.EqualTo("STAND"));
+                player.Played.AddRange(new[] { "", "" });
+
                 // Killed: it dies with its sound (at frame 2), lies dead and cannot be selected or sent.
                 window.KillSelected();
                 Assert.That(unit.State.Code, Is.EqualTo("DEATH"));
@@ -279,8 +294,8 @@ namespace ViewerTests
                 }
 
                 Assert.That(window.FieldUnits, Is.Empty);
-                Assert.That(player.Played.Select(Path.GetFileName).Last(), Is.EqualTo("Alarm.wav"), "the shot landed a while after it was fired");
-                Assert.That(player.Played, Has.Count.EqualTo(4));
+                Assert.That(Path.GetFileName(player.Played.Last()), Does.StartWith("Step"), "the mortar shell landed a while after it was fired");
+                Assert.That(player.Played, Has.Count.EqualTo(5), "with the mortar shell");
 
                 window.Close();
             }

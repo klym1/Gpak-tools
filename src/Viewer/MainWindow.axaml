@@ -24,6 +24,8 @@
                 ToolTip.Tip="Remove the selected units from the field (Delete)" />
         <Button x:Name="AttackButton" Content="Attack" IsEnabled="False"
                 ToolTip.Tip="The selected units attack once where they stand" />
+        <ComboBox x:Name="AttackBox" MinWidth="150" IsVisible="False"
+                  ToolTip.Tip="Which of the unit's attacks to play, with the weapon it fires" />
         <Button x:Name="KillButton" Content="Kill" IsEnabled="False"
                 ToolTip.Tip="The selected units die and leave the field" />
       </StackPanel>

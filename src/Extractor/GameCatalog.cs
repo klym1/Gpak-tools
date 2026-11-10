@@ -112,7 +112,7 @@ namespace GPExtractor
         }
 
         /// <summary>Whether two animation names mean the same one: the first attack is <c>ATTACK</c> or <c>ATTACK0</c>.</summary>
-        private static bool SameAnimation(string first, string second)
+        public static bool SameAnimation(string first, string second)
         {
             static string Normalize(string name) => name.Equals("ATTACK0", StringComparison.OrdinalIgnoreCase) ? "ATTACK" : name;
 

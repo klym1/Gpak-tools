@@ -75,6 +75,12 @@ namespace Viewer
             : null;
     }
 
+    /// <summary>An attack in the attack list, with the weapon it fires, if any.</summary>
+    public sealed record AttackOption(GameObjectState State, string Weapon)
+    {
+        public override string ToString() => State.Code + (Weapon == null ? "" : "  ·  " + Weapon);
+    }
+
     /// <summary>The frames of a unit's state from one direction, and where its feet (the anchor) are in them.</summary>
     internal sealed record FieldFrames(IReadOnlyList<RenderedImage> Images, PixelPoint Anchor);
 }

@@ -101,7 +101,7 @@ namespace UnitTests
             unit.Label.Should().Be("Тестовый воин (TST)");
             catalog.Objects.Single(o => !o.IsUnit).Descriptor.FileName.Should().Be("DEPO");
 
-            unit.States.Select(s => s.Code).Should().Equal("STAND", "MOTION_L+MOTION_R", "MOTION_L", "MOTION_R", "MOTION_LB", "ATTACK", "DEATH", "DEATHLIE1");
+            unit.States.Select(s => s.Code).Should().Equal("STAND", "MOTION_L+MOTION_R", "MOTION_L", "MOTION_R", "MOTION_LB", "ATTACK", "ATTACK2", "DEATH", "DEATHLIE1");
 
             var walk = unit.States[1];
             walk.Label.Should().Be("Walk (MOTION_L+MOTION_R)");
@@ -141,10 +141,10 @@ namespace UnitTests
 
             // GONE is not in the sound list.
             var sounds = catalog.SoundsOf(unit);
-            sounds.Should().HaveCount(6);
+            sounds.Should().HaveCount(8);
 
             // The weapon of the attack sounds at its firing frame: CANNON is silent itself, but launches BALL.
-            unit.Descriptor.Weapons.Should().Equal(new GpDescriptorWeapon(0, "CANNON"));
+            unit.Descriptor.Weapons.Should().Equal(new GpDescriptorWeapon(2, "MORTAR"), new GpDescriptorWeapon(0, "CANNON"));
             unit.Descriptor.FiringFrames.Should().Equal(("ATTACK", 2));
             catalog.Weapons.ShotSoundOf("cannon").Should().Be("STEP");
             catalog.Weapons.ShotSoundOf("SMOKE").Should().BeNull();
