@@ -156,7 +156,7 @@ namespace UnitTests
                     "//NAME #Animation",
                     "CANNON #POINT 0 0 NONE HI_GRAVITY ANGLE 60 1",
                     "SMOKE  #SMOKE 0 0 NONE NO_GRAVITY STAND 1 1",
-                    "BALL   #SHELL 0 0 NONE HI_GRAVITY ANGLE 45 -1",
+                    "BALL   #SHELL 0 40 NONE HI_GRAVITY ANGLE 45 -1",
                     "BANG   #BANG  0 0 NONE NO_GRAVITY SLIGHTUP 0 1",
                     "[SYNCWEAPON]",
                     "CANNON 2 SMOKE BALL",

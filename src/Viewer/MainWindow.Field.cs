@@ -64,9 +64,9 @@ namespace Viewer
         // Shots on their way: they do their damage where they land, to whoever is there then.
         private readonly List<ShotInFlight> _shotsInFlight = new();
 
-        private sealed record ShotInFlight(int TicksLeft, FieldUnitView Attacker, string Attack, Point Where);
+        private sealed record ShotInFlight(int TicksLeft, FieldUnitView Attacker, string Attack, Point Where, double BlastRadius);
 
-        /// <summary>How far, in pixels on the ground, a shot may land from a unit's footprint and still hit it.</summary>
+        /// <summary>How far, in pixels on the ground, a shot without a blast may land from a unit's footprint and still hit it.</summary>
         private const double HitSlack = 6;
 
         /// <summary>The weapon animations playing on the field now.</summary>
@@ -387,12 +387,16 @@ namespace Viewer
             }
         }
 
-        /// <summary>A shot lands at a point: it hits the units standing there, whoever they are, but not the one that fired it.</summary>
-        private void Land(FieldUnitView attacker, string attack, Point where)
+        /// <summary>
+        /// A shot lands at a point: it hits the units within its blast, whoever they are, but not the one that
+        /// fired it.
+        /// </summary>
+        private void Land(FieldUnitView attacker, string attack, Point where, double blastRadius)
         {
+            var reach = Math.Max(blastRadius, HitSlack);
             var struck = _fieldUnits
                 .Where(unit => !ReferenceEquals(unit, attacker) && !unit.IsDead
-                               && FieldPath.GroundDistance(unit.Movement.Position, where) <= RadiusOf(unit) + HitSlack)
+                               && FieldPath.GroundDistance(unit.Movement.Position, where) <= RadiusOf(unit) + reach)
                 .ToList();
 
             foreach (var unit in struck)
@@ -414,7 +418,12 @@ namespace Viewer
                 }
 
                 _shotsInFlight.RemoveAt(i);
-                Land(shot.Attacker, shot.Attack, shot.Where);
+                Land(
+                      shot.Attacker
+                    , shot.Attack
+                    , shot.Where
+                    , shot.BlastRadius
+                );
             }
         }
 
@@ -1150,11 +1159,17 @@ namespace Viewer
                         , unit
                         , unit.State.Code
                         , where
+                        , flying.Select(flight => flight.BlastRadius).DefaultIfEmpty(0).Max()
                     ));
                 }
                 else
                 {
-                    Land(unit, unit.State.Code, where);
+                    Land(
+                          unit
+                        , unit.State.Code
+                        , where
+                        , 0
+                    );
                 }
             }
         }

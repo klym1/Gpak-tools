@@ -11,8 +11,11 @@ namespace GPExtractor
     /// weapons…</c>: weapons born when one explodes), <c>[MEMBERS]</c> (lines <c>weapon #animation damage
     /// radius transparency gravity propagation speed cycles</c>), and <c>//</c> comments.
     /// </summary>
-    /// <summary>A weapon in flight: its animation and the angle above the ground it is launched at, in degrees.</summary>
-    public sealed record WeaponFlight(string Animation, double LaunchAngle);
+    /// <summary>
+    /// A weapon in flight: its animation, the angle above the ground it is launched at, in degrees, and how
+    /// far from where it lands it does damage.
+    /// </summary>
+    public sealed record WeaponFlight(string Animation, double LaunchAngle, double BlastRadius);
 
     public sealed class WeaponList
     {
@@ -30,8 +33,8 @@ namespace GPExtractor
         // The animation of weapons that are not drawn.
         private const string NoAnimation = "POINT";
 
-        private Dictionary<string, (string Animation, bool Stays, bool Travels, double LaunchAngle)> Members { get; init; } =
-            new Dictionary<string, (string, bool, bool, double)>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, (string Animation, bool Stays, bool Travels, double LaunchAngle, double Radius)> Members { get; init; } =
+            new Dictionary<string, (string, bool, bool, double, double)>(StringComparer.OrdinalIgnoreCase);
 
         // The angle a weapon is taken to be launched at when the file gives its speed instead: an arrow's.
         private const double DefaultLaunchAngle = 15;
@@ -112,7 +115,7 @@ namespace GPExtractor
                         }
                         else if (member.Travels && drawn && !landed)
                         {
-                            flying.Add(new WeaponFlight(member.Animation, member.LaunchAngle));
+                            flying.Add(new WeaponFlight(member.Animation, member.LaunchAngle, member.Radius));
                         }
                     }
 
@@ -156,7 +159,7 @@ namespace GPExtractor
             var sounds = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             var launchedTogether = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase);
             var bornOnExplosion = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase);
-            var members = new Dictionary<string, (string Animation, bool Stays, bool Travels, double LaunchAngle)>(StringComparer.OrdinalIgnoreCase);
+            var members = new Dictionary<string, (string Animation, bool Stays, bool Travels, double LaunchAngle, double Radius)>(StringComparer.OrdinalIgnoreCase);
             var section = "";
 
             foreach (var rawLine in text.Split('\n'))
@@ -190,7 +193,8 @@ namespace GPExtractor
                         angle = DefaultLaunchAngle;
                     }
 
-                    members.TryAdd(tokens[0], (tokens[1].Substring(1), stays, !stays && endless, angle));
+                    double.TryParse(tokens[3], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var radius);
+                    members.TryAdd(tokens[0], (tokens[1].Substring(1), stays, !stays && endless, angle, radius));
                 }
                 else if (section == "SOUND" && tokens.Length >= 2)
                 {

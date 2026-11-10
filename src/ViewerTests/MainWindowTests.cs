@@ -609,12 +609,15 @@ namespace ViewerTests
                 window.Pause();
                 window.UpdateLayout();
 
-                // The unit faces west; one bystander stands where a shot lands (300 pixels on), another short of it.
+                // The unit faces west; one bystander stands where a shot lands (300 pixels on), one within its
+                // blast (40 pixels, and the 10 of the unit's own room), one just outside, one well short of it.
                 var unit = window.FieldUnits.Single();
                 unit.Movement.PlaceAt(new Point(500, 200));
                 unit.Movement.TurnTo(90);
                 var short_ = window.AddToField("TST", new Point(350, 200));
                 var there = window.AddToField("TST", new Point(200, 200));
+                var inBlast = window.AddToField("TST", new Point(248, 200));
+                var outside = window.AddToField("TST", new Point(200, 228));
                 window.Tick();
                 await window.RenderingCompleted;
 
@@ -626,6 +629,8 @@ namespace ViewerTests
                 }
 
                 Assert.That(there.Life, Is.EqualTo(27), "hit, friend or not");
+                Assert.That(inBlast.Life, Is.EqualTo(27), "48 pixels away: within the blast");
+                Assert.That(outside.Life, Is.EqualTo(50), "28 pixels up the screen is 56 on the ground: outside");
                 Assert.That(short_.Life, Is.EqualTo(50), "the shell flew over it");
                 Assert.That(unit.Life, Is.EqualTo(50));
 

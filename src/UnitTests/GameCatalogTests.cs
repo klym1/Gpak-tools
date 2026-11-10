@@ -201,7 +201,7 @@ namespace UnitTests
             var (muzzle, impact, flying) = catalog.Weapons.EffectsOf("CANNON");
             muzzle.Should().Equal("SMOKE");
             impact.Should().Equal("BANG");
-            flying.Should().Equal(new WeaponFlight("SHELL", 45));
+            flying.Should().Equal(new WeaponFlight("SHELL", 45, 40));
             var nothing = catalog.Weapons.EffectsOf("NOTHING");
             nothing.Muzzle.Should().BeEmpty("an unknown weapon shows nothing");
             nothing.Impact.Should().BeEmpty();
