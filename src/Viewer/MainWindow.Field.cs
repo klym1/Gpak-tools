@@ -103,7 +103,7 @@ namespace Viewer
         {
             foreach (var unit in SelectedFieldUnits)
             {
-                var attack = StateOf(unit.Kind, "ATTACK");
+                var attack = AttackStateOf(unit.Kind);
                 if (attack == null)
                 {
                     continue;
@@ -355,6 +355,19 @@ namespace Viewer
             }
 
             unit.PlaysOnce = false;
+        }
+
+        /// <summary>
+        /// The attack to show: the first of the unit's attacks (ATTACK, ATTACK1, …) that sounds, such as a
+        /// shot, or just its first attack; null if it has none.
+        /// </summary>
+        private GameObjectState AttackStateOf(GameObject unit)
+        {
+            var attacks = unit.States
+                .Where(state => state.Code.StartsWith("ATTACK", StringComparison.Ordinal) && !state.Code.Contains('+'))
+                .ToList();
+
+            return attacks.FirstOrDefault(state => _catalog.SoundsOf(unit, state).Count > 0) ?? attacks.FirstOrDefault();
         }
 
         /// <summary>The unit's state of a code, or the first whose code starts with it; null if it has none.</summary>

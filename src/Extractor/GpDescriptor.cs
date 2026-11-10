@@ -58,6 +58,14 @@ namespace GPExtractor
         /// <summary>The <c>SOUND frame #ANIMATION name</c> lines.</summary>
         public IReadOnlyList<GpDescriptorSound> Sounds { get; private init; } = Array.Empty<GpDescriptorSound>();
 
+        /// <summary>The <c>WEAPON attack name</c> lines: the weapon (in <c>WEAPON.NDS</c>) of each attack.</summary>
+        public IReadOnlyList<GpDescriptorWeapon> Weapons { get; private init; } = Array.Empty<GpDescriptorWeapon>();
+
+        /// <summary>
+        /// The <c>SETACTIVEPOINT #ANIMATION frame …</c> lines: the frame of an attack at which the weapon fires.
+        /// </summary>
+        public IReadOnlyList<(string Animation, int Frame)> FiringFrames { get; private init; } = Array.Empty<(string, int)>();
+
         /// <summary>Whether any animation has several directions: units, ships, cannons.</summary>
         public bool HasDirections => Animations.Any(animation => animation.Directions > 1);
 
@@ -80,6 +88,8 @@ namespace GPExtractor
             var sprites = new List<GpDescriptorSprite>();
             var animations = new List<GpDescriptorAnimation>();
             var sounds = new List<GpDescriptorSound>();
+            var weapons = new List<GpDescriptorWeapon>();
+            var firingFrames = new List<(string Animation, int Frame)>();
 
             foreach (var line in text.Split('\n'))
             {
@@ -115,6 +125,16 @@ namespace GPExtractor
                 {
                     sounds.Add(new GpDescriptorSound(tokens[2].Substring(1), soundFrame, tokens[3]));
                 }
+                else if (tokens.Length >= 3 && tokens[0].Equals("WEAPON", StringComparison.OrdinalIgnoreCase)
+                         && TryInt(tokens[1], out var attack))
+                {
+                    weapons.Add(new GpDescriptorWeapon(attack, tokens[2]));
+                }
+                else if (tokens.Length >= 3 && tokens[0].Equals("SETACTIVEPOINT", StringComparison.OrdinalIgnoreCase)
+                         && tokens[1].StartsWith('#') && TryInt(tokens[2], out var firingFrame))
+                {
+                    firingFrames.Add((tokens[1].Substring(1), firingFrame));
+                }
                 else if (tokens.Length >= 3 && tokens[0].StartsWith('#') && TryInt(tokens[1], out var directions)
                          && TryInt(tokens[2], out var count) && directions > 0)
                 {
@@ -137,7 +157,12 @@ namespace GPExtractor
                 }
             }
 
-            return new GpDescriptor(fileName, name ?? fileName, displayName, sprites, animations) { Sounds = sounds };
+            return new GpDescriptor(fileName, name ?? fileName, displayName, sprites, animations) 
+            {
+                Sounds = sounds,
+                Weapons = weapons,
+                FiringFrames = firingFrames,
+            };
         }
 
         /// <summary>
@@ -190,6 +215,12 @@ namespace GPExtractor
     /// <param name="Frames">The animation's frames as (sprite index, pose) pairs.</param>
     /// <summary>A sound (a name in <c>SOUNDLIST.TXT</c>) played at a frame of an animation.</summary>
     public sealed record GpDescriptorSound(string Animation, int Frame, string Sound);
+
+    /// <summary>The weapon of an attack: attack 0 is the animation <c>ATTACK</c>, attack 1 <c>ATTACK1</c>, …</summary>
+    public sealed record GpDescriptorWeapon(int Attack, string Weapon)
+    {
+        public string Animation => Attack == 0 ? "ATTACK" : "ATTACK" + Attack;
+    }
 
     public sealed record GpDescriptorAnimation(string Name, int Directions, IReadOnlyList<(int Sprite, int Pose)> Frames);
 }

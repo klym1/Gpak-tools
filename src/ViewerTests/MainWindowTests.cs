@@ -225,6 +225,8 @@ namespace ViewerTests
             var folder = UnitArchiveFolder(out var archive);
             Directory.CreateDirectory(Path.Combine(folder, "Sound"));
             File.WriteAllBytes(Path.Combine(folder, "Sound", "Alarm.wav"), new byte[4]);
+            File.WriteAllBytes(Path.Combine(folder, "Sound", "Step1.wav"), new byte[4]);
+            File.WriteAllBytes(Path.Combine(folder, "Sound", "Step2.wav"), new byte[4]);
 
             try
             {
@@ -239,7 +241,8 @@ namespace ViewerTests
                 var unit = window.FieldUnits.Single();
                 Assert.That(attackButton.IsEnabled, Is.True, "a unit is selected");
 
-                // The attack plays once (3 frames, its sound at frame 1), then the unit stands again.
+                // The attack plays once (3 frames: its sound at frame 1, its weapon's shot at frame 2), then the
+                // unit stands again.
                 window.SendSelectedTo(unit.Movement.Position + new Vector(-100, 0));
                 window.AttackWithSelected();
                 Assert.That(unit.State.Code, Is.EqualTo("ATTACK"));
@@ -249,10 +252,12 @@ namespace ViewerTests
                 Assert.That(player.Played.Select(Path.GetFileName), Is.EqualTo(new[] { "Alarm.wav" }));
                 window.Tick();
                 Assert.That(unit.State.Code, Is.EqualTo("ATTACK"));
+                Assert.That(player.Played, Has.Count.EqualTo(2));
+                Assert.That(Path.GetFileName(player.Played[1]), Does.StartWith("Step"), "the shot");
                 window.Tick();
                 Assert.That(unit.State.Code, Is.EqualTo("STAND"));
                 window.Tick();
-                Assert.That(player.Played, Has.Count.EqualTo(1));
+                Assert.That(player.Played, Has.Count.EqualTo(2));
 
                 // Killed: it dies with its sound (at frame 2), lies dead and cannot be selected or sent.
                 window.KillSelected();
@@ -260,7 +265,7 @@ namespace ViewerTests
                 Assert.That(window.SelectedFieldUnits, Is.Empty);
                 window.Tick();
                 window.Tick();
-                Assert.That(player.Played, Has.Count.EqualTo(2));
+                Assert.That(player.Played, Has.Count.EqualTo(3));
                 window.Tick();
                 Assert.That(unit.State.Code, Is.EqualTo("DEATHLIE1"));
                 Click(window, unit.Movement.Position, MouseButton.Left);
@@ -274,7 +279,7 @@ namespace ViewerTests
                 }
 
                 Assert.That(window.FieldUnits, Is.Empty);
-                Assert.That(player.Played, Has.Count.EqualTo(2));
+                Assert.That(player.Played, Has.Count.EqualTo(3));
 
                 window.Close();
             }

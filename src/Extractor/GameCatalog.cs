@@ -75,7 +75,13 @@ namespace GPExtractor
 
             var soundList = files.Find("SOUNDLIST", ".TXT");
             Sounds = soundList == null ? SoundList.Empty : SoundList.Parse(Encoding.Latin1.GetString(files.Read(soundList)));
+
+            var weaponList = files.Find("WEAPON", ".NDS");
+            Weapons = weaponList == null ? WeaponList.Empty : WeaponList.Parse(Encoding.Latin1.GetString(files.Read(weaponList)));
         }
+
+        /// <summary>The weapons of <c>WEAPON.NDS</c>; empty if the game files have none.</summary>
+        public WeaponList Weapons { get; }
 
         /// <summary>The sounds of <c>SOUNDLIST.TXT</c>; empty if the game files have none.</summary>
         public SoundList Sounds { get; }
@@ -93,7 +99,7 @@ namespace GPExtractor
             foreach (var code in state.Code.Split('+'))
             {
                 result.AddRange(sounds
-                    .Where(sound => sound.Animation.Equals(code, StringComparison.OrdinalIgnoreCase))
+                    .Where(sound => SameAnimation(sound.Animation, code))
                     .Select(sound => (offset + sound.Frame, sound.Sound)));
 
                 offset += gameObject.Descriptor.Animations
@@ -104,10 +110,37 @@ namespace GPExtractor
             return result;
         }
 
-        /// <summary>The sounds an object plays, with their wave files: at which frame of which animation.</summary>
+        /// <summary>Whether two animation names mean the same one: the first attack is <c>ATTACK</c> or <c>ATTACK0</c>.</summary>
+        private static bool SameAnimation(string first, string second)
+        {
+            static string Normalize(string name) => name.Equals("ATTACK0", StringComparison.OrdinalIgnoreCase) ? "ATTACK" : name;
+
+            return Normalize(first).Equals(Normalize(second), StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// The sounds an object plays, with their wave files: at which frame of which animation. These are its
+        /// <c>SOUND</c> lines and the shots of its weapons.
+        /// </summary>
         public IReadOnlyList<GameObjectSound> SoundsOf(GameObject gameObject)
         {
-            return gameObject.Descriptor.Sounds
+            var descriptor = gameObject.Descriptor;
+
+            // A weapon sounds when it fires: at the attack's firing frame, or its first frame if none is given.
+            var shots = descriptor.Weapons
+                .Select(weapon => (weapon.Animation, Sound: Weapons.ShotSoundOf(weapon.Weapon)))
+                .Where(shot => shot.Sound != null)
+                .Select(shot => new GpDescriptorSound(
+                      shot.Animation
+                    , descriptor.FiringFrames
+                        .Where(firing => SameAnimation(firing.Animation, shot.Animation))
+                        .Select(firing => firing.Frame)
+                        .FirstOrDefault()
+                    , shot.Sound
+                ));
+
+            return descriptor.Sounds
+                .Concat(shots)
                 .Select(sound => new GameObjectSound(sound.Animation, sound.Frame, Sounds.Find(sound.Sound)))
                 .Where(sound => sound.Sound != null)
                 .ToList();

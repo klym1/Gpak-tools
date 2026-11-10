@@ -141,7 +141,16 @@ namespace UnitTests
 
             // GONE is not in the sound list.
             var sounds = catalog.SoundsOf(unit);
-            sounds.Should().HaveCount(4);
+            sounds.Should().HaveCount(5);
+
+            // The weapon of the attack sounds at its firing frame: CANNON is silent itself, but launches BALL.
+            unit.Descriptor.Weapons.Should().Equal(new GpDescriptorWeapon(0, "CANNON"));
+            unit.Descriptor.FiringFrames.Should().Equal(("ATTACK", 2));
+            catalog.Weapons.ShotSoundOf("cannon").Should().Be("STEP");
+            catalog.Weapons.ShotSoundOf("SMOKE").Should().BeNull();
+            catalog.Weapons.ShotSoundOf("MORTAR").Should().Be("ALARM", "its own launch, not the blast of the shell");
+            catalog.SoundsOf(unit, unit.States.Single(state => state.Code == "ATTACK"))
+                .Select(s => (s.Frame, s.Sound.Name)).Should().Equal((1, "ALARM"), (2, "STEP"));
             var sound = sounds[0];
             (sound.Animation, sound.Frame).Should().Be(("MOTION_L", 1));
             sound.Sound.Files.Should().Equal(@"Sound\Step1.wav", @"Sound\Step2.wav");
