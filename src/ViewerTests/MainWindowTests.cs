@@ -8,6 +8,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.NUnit;
+using Avalonia.Input;
 using Avalonia.Media.Imaging;
 using NUnit.Framework;
 using GPExtractor;
@@ -377,6 +378,134 @@ namespace ViewerTests
             {
                 Directory.Delete(folder, true);
             }
+        }
+
+        [AvaloniaTest]
+        public async Task SelectsAndWalksTheUnitOnTheField()
+        {
+            var folder = Path.Combine(Path.GetTempPath(), "viewer-field-" + Guid.NewGuid());
+            Directory.CreateDirectory(folder);
+            var archive = Path.Combine(folder, "All.gsc");
+            File.WriteAllBytes(archive, UnitTests.GpTestFiles.GameArchive(UnitTests.GpTestFiles.UnitGameData()));
+
+            try
+            {
+                var window = new MainWindow(archive);
+                window.Show();
+                await window.RenderingCompleted;
+                await window.SetDirection(4);
+
+                // On the field the unit stands, facing the way it faced, and the animation plays.
+                await window.SetFieldMode(true);
+                window.Pause(); // the test drives the ticks
+                window.UpdateLayout();
+
+                var field = window.FindControl<Canvas>("Field");
+                Assert.That(field.IsVisible, Is.True);
+                Assert.That(window.FindControl<ScrollViewer>("ImageScroller").IsVisible, Is.False);
+                Assert.That(window.CurrentState.Code, Is.EqualTo("STAND"));
+                Assert.That(window.CurrentDirection, Is.EqualTo(4), "west");
+                var unit = window.FieldUnit;
+                var start = unit.Position;
+                Assert.That(DrawnColumnsAtFeet(window), Is.EqualTo(new[] { 0, 1, 2, 3, 4 }), "feet at the anchor, line to the right");
+
+                // Right-click does nothing until the unit is selected; a left-click elsewhere does not select it.
+                Click(window, start + new Vector(0, -100), MouseButton.Right);
+                Assert.That(unit.IsWalking, Is.False);
+                Click(window, start + new Vector(60, 60), MouseButton.Left);
+                Assert.That(window.IsUnitSelected, Is.False);
+
+                Click(window, start, MouseButton.Left);
+                Assert.That(window.IsUnitSelected, Is.True);
+                Assert.That(window.FindControl<Avalonia.Controls.Shapes.Ellipse>("SelectionMarker").IsVisible, Is.True);
+
+                // Sent north: it turns and walks.
+                Click(window, start + new Vector(0, -100), MouseButton.Right);
+                await window.RenderingCompleted;
+                Assert.That(unit.IsWalking, Is.True);
+                Assert.That(window.CurrentState.Code, Is.EqualTo("MOTION_L+MOTION_R"));
+                Assert.That(window.CurrentDirection, Is.EqualTo(8), "north");
+                Assert.That(window.FrameCount, Is.EqualTo(4));
+
+                for (var i = 0; i < 10; i++)
+                {
+                    window.Tick();
+                }
+
+                Assert.That(unit.Position, Is.EqualTo(start + new Vector(0, -10 * FieldUnit.DefaultStepLength)));
+                Assert.That(window.CurrentState.Code, Is.EqualTo("MOTION_L+MOTION_R"));
+
+                // On arrival it stands again, still facing north.
+                for (var i = 0; i < 15; i++)
+                {
+                    window.Tick();
+                }
+
+                await window.RenderingCompleted;
+                Assert.That(unit.IsWalking, Is.False);
+                Assert.That(unit.Position, Is.EqualTo(start + new Vector(0, -100)));
+                Assert.That(window.CurrentState.Code, Is.EqualTo("STAND"));
+                Assert.That(window.CurrentDirection, Is.EqualTo(8));
+
+                // Sent east: the mirrored frames are drawn with the feet at the unit's position too.
+                var here = unit.Position;
+                Click(window, here + new Vector(80, 0), MouseButton.Right);
+                await window.RenderingCompleted;
+                Assert.That(window.CurrentState.Code, Is.EqualTo("MOTION_L+MOTION_R"));
+                Assert.That(window.CurrentDirection, Is.EqualTo(12), "east");
+                window.Tick();
+                await window.RenderingCompleted;
+                Assert.That(DrawnColumnsAtFeet(window), Is.EqualTo(new[] { -5, -4, -3, -2, -1 }));
+
+                // Turning while walking keeps the step it is in.
+                window.Tick();
+                var pose = window.CurrentFrame;
+                Click(window, unit.Position + new Vector(-50, 50), MouseButton.Right);
+                await window.RenderingCompleted;
+                Assert.That(window.CurrentDirection, Is.EqualTo(2), "south-west");
+                Assert.That(window.CurrentFrame, Is.EqualTo(pose));
+
+                // Leaving the field goes back to the plain view.
+                await window.SetFieldMode(false);
+                Assert.That(window.FieldUnit, Is.Null);
+                Assert.That(field.IsVisible, Is.False);
+                Assert.That(window.CurrentState.Code, Is.EqualTo("MOTION_L+MOTION_R"));
+
+                window.Close();
+            }
+            finally
+            {
+                Directory.Delete(folder, true);
+            }
+        }
+
+        private static void Click(MainWindow window, Point fieldPoint, MouseButton button)
+        {
+            var point = window.FindControl<Canvas>("Field").TranslatePoint(fieldPoint, window).Value;
+            window.MouseDown(point, button);
+            window.MouseUp(point, button);
+        }
+
+        /// <summary>Columns of the unit's row (its feet) that are drawn on the field, relative to the feet.</summary>
+        private static int[] DrawnColumnsAtFeet(MainWindow window)
+        {
+            var image = window.FindControl<Image>("FieldImage");
+            var bitmap = (WriteableBitmap)image.Source;
+            var feet = window.FieldUnit.Position;
+            var left = (int)Canvas.GetLeft(image);
+            var y = (int)Math.Round(feet.Y) - (int)Canvas.GetTop(image);
+            var width = bitmap.PixelSize.Width;
+            var row = new byte[width * 4];
+
+            using (var buffer = bitmap.Lock())
+            {
+                Marshal.Copy(buffer.Address + y * buffer.RowBytes, row, 0, row.Length);
+            }
+
+            return Enumerable.Range(0, width)
+                .Where(x => row[4 * x + 3] != 0)
+                .Select(x => left + x - (int)Math.Round(feet.X))
+                .ToArray();
         }
 
         /// <summary>Columns of row 0 that differ from the gray background.</summary>
