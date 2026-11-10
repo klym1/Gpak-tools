@@ -87,6 +87,14 @@ namespace GPExtractor
         /// <summary>The pause after an attack animation, as <see cref="DamageOf"/>; null if the descriptor does not give it.</summary>
         public int? AttackPauseOf(string animation) => ValueOf(AttackPauses, animation);
 
+        /// <summary>
+        /// The <c>ATTACK_RADIUS attack min max</c> lines: how far each attack reaches, in pixels on the ground.
+        /// </summary>
+        public IReadOnlyList<(int Attack, int Value)> AttackRanges { get; private init; } = Array.Empty<(int, int)>();
+
+        /// <summary>How far an attack animation reaches, as <see cref="DamageOf"/>; null if the descriptor does not give it.</summary>
+        public int? AttackRangeOf(string animation) => ValueOf(AttackRanges, animation);
+
         /// <summary>The <c>SHIELD</c> line: armor taken off the damage of every hit; 0 if there is none.</summary>
         public int Shield { get; private init; }
 
@@ -161,6 +169,7 @@ namespace GPExtractor
             var activePoints = new List<GpDescriptorActivePoint>();
             var damages = new List<(int Attack, int Value)>();
             var attackPauses = new List<(int Attack, int Value)>();
+            var attackRanges = new List<(int Attack, int Value)>();
             var weaponKinds = new List<(int Attack, string Kind)>();
             var protections = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             var shield = 0;
@@ -232,6 +241,11 @@ namespace GPExtractor
                 {
                     attackPauses.Add((pauseAttack, pauseValue));
                 }
+                else if (tokens.Length >= 4 && tokens[0].Equals("ATTACK_RADIUS", StringComparison.OrdinalIgnoreCase)
+                         && TryInt(tokens[1], out var rangeAttack) && TryInt(tokens[3], out var rangeValue))
+                {
+                    attackRanges.Add((rangeAttack, rangeValue));
+                }
                 else if (tokens[0].Equals("SHIELD", StringComparison.OrdinalIgnoreCase) && TryInt(tokens[1], out var shieldValue))
                 {
                     shield = shieldValue;
@@ -282,6 +296,7 @@ namespace GPExtractor
                 Life = life,
                 Damages = damages,
                 AttackPauses = attackPauses,
+                AttackRanges = attackRanges,
                 Shield = shield,
                 Protections = protections,
                 WeaponKinds = weaponKinds,

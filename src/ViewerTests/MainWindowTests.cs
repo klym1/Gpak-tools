@@ -666,6 +666,57 @@ namespace ViewerTests
             }
         }
 
+        [AvaloniaTest]
+        public async Task AShotReachesAsFarAsItsAttackRadius()
+        {
+            var folder = UnitArchiveFolder(out var archive);
+            try
+            {
+                var window = new MainWindow(archive) { SoundPlayer = new RecordingSoundPlayer() };
+                window.Show();
+                await window.RenderingCompleted;
+                window.Pause();
+                window.UpdateLayout();
+
+                // ATTACK2 reaches 200 pixels on the ground (ATTACK_RADIUS 2 100 200): 200 across the screen,
+                // 100 down it.
+                var unit = window.FieldUnits.Single();
+                unit.Movement.PlaceAt(new Point(500, 200));
+                unit.Movement.TurnTo(90);
+                var west = window.AddToField("TST", new Point(300, 200));
+                var farWest = window.AddToField("TST", new Point(200, 200));
+                var south = window.AddToField("TST", new Point(500, 300));
+                window.Tick();
+                await window.RenderingCompleted;
+
+                Click(window, unit.Movement.Position, MouseButton.Left);
+                window.AttackWithSelected("ATTACK2");
+                for (var i = 0; i < 30; i++)
+                {
+                    window.Tick();
+                }
+
+                Assert.That(west.Life, Is.EqualTo(0));
+                Assert.That(farWest.Life, Is.EqualTo(50), "where a shot without a radius lands");
+                Assert.That(south.Life, Is.EqualTo(50));
+
+                unit.Movement.TurnTo(0);
+                window.AttackWithSelected("ATTACK2");
+                for (var i = 0; i < 30; i++)
+                {
+                    window.Tick();
+                }
+
+                Assert.That(south.Life, Is.EqualTo(0));
+
+                window.Close();
+            }
+            finally
+            {
+                Directory.Delete(folder, true);
+            }
+        }
+
         private sealed class RecordingSoundPlayer : ISoundPlayer
         {
             public System.Collections.Generic.List<string> Played { get; } = new System.Collections.Generic.List<string>();

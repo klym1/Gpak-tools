@@ -127,6 +127,7 @@ namespace UnitTests
                 "LIFE 50",
                 "DAMAGE 0 30",
                 "ATTACK_PAUSE 0 2",
+                "ATTACK_RADIUS 2 100 200",
                 "WEAPONKIND 0 IADRO",
                 "SHIELD 4",
                 "PROTECTION 2 PIKA 6 IADRO 3",

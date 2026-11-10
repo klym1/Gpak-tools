@@ -38,7 +38,10 @@ namespace Viewer
         // The unit kind whose attacks the attack list shows.
         private GameObject _attackBoxKind;
 
-        /// <summary>How near, in pixels, a unit comes to an enemy to hit it by hand, and to fire at it.</summary>
+        /// <summary>
+        /// How near, in pixels, a unit comes to an enemy to hit it by hand, and to fire at it if its descriptor
+        /// gives no <c>ATTACK_RADIUS</c>.
+        /// </summary>
         private const double MeleeReach = 40;
         private const double ShotReach = 300;
 
@@ -214,14 +217,25 @@ namespace Viewer
             return AttacksOf(kind).FirstOrDefault(state => state.Code == code) ?? AttackStateOf(kind);
         }
 
-        /// <summary>How near a unit must be to hit with an attack: far for one that fires a weapon.</summary>
-        private static double ReachOf(FieldUnitView unit, FieldUnitView target, GameObjectState attack)
+        /// <summary>
+        /// Whether a unit is near enough to hit with an attack: one that fires a weapon reaches as far as its
+        /// <c>ATTACK_RADIUS</c>, measured on the ground.
+        /// </summary>
+        private static bool IsWithinReach(FieldUnitView unit, FieldUnitView target, GameObjectState attack)
         {
+            var from = unit.Movement.Position;
+            var to = target.Movement.Position;
             var fires = unit.Kind.Descriptor.Weapons.Any(weapon => GameCatalog.SameAnimation(weapon.Animation, attack.Code));
 
             // Large units cannot come as near as small ones.
-            return Math.Max(fires ? ShotReach : MeleeReach, RadiusOf(unit) + RadiusOf(target) + 4);
+            var room = RadiusOf(unit) + RadiusOf(target) + 4;
+            return fires
+                ? FieldPath.GroundDistance(from, to) <= Math.Max(ShotReachOf(unit, attack.Code), room)
+                : Distance(from, to) <= Math.Max(MeleeReach, room);
         }
+
+        private static double ShotReachOf(FieldUnitView unit, string attack) =>
+            unit.Kind.Descriptor.AttackRangeOf(attack) ?? ShotReach;
 
         /// <summary>The room a unit takes on the ground, as a radius: half its selection ring.</summary>
         private static double RadiusOf(FieldUnitView unit) => RingWidthOf(unit) / 2;
@@ -448,7 +462,7 @@ namespace Viewer
             }
 
             var way = target.Movement.Position - unit.Movement.Position;
-            if (Distance(target.Movement.Position, unit.Movement.Position) <= ReachOf(unit, target, attack))
+            if (IsWithinReach(unit, target, attack))
             {
                 Halt(unit);
                 unit.Movement.TurnTo(FieldUnit.HeadingOf(way));
@@ -1132,9 +1146,11 @@ namespace Viewer
                 // What flies or bursts takes its time to get there; a bullet is there at once.
                 var takesTime = flying.Count > 0 || impact.Count > 0;
                 var heading = unit.Movement.Heading * Math.PI / 180;
+                var ahead = new Vector(-Math.Sin(heading), Math.Cos(heading));
+                var reach = ShotReachOf(unit, unit.State.Code) / FieldPath.GroundDistance(default, new Point(ahead.X, ahead.Y));
                 var where = unit.Target != null
                     ? AimAt(unit.Target, takesTime ? TicksToImpact : 0)
-                    : ClampToField(unit.Movement.Position + new Vector(-Math.Sin(heading), Math.Cos(heading)) * ShotReach);
+                    : ClampToField(unit.Movement.Position + ahead * reach);
 
                 foreach (var flight in flying)
                 {
