@@ -84,11 +84,47 @@ namespace GPExtractor
         /// <summary>The pause after an attack animation, as <see cref="DamageOf"/>; null if the descriptor does not give it.</summary>
         public int? AttackPauseOf(string animation) => ValueOf(AttackPauses, animation);
 
-        private static int? ValueOf(IReadOnlyList<(int Attack, int Value)> values, string animation)
+        /// <summary>The <c>SHIELD</c> line: armor taken off the damage of every hit; 0 if there is none.</summary>
+        public int Shield { get; private init; }
+
+        /// <summary>The <c>PROTECTION count (kind value)…</c> line: more armor against each kind of weapon.</summary>
+        public IReadOnlyDictionary<string, int> Protections { get; private init; } = new Dictionary<string, int>();
+
+        /// <summary>The <c>WEAPONKIND attack kind</c> lines: the kind of weapon of each attack (PIKA, VISTREL, …).</summary>
+        public IReadOnlyList<(int Attack, string Kind)> WeaponKinds { get; private init; } = Array.Empty<(int, string)>();
+
+        /// <summary>The kind of weapon of an attack animation, as <see cref="DamageOf"/>; null if not given.</summary>
+        public string WeaponKindOf(string animation)
+        {
+            var attack = AttackNumberOf(animation);
+            return WeaponKinds.Where(kind => kind.Attack == attack).Select(kind => kind.Kind).FirstOrDefault();
+        }
+
+        /// <summary>
+        /// The damage an attack of this object does to another: its damage less the target's shield and its
+        /// protection against the attack's kind of weapon, but at least 1. Null if the attack has no damage given.
+        /// </summary>
+        public int? DamageTo(GpDescriptor target, string animation)
+        {
+            if (DamageOf(animation) is not { } damage)
+            {
+                return null;
+            }
+
+            var kind = WeaponKindOf(animation);
+            var protection = kind != null && target.Protections.TryGetValue(kind, out var value) ? value : 0;
+            return Math.Max(1, damage - target.Shield - protection);
+        }
+
+        private static int AttackNumberOf(string animation)
         {
             var number = animation.Substring(animation.IndexOf("ATTACK", StringComparison.OrdinalIgnoreCase) + "ATTACK".Length);
-            var attack = TryInt(number, out var parsed) ? parsed : 0;
+            return TryInt(number, out var parsed) ? parsed : 0;
+        }
 
+        private static int? ValueOf(IReadOnlyList<(int Attack, int Value)> values, string animation)
+        {
+            var attack = AttackNumberOf(animation);
             return values
                 .Where(value => value.Attack == attack)
                 .Select(value => (int?) value.Value)
@@ -121,6 +157,9 @@ namespace GPExtractor
             var firingFrames = new List<(string Animation, int Frame)>();
             var damages = new List<(int Attack, int Value)>();
             var attackPauses = new List<(int Attack, int Value)>();
+            var weaponKinds = new List<(int Attack, string Kind)>();
+            var protections = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var shield = 0;
             int? life = null;
 
             foreach (var line in text.Split('\n'))
@@ -181,6 +220,25 @@ namespace GPExtractor
                 {
                     attackPauses.Add((pauseAttack, pauseValue));
                 }
+                else if (tokens[0].Equals("SHIELD", StringComparison.OrdinalIgnoreCase) && TryInt(tokens[1], out var shieldValue))
+                {
+                    shield = shieldValue;
+                }
+                else if (tokens.Length >= 3 && tokens[0].Equals("WEAPONKIND", StringComparison.OrdinalIgnoreCase)
+                         && TryInt(tokens[1], out var kindAttack))
+                {
+                    weaponKinds.Add((kindAttack, tokens[2]));
+                }
+                else if (tokens[0].Equals("PROTECTION", StringComparison.OrdinalIgnoreCase) && TryInt(tokens[1], out var kinds))
+                {
+                    for (var i = 0; i < kinds && 3 + 2 * i < tokens.Length; i++)
+                    {
+                        if (TryInt(tokens[3 + 2 * i], out var protection))
+                        {
+                            protections[tokens[2 + 2 * i]] = protection;
+                        }
+                    }
+                }
                 else if (tokens.Length >= 3 && tokens[0].StartsWith('#') && TryInt(tokens[1], out var directions)
                          && TryInt(tokens[2], out var count) && directions > 0)
                 {
@@ -211,6 +269,9 @@ namespace GPExtractor
                 Life = life,
                 Damages = damages,
                 AttackPauses = attackPauses,
+                Shield = shield,
+                Protections = protections,
+                WeaponKinds = weaponKinds,
             };
         }
 

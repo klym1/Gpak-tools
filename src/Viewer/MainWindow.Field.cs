@@ -209,12 +209,13 @@ namespace Viewer
         }
 
         /// <summary>
-        /// The unit's attack lands: the target loses the attack's damage from its life (all of it, if the unit
-        /// has no damage given) and dies when none is left; otherwise the unit attacks again.
+        /// The unit's attack lands: the target loses the attack's damage, less its armor, from its life (all of
+        /// it, if the unit has no damage given) and dies when none is left; otherwise the unit attacks again.
         /// </summary>
         private void Hit(FieldUnitView unit, FieldUnitView target)
         {
-            target.Life = Math.Max(0, target.Life - (unit.Kind.Descriptor.DamageOf(unit.State.Code) ?? target.Life));
+            var damage = unit.Kind.Descriptor.DamageTo(target.Kind.Descriptor, unit.State.Code) ?? target.Life;
+            target.Life = Math.Max(0, target.Life - damage);
             if (target.Life == 0)
             {
                 Kill(target);

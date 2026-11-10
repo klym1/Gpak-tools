@@ -66,6 +66,14 @@ namespace UnitTests
             descriptor.DamageOf("ATTACK2").Should().BeNull();
             descriptor.AttackPauseOf("ATTACK").Should().Be(2);
             descriptor.AttackPauseOf("ATTACK2").Should().BeNull();
+
+            // Armor: the shield and the protection against the attack's kind of weapon come off the damage.
+            descriptor.Shield.Should().Be(4);
+            descriptor.Protections.Should().Equal(new System.Collections.Generic.Dictionary<string, int> { ["PIKA"] = 6, ["IADRO"] = 3 });
+            descriptor.WeaponKindOf("ATTACK").Should().Be("IADRO");
+            descriptor.DamageTo(descriptor, "ATTACK").Should().Be(30 - 4 - 3);
+            descriptor.DamageTo(descriptor, "ATTACK2").Should().BeNull();
+            GpDescriptor.Parse("W", "DAMAGE 0 5\r\nWEAPONKIND 0 PIKA\r\n").DamageTo(descriptor, "ATTACK").Should().Be(1, "a hit always does some damage");
         }
 
         [Test]

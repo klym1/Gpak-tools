@@ -127,6 +127,9 @@ namespace UnitTests
                 "LIFE 50",
                 "DAMAGE 0 30",
                 "ATTACK_PAUSE 0 2",
+                "WEAPONKIND 0 IADRO",
+                "SHIELD 4",
+                "PROTECTION 2 PIKA 6 IADRO 3",
                 ""));
 
             var building = Encoding.ASCII.GetBytes(string.Join("\r\n",

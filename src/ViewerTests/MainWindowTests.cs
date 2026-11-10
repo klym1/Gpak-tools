@@ -359,13 +359,13 @@ namespace ViewerTests
                 Assert.That(enemy.State.Code, Is.EqualTo("ATTACK"));
                 Assert.That(enemy.Direction, Is.EqualTo(4), "west, facing the unit");
 
-                // ... and both lose life as attacks land (30 of 50): the unit's first, ...
+                // ... and both lose life as attacks land (30 less 7 of armor, of 50): the unit's first, ...
                 window.Tick();
-                Assert.That(enemy.Life, Is.EqualTo(20));
+                Assert.That(enemy.Life, Is.EqualTo(27));
                 Assert.That(enemy.IsDead, Is.False);
                 Assert.That(enemy.LifeBar.IsVisible, Is.True);
                 window.Tick();
-                Assert.That(unit.Life, Is.EqualTo(20));
+                Assert.That(unit.Life, Is.EqualTo(27));
 
                 // After its attack the unit rests for its pause (2 ticks), then attacks again.
                 Assert.That(unit.State.Code, Is.EqualTo("STAND"));
@@ -374,8 +374,8 @@ namespace ViewerTests
                 window.Tick();
                 Assert.That(unit.State.Code, Is.EqualTo("ATTACK"));
 
-                // ... so its second attack kills the enemy before the enemy's second lands; it stands again.
-                for (var i = 0; i < 10 && !enemy.IsDead; i++)
+                // ... so its third attack kills the enemy before the enemy's third lands; it stands again.
+                for (var i = 0; i < 20 && !enemy.IsDead; i++)
                 {
                     window.Tick();
                 }
@@ -383,7 +383,7 @@ namespace ViewerTests
                 Assert.That(enemy.IsDead, Is.True);
                 Assert.That(enemy.State.Code, Is.EqualTo("DEATH"));
                 Assert.That(unit.IsDead, Is.False);
-                Assert.That(unit.Life, Is.EqualTo(20));
+                Assert.That(unit.Life, Is.EqualTo(4));
                 Assert.That(unit.Target, Is.Null);
                 window.Tick();
                 Assert.That(unit.State.Code, Is.EqualTo("STAND"));
