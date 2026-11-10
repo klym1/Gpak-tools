@@ -157,7 +157,7 @@ namespace Viewer
 
         private void UpdateTimerInterval()
         {
-            var fps = (double) (FramesPerSecond.Value ?? 12);
+            var fps = (double) (FramesPerSecond.Value ?? 25);
             _timer.Interval = TimeSpan.FromSeconds(1 / Math.Clamp(fps, 1, 60));
         }
 
