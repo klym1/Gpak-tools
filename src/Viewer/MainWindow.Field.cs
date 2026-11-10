@@ -111,7 +111,6 @@ namespace Viewer
                 SetFieldState(unit, unit.Movement.IsWalking ? WalkStateOf(unit.Kind) : StandStateOf(unit.Kind));
             }
 
-            Play();
             UpdateFieldView();
         }
 
