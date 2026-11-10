@@ -90,6 +90,10 @@ namespace UnitTests
                 "RAZBROS 250",
                 "ROTATE 4",
                 "MOTIONSTYLE SHEEPS",
+                "SELECT_SOUND ALARM",
+                "ORDER_SOUND  STEP",
+                "MATHERIAL 1 BODY",
+                "ATTMASK 2 2 BUILDING WOOD STENA",
                 "ZPOINTS 30 30",
                 "SHOWDELAY",
                 "STANDGROUND");
@@ -105,6 +109,13 @@ namespace UnitTests
             descriptor.TurnRate.Should().Be(4);
             descriptor.MotionStyle.Should().Be("SHEEPS");
             descriptor.TurnsUnderWay.Should().BeTrue();
+            descriptor.SelectSound.Should().Be("ALARM");
+            descriptor.OrderSound.Should().Be("STEP");
+            descriptor.BornSound.Should().BeNull();
+            descriptor.Materials.Should().BeEquivalentTo("BODY");
+            descriptor.AttackMasks[2].Should().BeEquivalentTo(new[] { "BUILDING", "WOOD" }, "the count says two");
+            descriptor.CanAttack(descriptor, "ATTACK2").Should().BeFalse("a body is not in the mask");
+            descriptor.CanAttack(descriptor, "ATTACK").Should().BeTrue("an attack without a mask is made on anything");
             descriptor.Height.Should().Be(30);
             descriptor.ShowsDelay.Should().BeTrue();
             descriptor.CanStandGround.Should().BeTrue();

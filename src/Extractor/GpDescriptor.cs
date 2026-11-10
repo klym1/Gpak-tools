@@ -129,6 +129,39 @@ namespace GPExtractor
         /// <summary>Whether the object turns as it goes, like a ship, and does not stop to turn.</summary>
         public bool TurnsUnderWay => "SHEEPS".Equals(MotionStyle, StringComparison.OrdinalIgnoreCase);
 
+        /// <summary>The <c>SELECT_SOUND</c> line: the sound (a name in <c>SOUNDLIST.TXT</c>) the object makes when selected; null if none.</summary>
+        public string SelectSound => Words.GetValueOrDefault(SelectSoundKey);
+
+        /// <summary>The <c>ORDER_SOUND</c> line: the sound the object makes when it is given an order; null if none.</summary>
+        public string OrderSound => Words.GetValueOrDefault(OrderSoundKey);
+
+        /// <summary>The <c>BORN_SOUND</c> line: the sound the object makes when it appears; null if none.</summary>
+        public string BornSound => Words.GetValueOrDefault(BornSoundKey);
+
+        /// <summary>The <c>MATHERIAL count names…</c> lines: what the object is made of (BODY, WOOD, IRON, BUILDING, …).</summary>
+        public IReadOnlySet<string> Materials { get; private init; } = new HashSet<string>();
+
+        /// <summary>
+        /// The <c>ATTMASK attack count materials…</c> lines, by attack: the only materials that attack is made on.
+        /// </summary>
+        public IReadOnlyDictionary<int, IReadOnlySet<string>> AttackMasks { get; private init; } = new Dictionary<int, IReadOnlySet<string>>();
+
+        /// <summary>Whether an attack animation is made on another object: always, unless its <c>ATTMASK</c> leaves out what that is made of.</summary>
+        public bool CanAttack(GpDescriptor target, string animation) =>
+            !AttackMasks.TryGetValue(AttackNumberOf(animation), out var mask) || mask.Overlaps(target.Materials);
+
+        private const string SelectSoundKey = "SELECT_SOUND";
+        private const string OrderSoundKey = "ORDER_SOUND";
+        private const string BornSoundKey = "BORN_SOUND";
+
+        private static readonly HashSet<string> WordKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            SelectSoundKey, OrderSoundKey, BornSoundKey,
+        };
+
+        // The first word after the keyword of the lines named in WordKeys.
+        private IReadOnlyDictionary<string, string> Words { get; init; } = new Dictionary<string, string>();
+
         /// <summary>The <c>ZPOINTS</c> line: how high above the ground the object is hit, in pixels.</summary>
         public int? Height => Number(HeightKey);
 
@@ -248,6 +281,9 @@ namespace GPExtractor
             int? radius = null;
             int? stepSize = null;
             string motionStyle = null;
+            var words = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var materials = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var attackMasks = new Dictionary<int, IReadOnlySet<string>>();
 
             foreach (var line in text.Split('\n'))
             {
@@ -340,6 +376,19 @@ namespace GPExtractor
                     radius = geometryRadius;
                     stepSize = geometryStep;
                 }
+                else if (WordKeys.Contains(tokens[0]))
+                {
+                    words[tokens[0]] = tokens[1];
+                }
+                else if (tokens[0].Equals("MATHERIAL", StringComparison.OrdinalIgnoreCase) && TryInt(tokens[1], out var materialCount))
+                {
+                    materials.UnionWith(tokens.Skip(2).Take(materialCount));
+                }
+                else if (tokens.Length >= 3 && tokens[0].Equals("ATTMASK", StringComparison.OrdinalIgnoreCase)
+                         && TryInt(tokens[1], out var maskAttack) && TryInt(tokens[2], out var maskCount))
+                {
+                    attackMasks[maskAttack] = tokens.Skip(3).Take(maskCount).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                }
                 else if (tokens[0].Equals("MOTIONSTYLE", StringComparison.OrdinalIgnoreCase))
                 {
                     motionStyle = tokens[1];
@@ -404,6 +453,9 @@ namespace GPExtractor
                 Numbers = numbers,
                 Flags = flags,
                 MotionStyle = motionStyle,
+                Words = words,
+                Materials = materials,
+                AttackMasks = attackMasks,
                 Radius = radius,
                 StepSize = stepSize,
                 Shield = shield,

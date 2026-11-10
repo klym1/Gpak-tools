@@ -180,6 +180,7 @@ namespace Viewer
             _fieldUnits.Add(unit);
 
             Select(new[] { unit }, add: false);
+            Play(descriptor.BornSound);
             return unit;
         }
 
@@ -327,7 +328,10 @@ namespace Viewer
         /// </summary>
         private static GameObjectState AttackOn(FieldUnitView unit, FieldUnitView target, GameObjectState chosen)
         {
-            var attacks = AttacksOf(unit.Kind).Prepend(chosen).Where(attack => !IsTooNear(unit, target, attack)).ToList();
+            var attacks = AttacksOf(unit.Kind)
+                .Prepend(chosen)
+                .Where(attack => unit.Kind.Descriptor.CanAttack(target.Kind.Descriptor, attack.Code) && !IsTooNear(unit, target, attack))
+                .ToList();
             return attacks.FirstOrDefault(attack => IsChosenAt(unit, target, attack)) ?? attacks.FirstOrDefault();
         }
 
@@ -540,6 +544,11 @@ namespace Viewer
         /// </summary>
         private void Hit(GameObject attacker, string attack, FieldUnitView target, double share = 1)
         {
+            if (!attacker.Descriptor.CanAttack(target.Kind.Descriptor, attack))
+            {
+                return;
+            }
+
             var damage = attacker.Descriptor.DamageTo(target.Kind.Descriptor, attack, share) ?? target.Life;
             target.Life = Math.Max(0, target.Life - damage);
             if (target.Life == 0)
@@ -956,6 +965,19 @@ namespace Viewer
             }
         }
 
+        /// <summary>Plays a sound by its name in <c>SOUNDLIST.TXT</c>, if the name is given and known.</summary>
+        private void Play(string name)
+        {
+            if (SoundBox.IsChecked == true && name != null && _catalog.Sounds.Find(name) is { } sound)
+            {
+                Play(sound);
+            }
+        }
+
+        /// <summary>Plays the first sound of its kind that a selected unit has, e.g. its <c>ORDER_SOUND</c>.</summary>
+        private void PlayOfSelected(Func<GpDescriptor, string> sound) =>
+            Play(SelectedFieldUnits.Select(unit => sound(unit.Kind.Descriptor)).FirstOrDefault(name => name != null));
+
         private void Play(GameSound sound)
         {
             if (sound.Files.Count == 0)
@@ -1222,6 +1244,8 @@ namespace Viewer
                     {
                         Select(new[] { hit }, add: false);
                     }
+
+                    PlayOfSelected(descriptor => descriptor.SelectSound);
                 }
                 else
                 {
@@ -1247,6 +1271,7 @@ namespace Viewer
                     SendSelectedTo(point.Position);
                 }
 
+                PlayOfSelected(descriptor => descriptor.OrderSound);
                 e.Handled = true;
             }
         }
@@ -1292,6 +1317,7 @@ namespace Viewer
                 Select(_fieldUnits.Where(unit => unit.DrawnBounds is { } bounds
                     ? bounds.Intersects(box)
                     : box.Contains(unit.Movement.Position)), adds);
+                PlayOfSelected(descriptor => descriptor.SelectSound);
             }
             else if (!adds)
             {

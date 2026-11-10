@@ -1291,6 +1291,77 @@ namespace ViewerTests
             });
         }
 
+        [AvaloniaTest]
+        public async Task AUnitSoundsWhenItAppearsIsSelectedAndIsOrdered()
+        {
+            var folder = UnitArchiveFolder(out var archive, "BORN_SOUND ALARM", "SELECT_SOUND ALARM", "ORDER_SOUND STEP");
+            Directory.CreateDirectory(Path.Combine(folder, "Sound"));
+            foreach (var wave in new[] { "Alarm.wav", "Step1.wav", "Step2.wav" })
+            {
+                File.WriteAllBytes(Path.Combine(folder, "Sound", wave), new byte[4]);
+            }
+
+            try
+            {
+                var player = new RecordingSoundPlayer();
+                var window = new MainWindow(archive) { SoundPlayer = player };
+                window.Show();
+                await window.RenderingCompleted;
+                window.Pause();
+                window.UpdateLayout();
+                var unit = OnlyUnit(window);
+                window.Tick();
+                await window.RenderingCompleted;
+
+                player.Played.Clear();
+                var born = window.AddToField("TST", unit.Movement.Position + new Vector(0, 100));
+                Assert.That(player.Played.Select(Path.GetFileName), Is.EqualTo(new[] { "Alarm.wav" }));
+                window.RemoveFromField(born);
+
+                player.Played.Clear();
+                Click(window, unit.Movement.Position, MouseButton.Left);
+                Assert.That(player.Played.Select(Path.GetFileName), Is.EqualTo(new[] { "Alarm.wav" }));
+
+                player.Played.Clear();
+                Click(window, unit.Movement.Position + new Vector(100, 0), MouseButton.Right);
+                Assert.That(player.Played, Has.Count.EqualTo(1));
+                Assert.That(Path.GetFileName(player.Played[0]), Does.StartWith("Step"));
+
+                window.Close();
+            }
+            finally
+            {
+                Directory.Delete(folder, true);
+            }
+        }
+
+        [AvaloniaTest]
+        public Task AnAttackIsOnlyMadeOnWhatItsMaskNames()
+        {
+            // The mortar (attack 2) is for buildings and wood; the units are bodies.
+            return OnFieldWith(new[] { "MATHERIAL 1 BODY", "ATTMASK 2 2 BUILDING WOOD" }, async (window, unit) =>
+            {
+                // Its blast, 200 pixels on, does nothing to a body there.
+                var bystander = window.AddToField("TST", unit.Movement.Position + new Vector(-200, 0));
+                Click(window, unit.Movement.Position, MouseButton.Left);
+                unit.Movement.TurnTo(90);
+                window.AttackWithSelected("ATTACK2");
+                for (var i = 0; i < 30; i++)
+                {
+                    window.Tick();
+                }
+
+                Assert.That(bystander.Life, Is.EqualTo(50));
+
+                // Picked in the list and sent against an enemy, the unit makes its other attack.
+                var enemy = await AddEnemy(window, unit.Movement.Position + new Vector(150, 0));
+                window.FindControl<ComboBox>("AttackBox").SelectedIndex = 1;
+                Click(window, enemy.Movement.Position, MouseButton.Right);
+                window.Tick();
+                Assert.That(unit.State.Code, Is.EqualTo("ATTACK"));
+            });
+        }
+
         /// <summary>The first of the units the field starts with, the others taken off it.</summary>
         private static FieldUnitView OnlyUnit(MainWindow window)
         {
