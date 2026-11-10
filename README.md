@@ -124,7 +124,7 @@ Smoke and explosions are animations of the weapons. `WEAPON.ADS` is written like
 
 ## RLC sprite format
 
-Fonts, cursors and a few older sprites are `.rlc` files (`RlcFile`): the signature `RLC` `0x1B`, a uint32 number of frames *N*, and *N* uint32 frame offsets. A frame is a uint16 width, a uint16 height, and one entry per row: a byte with the number of runs, then per run a byte of transparent pixels to skip, a byte with the length and that many palette indices. The viewer draws units whose descriptors name an RLC sprite (the drummer, `BA1`, stands in one).
+Fonts, cursors and a few older sprites are `.rlc` files (`RlcFile`): the signature `RLC` `0x1B`, a uint32 number of frames *N*, and *N* uint32 frame offsets. A frame is a uint16 width, a uint16 height, and one entry per row: a byte with the number of runs, then per run a byte of transparent pixels to skip, a byte with the length and that many palette indices. The viewer draws units whose descriptors name an RLC sprite (the drummer, `BA1`, stands in one). RLC has no separate player-color parts: the pixels in the red player ramp (palette 208-211) are the player color. The drummer has about ten of them a frame, where his GP walk sprite has its player-color part; indices of the other ramps are ordinary colors (the orange of the drum, black, white).
 
 ## GRD color tables
 
