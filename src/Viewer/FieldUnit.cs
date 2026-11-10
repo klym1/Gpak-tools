@@ -134,11 +134,12 @@ namespace Viewer
 
         /// <summary>
         /// The heading of a movement on screen (y pointing down), in degrees clockwise from south:
-        /// down = 0, left = 90, up = 180, right = 270.
+        /// down = 0, left = 90, up = 180, right = 270. Headings are angles on the ground, which the screen
+        /// shows at a slant: a pixel up or down is two on the ground, so south-west is two left for one down.
         /// </summary>
         public static double HeadingOf(Vector way)
         {
-            return Normalized(Math.Atan2(-way.X, way.Y) * 180 / Math.PI);
+            return Normalized(Math.Atan2(-way.X, way.Y * FieldPath.Slant) * 180 / Math.PI);
         }
 
         private static double Length(Vector v) => Math.Sqrt(v.X * v.X + v.Y * v.Y);

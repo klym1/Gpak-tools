@@ -1484,7 +1484,7 @@ namespace Viewer
                 // What flies or bursts takes its time to get there; a bullet is there at once.
                 var takesTime = flying.Count > 0 || impact.Count > 0;
                 var heading = unit.Movement.Heading * Math.PI / 180;
-                var ahead = new Vector(-Math.Sin(heading), Math.Cos(heading));
+                var ahead = new Vector(-Math.Sin(heading), Math.Cos(heading) / FieldPath.Slant);
                 var reach = ShotReachOf(unit, unit.State.Code) / FieldPath.GroundDistance(default, new Point(ahead.X, ahead.Y));
                 // How long the shot is in the air: as its weapon flies over the distance, as near as can be told
                 // before aiming ahead of a walking target.

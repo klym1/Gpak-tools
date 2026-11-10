@@ -915,7 +915,7 @@ namespace ViewerTests
 
                 // Turning while walking keeps the step it is in.
                 var pose = unit.Pose;
-                Click(window, unit.Movement.Position + new Vector(-50, 50), MouseButton.Right);
+                Click(window, unit.Movement.Position + new Vector(-50, 25), MouseButton.Right);
                 Assert.That(unit.Direction, Is.EqualTo(2), "south-west");
                 Assert.That(unit.Pose, Is.EqualTo(pose));
 

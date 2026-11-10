@@ -10,8 +10,8 @@ namespace ViewerTests
         [TestCase(-1, 0, 90, TestName = "Left is west")]
         [TestCase(0, -1, 180, TestName = "Up is north")]
         [TestCase(1, 0, 270, TestName = "Right is east")]
-        [TestCase(-1, 1, 45, TestName = "Down-left is south-west")]
-        [TestCase(1, -1, 225, TestName = "Up-right is north-east")]
+        [TestCase(-2, 1, 45, TestName = "Two left for one down is south-west")]
+        [TestCase(2, -1, 225, TestName = "Two right for one up is north-east")]
         public void HeadingIsClockwiseFromSouthLikeDirections(double dx, double dy, double heading)
         {
             Assert.That(FieldUnit.HeadingOf(new Vector(dx, dy)), Is.EqualTo(heading).Within(1e-9));

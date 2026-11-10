@@ -106,6 +106,8 @@ Unit, ship and projectile sprites store each pose from several directions, frame
 
 With *D* = 2^n + 1 (9, 17, 33, 65, 129), the stored directions cover half a turn, from facing the viewer (south) clockwise to facing away (north); the game mirrors them around the anchor for the eastern half, giving 2 × (*D* − 1) directions. `GpDirections` reads this from the descriptors or, for sprites without one, recognizes it from the frames, and the viewer plays the poses of a chosen direction.
 
+The directions are evenly spaced on the ground, which the game shows at a slant of 2:1: the weapon points of `SETACTIVEPOINT`, one per direction, lie on an ellipse half as high as wide (ratios of 0.45 to 0.54 for 33 of the 35 attacks that have them). So a unit moving two pixels left for one down faces south-west, and the viewer picks directions that way.
+
 ### Units
 
 Each descriptor (`*.MD`) describes one game object. Objects whose animations have directions are units (92 in Cossacks: European Wars); the others are mostly buildings. A unit's states are its animations, written either as (sprite, pose) pairs or as a range of poses, `@MOTION_LB 9 1 19 10` (sprite 1, poses 19 down to 11; the end is not included). `MESSAGE` holds the display name in DOS (866) or Windows (1251) Cyrillic.
