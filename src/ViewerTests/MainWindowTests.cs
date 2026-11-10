@@ -159,6 +159,63 @@ namespace ViewerTests
         }
 
         [AvaloniaTest]
+        public async Task PlaysTheSoundsOfWalkingUnits()
+        {
+            var folder = UnitArchiveFolder(out var archive);
+            Directory.CreateDirectory(Path.Combine(folder, "Sound"));
+            File.WriteAllBytes(Path.Combine(folder, "Sound", "Step1.wav"), new byte[4]);
+            File.WriteAllBytes(Path.Combine(folder, "Sound", "Step2.wav"), new byte[4]);
+
+            try
+            {
+                var player = new RecordingSoundPlayer();
+                var window = new MainWindow(archive) { SoundPlayer = player };
+                window.Show();
+                await window.RenderingCompleted;
+                window.Pause();
+                window.UpdateLayout();
+
+                // Standing is silent.
+                var unit = window.FieldUnits.Single();
+                for (var i = 0; i < 8; i++)
+                {
+                    window.Tick();
+                }
+
+                Assert.That(player.Played, Is.Empty);
+
+                // Walking plays the step sound from the game folder, next to the archive.
+                window.SendSelectedTo(unit.Movement.Position + new Vector(0, -200));
+                window.Tick();
+                Assert.That(player.Played, Has.Count.EqualTo(1), "the walk has a sound at its frame 1");
+                Assert.That(Path.GetDirectoryName(player.Played[0]), Is.EqualTo(Path.Combine(folder, "Sound")));
+                Assert.That(Path.GetFileName(player.Played[0]), Does.Match("^Step[12]\\.wav$"));
+
+                // Not with the sound switched off.
+                window.FindControl<CheckBox>("SoundBox").IsChecked = false;
+                for (var i = 0; i < 8; i++)
+                {
+                    window.Tick();
+                }
+
+                Assert.That(player.Played, Has.Count.EqualTo(1));
+
+                window.Close();
+            }
+            finally
+            {
+                Directory.Delete(folder, true);
+            }
+        }
+
+        private sealed class RecordingSoundPlayer : ISoundPlayer
+        {
+            public System.Collections.Generic.List<string> Played { get; } = new System.Collections.Generic.List<string>();
+
+            public void Play(string path) => Played.Add(path);
+        }
+
+        [AvaloniaTest]
         public async Task SelectsAndWalksAUnitOnTheField()
         {
             var folder = UnitArchiveFolder(out var archive);

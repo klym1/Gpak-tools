@@ -113,6 +113,7 @@ namespace UnitTests
                 "@MOTION_R  9 1 2 4",
                 "@MOTION_LB 9 1 3 1",
                 "SOUND 1 #MOTION_L STEP",
+                "SOUND 0 #MOTION_R STEP",
                 "SOUND 3 #DEATH GONE",
                 "LIFE 50",
                 ""));

@@ -32,6 +32,13 @@ namespace Viewer
         private readonly Dictionary<FieldFramesKey, FieldFrames> _readyFrames = new Dictionary<FieldFramesKey, FieldFrames>();
         private readonly Dictionary<FieldFramesKey, Task> _renderingFrames = new Dictionary<FieldFramesKey, Task>();
 
+        // Sounds per unit kind and state.
+        private readonly Dictionary<(GameObject, GameObjectState), IReadOnlyList<(int Frame, GameSound Sound)>> _stateSounds = new();
+        private readonly Random _random = new Random();
+
+        /// <summary>What plays the units' sounds.</summary>
+        public ISoundPlayer SoundPlayer { get; set; } = new SoundPlayer();
+
         // A selection box being dragged.
         private Point? _dragStart;
         private bool _dragging;
@@ -131,6 +138,7 @@ namespace Viewer
             foreach (var unit in _fieldUnits)
             {
                 unit.Pose++;
+                PlaySounds(unit);
                 if (unit.Movement.IsWalking && unit.Movement.Step())
                 {
                     SetFieldState(unit, StandStateOf(unit.Kind));
@@ -138,6 +146,45 @@ namespace Viewer
             }
 
             UpdateFieldView();
+        }
+
+        /// <summary>Plays the sounds the unit's state has at the frame it is in now.</summary>
+        private void PlaySounds(FieldUnitView unit)
+        {
+            if (SoundBox.IsChecked != true || unit.State.Frames.Count == 0)
+            {
+                return;
+            }
+
+            var key = (unit.Kind, unit.State);
+            if (!_stateSounds.TryGetValue(key, out var sounds))
+            {
+                sounds = _catalog.SoundsOf(unit.Kind, unit.State);
+                _stateSounds[key] = sounds;
+            }
+
+            var frame = unit.Pose % unit.State.Frames.Count;
+            foreach (var (_, sound) in sounds.Where(sound => sound.Frame == frame && sound.Sound.Files.Count > 0))
+            {
+                var file = sound.Files[_random.Next(sound.Files.Count)];
+                var path = SoundPath(file);
+                if (path != null)
+                {
+                    SoundPlayer.Play(path);
+                }
+            }
+        }
+
+        /// <summary>A wave file of the sound list in the game folder: next to the archive, or around an extracted folder.</summary>
+        private string SoundPath(string file)
+        {
+            var source = _catalog.Files.Source;
+            var folders = new[] { System.IO.Path.GetDirectoryName(source), source, System.IO.Path.GetDirectoryName(System.IO.Path.GetDirectoryName(source) ?? "") };
+
+            return folders
+                .Where(folder => !string.IsNullOrEmpty(folder))
+                .Select(folder => System.IO.Path.Combine(folder, file.Replace('\\', System.IO.Path.DirectorySeparatorChar)))
+                .FirstOrDefault(System.IO.File.Exists);
         }
 
         private void InitializeField()
@@ -194,6 +241,7 @@ namespace Viewer
             _fieldUnits.Clear();
             _readyFrames.Clear();
             _renderingFrames.Clear();
+            _stateSounds.Clear();
             EndDrag();
         }
 

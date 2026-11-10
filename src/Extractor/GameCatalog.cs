@@ -80,6 +80,30 @@ namespace GPExtractor
         /// <summary>The sounds of <c>SOUNDLIST.TXT</c>; empty if the game files have none.</summary>
         public SoundList Sounds { get; }
 
+        /// <summary>
+        /// The sounds of a state by its frame. In a state joined from several animations (<c>MOTION_L+MOTION_R</c>),
+        /// the frames of the later ones follow those before.
+        /// </summary>
+        public IReadOnlyList<(int Frame, GameSound Sound)> SoundsOf(GameObject gameObject, GameObjectState state)
+        {
+            var sounds = SoundsOf(gameObject);
+            var result = new List<(int Frame, GameSound Sound)>();
+            var offset = 0;
+
+            foreach (var code in state.Code.Split('+'))
+            {
+                result.AddRange(sounds
+                    .Where(sound => sound.Animation.Equals(code, StringComparison.OrdinalIgnoreCase))
+                    .Select(sound => (offset + sound.Frame, sound.Sound)));
+
+                offset += gameObject.Descriptor.Animations
+                    .FirstOrDefault(animation => animation.Name.Equals(code, StringComparison.OrdinalIgnoreCase))
+                    ?.Frames.Count ?? 0;
+            }
+
+            return result;
+        }
+
         /// <summary>The sounds an object plays, with their wave files: at which frame of which animation.</summary>
         public IReadOnlyList<GameObjectSound> SoundsOf(GameObject gameObject)
         {

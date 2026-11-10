@@ -91,6 +91,7 @@ namespace Viewer
             Closed += (sender, args) =>
             {
                 _timer.Stop();
+                (SoundPlayer as IDisposable)?.Dispose();
                 _catalog?.Dispose();
             };
         }

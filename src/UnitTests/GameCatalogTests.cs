@@ -134,13 +134,22 @@ namespace UnitTests
             var unit = catalog.Units.Single();
             unit.Descriptor.Sounds.Should().Equal(
                 new GpDescriptorSound("MOTION_L", 1, "STEP"),
+                new GpDescriptorSound("MOTION_R", 0, "STEP"),
                 new GpDescriptorSound("DEATH", 3, "GONE"));
 
             // GONE is not in the sound list.
-            var sound = catalog.SoundsOf(unit).Should().ContainSingle().Subject;
+            var sounds = catalog.SoundsOf(unit);
+            sounds.Should().HaveCount(2);
+            var sound = sounds[0];
             (sound.Animation, sound.Frame).Should().Be(("MOTION_L", 1));
             sound.Sound.Files.Should().Equal(@"Sound\Step1.wav", @"Sound\Step2.wav");
             sound.Sound.Danger.Should().BeFalse();
+
+            // In the joined walk, the right step's frames follow the two of the left step.
+            var walk = unit.States.Single(state => state.Code == "MOTION_L+MOTION_R");
+            catalog.SoundsOf(unit, walk).Select(s => s.Frame).Should().Equal(1, 2);
+            catalog.SoundsOf(unit, unit.States.Single(state => state.Code == "MOTION_R")).Select(s => s.Frame).Should().Equal(0);
+            catalog.SoundsOf(unit, unit.States.Single(state => state.Code == "STAND")).Should().BeEmpty();
         }
 
         [Test]

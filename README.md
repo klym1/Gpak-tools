@@ -114,7 +114,7 @@ Each descriptor (`*.MD`) describes one game object. Objects whose animations hav
 
 ### Sounds
 
-A descriptor line `SOUND frame #ANIMATION name` plays a sound at a frame of an animation (a drum beat in `MOTION_L`, a cry in `DEATH`). `SOUNDLIST.TXT` gives the wave files of each name, relative to the game folder: a line `NAME count`, an optional line `DANGER`, then `count` file lines, of which the game plays one. `GameCatalog.SoundsOf` matches the two.
+A descriptor line `SOUND frame #ANIMATION name` plays a sound at a frame of an animation (a drum beat in `MOTION_L`, a cry in `DEATH`). `SOUNDLIST.TXT` gives the wave files of each name, relative to the game folder: a line `NAME count`, an optional line `DANGER`, then `count` file lines, of which the game plays one. `GameCatalog.SoundsOf` matches the two. The viewer plays them as units walk (on Windows; the wave files are in the game's `Sound` folder, next to `All.gsc`).
 
 ## RLC sprite format
 
