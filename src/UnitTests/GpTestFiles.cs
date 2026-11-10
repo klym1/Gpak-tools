@@ -100,10 +100,12 @@ namespace UnitTests
         /// sprites with different anchors. The stand sprite (tsts.gp, 1 pose) is anchored at (20, 10), the walk
         /// sprite (tstg.gp, 4 poses) at (30, 15); both draw a line starting at the anchor (see <see cref="Unit"/>).
         /// </summary>
-        public static (string Name, byte[] Content)[] UnitGameData()
+        /// <param name="unitLines">More lines for the unit's descriptor.</param>
+        public static (string Name, byte[] Content)[] UnitGameData(params string[] unitLines)
         {
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-            var descriptor = Encoding.GetEncoding(866).GetBytes(string.Join("\r\n",
+            var descriptor = Encoding.GetEncoding(866).GetBytes(string.Join("\r\n", new[]
+            {
                 "NAME Testovyj",
                 "MESSAGE Тестовый_воин",
                 "USERLC 0 tsts  SHADOW -20 -10",
@@ -131,7 +133,7 @@ namespace UnitTests
                 "WEAPONKIND 0 IADRO",
                 "SHIELD 4",
                 "PROTECTION 2 PIKA 6 IADRO 3",
-                ""));
+            }.Concat(unitLines).Append("")));
 
             var building = Encoding.ASCII.GetBytes(string.Join("\r\n",
                 "NAME Depo",

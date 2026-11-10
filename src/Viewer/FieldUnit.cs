@@ -16,7 +16,41 @@ namespace Viewer
         {
             Position = position;
             Heading = heading;
+            _facing = heading;
         }
+
+        // The way the unit is turning to face.
+        private double _facing;
+
+        /// <summary>Degrees the unit turns per tick; null if it turns at once.</summary>
+        public double? TurnRate { get; set; }
+
+        /// <summary>Whether the unit has not yet turned the way it was told to face.</summary>
+        public bool IsTurning => TurnRate != null && Heading != _facing;
+
+        /// <summary>Turns a slow unit one tick further the shorter way round. Returns false if it already faces its way.</summary>
+        public bool Turn()
+        {
+            if (!IsTurning)
+            {
+                return false;
+            }
+
+            var left = (_facing - Heading + 540) % 360 - 180;
+            Heading = Math.Abs(left) <= TurnRate ? _facing : Normalized(Heading + Math.Sign(left) * TurnRate.Value);
+            return true;
+        }
+
+        private void Face(double heading)
+        {
+            _facing = Normalized(heading);
+            if (TurnRate == null)
+            {
+                Heading = _facing;
+            }
+        }
+
+        private static double Normalized(double heading) => (heading % 360 + 360) % 360;
 
         /// <summary>Where the unit's feet (the sprite anchor) are, in field pixels.</summary>
         public Point Position { get; private set; }
@@ -44,12 +78,12 @@ namespace Viewer
                 return;
             }
 
-            Heading = HeadingOf(way);
+            Face(HeadingOf(way));
             Target = target;
         }
 
-        /// <summary>Turns the unit on the spot (degrees clockwise from south).</summary>
-        public void TurnTo(double heading) => Heading = (heading % 360 + 360) % 360;
+        /// <summary>Turns the unit on the spot (degrees clockwise from south); a slow unit only starts to turn.</summary>
+        public void TurnTo(double heading) => Face(heading);
 
         /// <summary>Stops walking where the unit is.</summary>
         public void Stop() => Target = null;
@@ -98,8 +132,7 @@ namespace Viewer
         /// </summary>
         public static double HeadingOf(Vector way)
         {
-            var degrees = Math.Atan2(-way.X, way.Y) * 180 / Math.PI;
-            return (degrees + 360) % 360;
+            return Normalized(Math.Atan2(-way.X, way.Y) * 180 / Math.PI);
         }
 
         private static double Length(Vector v) => Math.Sqrt(v.X * v.X + v.Y * v.Y);

@@ -28,6 +28,8 @@
                   ToolTip.Tip="Which of the unit's attacks to play, with the weapon it fires" />
         <Button x:Name="KillButton" Content="Kill" IsEnabled="False"
                 ToolTip.Tip="The selected units die and leave the field" />
+        <CheckBox x:Name="StandGroundBox" Content="Stand ground" IsEnabled="False"
+                  ToolTip.Tip="The selected units hold their place: they attack enemies within reach but do not go after them" />
       </StackPanel>
 
       <StackPanel Orientation="Horizontal" Spacing="8">

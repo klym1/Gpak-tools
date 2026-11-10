@@ -71,6 +71,39 @@ namespace UnitTests
             descriptor.AttackMinRangeOf("ATTACK2").Should().Be(100);
             descriptor.AttackMinRangeOf("ATTACK").Should().BeNull();
 
+            descriptor.Radius.Should().BeNull();
+            descriptor.SearchEnemyRadius.Should().BeNull();
+            descriptor.ShowsDelay.Should().BeFalse();
+        }
+
+        [Test]
+        public void ReadsHowAUnitMovesAndFights()
+        {
+            var files = GpTestFiles.UnitGameData(
+                "GEOMETRY 1 15 64",
+                "DET_RADIUS 0 0 200",
+                "DET_RADIUS\t0 150 9000",
+                "DET_RADIUS 2 0 150",
+                "SEARCH_ENEMY_RADIUS 550",
+                "RAZBROS 250",
+                "ROTATE 4",
+                "ZPOINTS 30 30",
+                "SHOWDELAY",
+                "STANDGROUND");
+            var descriptor = GpDescriptor.Parse("TST", files[0].Content);
+
+            descriptor.Radius.Should().Be(15);
+            descriptor.StepSize.Should().Be(64);
+            descriptor.DetectionRadiusOf("ATTACK").Should().Be((150, 9000), "the last line for an attack counts");
+            descriptor.DetectionRadiusOf("ATTACK2").Should().Be((0, 150));
+            descriptor.DetectionRadiusOf("ATTACK1").Should().BeNull();
+            descriptor.SearchEnemyRadius.Should().Be(550);
+            descriptor.Scatter.Should().Be(250);
+            descriptor.TurnRate.Should().Be(4);
+            descriptor.Height.Should().Be(30);
+            descriptor.ShowsDelay.Should().BeTrue();
+            descriptor.CanStandGround.Should().BeTrue();
+
             // Armor: the shield and the protection against the attack's kind of weapon come off the damage.
             descriptor.Shield.Should().Be(4);
             descriptor.Protections.Should().Equal(new System.Collections.Generic.Dictionary<string, int> { ["PIKA"] = 6, ["IADRO"] = 3 });

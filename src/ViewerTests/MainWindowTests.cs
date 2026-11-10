@@ -924,6 +924,219 @@ namespace ViewerTests
             }
         }
 
+        [AvaloniaTest]
+        public Task AUnitWalksAsFastAsItsGeometrySaysAndTakesItsRoom()
+        {
+            // A step of 64 is twice a foot soldier's 32.
+            return OnFieldWith(new[] { "GEOMETRY 1 15 64" }, async (window, unit) =>
+            {
+                var start = unit.Movement.Position;
+                Click(window, start + new Vector(200, 0), MouseButton.Right);
+                for (var i = 0; i < 5; i++)
+                {
+                    window.Tick();
+                }
+
+                Assert.That(unit.Movement.Position, Is.EqualTo(start + new Vector(5 * 2 * FieldUnit.DefaultStepLength, 0)));
+
+                // Sent to where another unit stands, it stops where its room (a radius of 15) and the other's meet.
+                unit.Movement.PlaceAt(start);
+                var other = window.AddToField("TST", start + new Vector(100, 0));
+                Click(window, start, MouseButton.Left);
+                window.Tick();
+                await window.RenderingCompleted;
+                Click(window, other.Movement.Position, MouseButton.Right);
+                for (var i = 0; i < 40; i++)
+                {
+                    window.Tick();
+                }
+
+                Assert.That(unit.Movement.IsWalking, Is.False);
+                Assert.That(
+                    FieldPath.GroundDistance(other.Movement.Position, unit.Movement.Position),
+                    Is.InRange(30 - FieldPath.CellSize, 30 + 2 * FieldPath.CellSize));
+            });
+        }
+
+        [AvaloniaTest]
+        public Task ASlowUnitTurnsWhereItStandsBeforeItWalksOrFires()
+        {
+            // ROTATE 16 is a sixteenth of a turn (22.5 degrees) a tick.
+            return OnFieldWith(new[] { "ROTATE 16" }, async (window, unit) =>
+            {
+                // Facing south and sent east: a quarter turn takes 4 ticks, on the spot.
+                var start = unit.Movement.Position;
+                Click(window, start + new Vector(100, 0), MouseButton.Right);
+                Assert.That(unit.Movement.Heading, Is.EqualTo(0));
+                for (var i = 1; i <= 4; i++)
+                {
+                    window.Tick();
+                    Assert.That(unit.Movement.Position, Is.EqualTo(start));
+                    Assert.That(unit.Movement.Heading, Is.EqualTo(360 - 22.5 * i));
+                    Assert.That(unit.State.Code, Is.EqualTo("STAND"));
+                }
+
+                window.Tick();
+                Assert.That(unit.State.Code, Is.EqualTo("MOTION_L+MOTION_R"));
+                Assert.That(unit.Movement.Position, Is.EqualTo(start + new Vector(FieldUnit.DefaultStepLength, 0)));
+
+                // Sent against an enemy to its west, it turns half round (8 ticks) before it fires.
+                unit.Movement.PlaceAt(start);
+                var enemy = await AddEnemy(window, start + new Vector(-100, 0));
+                Click(window, enemy.Movement.Position, MouseButton.Right);
+                for (var i = 0; i < 8; i++)
+                {
+                    window.Tick();
+                    Assert.That(unit.State.Code, Is.EqualTo("STAND"));
+                }
+
+                window.Tick();
+                Assert.That(unit.Movement.Heading, Is.EqualTo(90));
+                Assert.That(unit.State.Code, Is.EqualTo("ATTACK"));
+            });
+        }
+
+        [AvaloniaTest]
+        public Task AnIdleUnitTakesOnAnEnemyWithinItsSearchRadiusUnlessItStandsGround()
+        {
+            return OnFieldWith(new[] { "SEARCH_ENEMY_RADIUS 350", "STANDGROUND" }, async (window, unit) =>
+            {
+                // 180 pixels up the screen is 360 on the ground, too far to notice; 320 is not, and beyond the
+                // shot's reach of 300.
+                var far = await AddEnemy(window, unit.Movement.Position + new Vector(0, -180));
+                window.Tick();
+                Assert.That(unit.Target, Is.Null);
+                Assert.That(far.Target, Is.Null);
+
+                var near = await AddEnemy(window, unit.Movement.Position + new Vector(-320, 0));
+                window.Tick();
+                Assert.That(unit.Target, Is.SameAs(near));
+                Assert.That(unit.Movement.IsWalking, Is.True);
+                Assert.That(near.Target, Is.SameAs(unit));
+
+                // Holding its place it lets the enemy be, until it has come within reach.
+                var box = window.FindControl<CheckBox>("StandGroundBox");
+                Assert.That(box.IsEnabled, Is.True);
+                Assert.That(box.IsChecked, Is.False);
+                window.StandGroundWithSelected(true);
+                Assert.That(box.IsChecked, Is.True);
+                near.Target = null;
+                near.Movement.PlaceAt(near.Movement.Position);
+                var held = unit.Movement.Position;
+                window.Tick();
+                Assert.That(unit.Target, Is.Null);
+                Assert.That(unit.Movement.IsWalking, Is.False);
+
+                near.Movement.PlaceAt(held + new Vector(-250, 0));
+                near.StandsGround = true;
+                window.Tick();
+                Assert.That(unit.Target, Is.SameAs(near));
+                Assert.That(unit.Movement.Position, Is.EqualTo(held));
+                Assert.That(unit.State.Code, Is.EqualTo("ATTACK"));
+
+                // Sent against an enemy out of reach, it goes all the same.
+                unit.Target = null;
+                Click(window, far.Movement.Position, MouseButton.Right);
+                for (var i = 0; i < 5; i++)
+                {
+                    window.Tick();
+                }
+
+                Assert.That(unit.Target, Is.SameAs(far));
+                Assert.That(unit.Movement.IsWalking, Is.True);
+            });
+        }
+
+        [AvaloniaTest]
+        public Task AUnitChoosesTheAttackWhoseDetectionRadiusTheEnemyIsIn()
+        {
+            // The cannon (attack 0) is for 150 pixels and more, the mortar (attack 2, which reaches 100 to 200) for less.
+            var lines = new[] { "DET_RADIUS 0 0 50", "DET_RADIUS 0 150 9000", "DET_RADIUS 2 0 150", "DAMAGE 2 1" };
+            return OnFieldWith(lines, async (window, unit) =>
+            {
+                var enemy = await AddEnemy(window, unit.Movement.Position + new Vector(120, 0));
+                Click(window, enemy.Movement.Position, MouseButton.Right);
+                window.Tick();
+                Assert.That(unit.State.Code, Is.EqualTo("ATTACK2"));
+
+                enemy.Movement.PlaceAt(unit.Movement.Position + new Vector(180, 0));
+                for (var i = 0; i < 10 && unit.State.Code != "ATTACK"; i++)
+                {
+                    window.Tick();
+                }
+
+                Assert.That(unit.State.Code, Is.EqualTo("ATTACK"));
+            });
+        }
+
+        [AvaloniaTest]
+        public Task ShotsScatterAroundTheirAimAndHitATargetAtItsHeight()
+        {
+            // At 200 pixels a scatter of 512 (per 2048) is 50 pixels; the unit is 30 pixels high.
+            return OnFieldWith(new[] { "RAZBROS 512", "ZPOINTS 30 30" }, async (window, unit) =>
+            {
+                unit.Movement.TurnTo(90);
+                var aim = unit.Movement.Position + new Vector(-300, 0);
+                var landings = new System.Collections.Generic.List<Point>();
+                for (var shot = 0; shot < 20; shot++)
+                {
+                    window.AttackWithSelected();
+                    for (var i = 0; i < 6; i++)
+                    {
+                        window.Tick();
+                        landings.AddRange(window.Effects.Where(effect => effect.Flight != null).Select(effect => effect.Flight.Value.To));
+                    }
+                }
+
+                Assert.That(landings, Is.Not.Empty);
+                Assert.That(landings.Select(landing => FieldPath.GroundDistance(landing, aim)), Is.All.LessThanOrEqualTo(300 * 512 / 2048.0 + 1e-6));
+                Assert.That(landings.Distinct().Count(), Is.GreaterThan(5));
+            });
+        }
+
+        [AvaloniaTest]
+        public Task AShotThatLandsOnItsTargetFliesToItsHeight()
+        {
+            return OnFieldWith(new[] { "ZPOINTS 30 30" }, async (window, unit) =>
+            {
+                var enemy = await AddEnemy(window, unit.Movement.Position + new Vector(-200, 0));
+                enemy.StandsGround = true;
+                Click(window, enemy.Movement.Position, MouseButton.Right);
+                FieldUnitView shell = null;
+                for (var i = 0; i < 10 && shell == null; i++)
+                {
+                    window.Tick();
+                    shell = window.Effects.FirstOrDefault(effect => effect.Flight != null);
+                }
+
+                Assert.That(shell, Is.Not.Null);
+                Assert.That(shell.Flight.Value.To, Is.EqualTo(enemy.Movement.Position + new Vector(0, -30)));
+            });
+        }
+
+        [AvaloniaTest]
+        public Task AUnitThatShowsItsDelayHasABarWhileItRests()
+        {
+            return OnFieldWith(new[] { "SHOWDELAY" }, (window, unit) =>
+            {
+                // The attack has 3 frames and a rest of 2 ticks after it.
+                window.AttackWithSelected();
+                Assert.That(unit.ReloadBar.IsVisible, Is.False);
+                window.Tick();
+                window.Tick();
+                window.Tick();
+                Assert.That(unit.PauseTicksLeft, Is.EqualTo(2));
+                Assert.That(unit.ReloadBar.IsVisible, Is.True);
+                Assert.That(unit.ReloadBar.Width, Is.EqualTo(1), "nothing of the rest is over");
+
+                window.Tick();
+                Assert.That(unit.ReloadBar.Width, Is.EqualTo(15), "half of it");
+                window.Tick();
+                Assert.That(unit.ReloadBar.IsVisible, Is.False);
+                return Task.CompletedTask;
+            });
+        }
+
         /// <summary>The first of the units the field starts with, the others taken off it.</summary>
         private static FieldUnitView OnlyUnit(MainWindow window)
         {
@@ -935,13 +1148,59 @@ namespace ViewerTests
             return window.FieldUnits.Single();
         }
 
-        private static string UnitArchiveFolder(out string archive)
+        private static string UnitArchiveFolder(out string archive, params string[] unitLines)
         {
             var folder = Path.Combine(Path.GetTempPath(), "viewer-field-" + Guid.NewGuid());
             Directory.CreateDirectory(folder);
             archive = Path.Combine(folder, "All.gsc");
-            File.WriteAllBytes(archive, UnitTests.GpTestFiles.GameArchive(UnitTests.GpTestFiles.UnitGameData()));
+            File.WriteAllBytes(archive, UnitTests.GpTestFiles.GameArchive(UnitTests.GpTestFiles.UnitGameData(unitLines)));
             return folder;
+        }
+
+        /// <summary>
+        /// Runs a test on the field of a paused window whose unit has more descriptor lines: one unit of the
+        /// player's is on it, selected.
+        /// </summary>
+        private static async Task OnFieldWith(string[] unitLines, Func<MainWindow, FieldUnitView, Task> test)
+        {
+            var folder = UnitArchiveFolder(out var archive, unitLines);
+            try
+            {
+                var window = new MainWindow(archive) { SoundPlayer = new RecordingSoundPlayer() };
+                window.Show();
+                await window.RenderingCompleted;
+                window.Pause();
+                window.UpdateLayout();
+
+                var unit = OnlyUnit(window);
+                unit.Movement.PlaceAt(new Point(400, 200));
+                window.Tick();
+                await window.RenderingCompleted;
+
+                await test(window, unit);
+                window.Close();
+            }
+            finally
+            {
+                Directory.Delete(folder, true);
+            }
+        }
+
+        /// <summary>Puts an enemy of the player's units on the field, leaving the selection as it is.</summary>
+        private static async Task<FieldUnitView> AddEnemy(MainWindow window, Point at)
+        {
+            // Deselected first, so the selection keeps its color.
+            var selected = window.SelectedFieldUnits;
+            Click(window, new Point(700, 20), MouseButton.Left);
+            await window.SetPlayerColor(NationColorOffset.Red);
+            var enemy = window.AddToField("TST", at);
+            Click(window, new Point(700, 20), MouseButton.Left);
+            foreach (var unit in selected)
+            {
+                Click(window, unit.Movement.Position, MouseButton.Left, RawInputModifiers.Shift);
+            }
+
+            return enemy;
         }
 
         private static Point OnWindow(MainWindow window, Point fieldPoint) =>

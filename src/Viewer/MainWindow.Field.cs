@@ -53,6 +53,15 @@ namespace Viewer
 
         private const double LifeBarWidth = 30;
 
+        /// <summary>The <c>GEOMETRY</c> step of a foot soldier, who walks <see cref="FieldUnit.DefaultStepLength"/> a frame.</summary>
+        private const double FootStepSize = 32;
+
+        /// <summary><c>ROTATE</c> is taken as parts of a turn per tick, a full turn being this many.</summary>
+        private const double TurnParts = 256;
+
+        /// <summary><c>RAZBROS</c> is taken as how far, in pixels, a shot at this distance may land from its aim.</summary>
+        private const double ScatterDistance = 2048;
+
         /// <summary>How far, in pixels, an enemy moves before the way to it is planned again.</summary>
         private const double RetargetDistance = 12;
 
@@ -142,15 +151,23 @@ namespace Viewer
 
         private FieldUnitView AddToField(GameObject kind, Point? at = null, NationColorOffset? color = null)
         {
+            var descriptor = kind.Descriptor;
+            var movement = new FieldUnit(at ?? FreePlace())
+            {
+                StepLength = FieldUnit.DefaultStepLength * (descriptor.StepSize is > 0 and var step ? step : FootStepSize) / FootStepSize,
+                TurnRate = descriptor.TurnRate * 360 / TurnParts,
+            };
 
-            var unit = new FieldUnitView(kind, color ?? PlayerColor, StandStateOf(kind), new FieldUnit(at ?? FreePlace()))
+            var unit = new FieldUnitView(kind, color ?? PlayerColor, StandStateOf(kind), movement)
             {
                 Ring = new Ellipse { Stroke = RingBrush, StrokeThickness = 2, IsHitTestVisible = false, IsVisible = false },
                 Marker = new Ellipse { Width = 14, Height = 7, Stroke = Brushes.White, StrokeThickness = 1.5, IsHitTestVisible = false, IsVisible = false },
-                LifeBar = new Rectangle { Height = 3, Fill = RingBrush, IsHitTestVisible = false, IsVisible = false, ZIndex = 99999 },
+                LifeBar = Bar(3, RingBrush),
+                ReloadBar = Bar(2, Brushes.White),
             };
 
             Field.Children.Add(unit.LifeBar);
+            Field.Children.Add(unit.ReloadBar);
 
             Field.Children.Add(unit.Ring);
             Field.Children.Add(unit.Marker);
@@ -160,6 +177,9 @@ namespace Viewer
             Select(new[] { unit }, add: false);
             return unit;
         }
+
+        private static Rectangle Bar(double height, IBrush fill) =>
+            new Rectangle { Height = height, Fill = fill, IsHitTestVisible = false, IsVisible = false, ZIndex = 99999 };
 
         /// <summary>Removes the selected units from the field.</summary>
         public void RemoveSelectedFromField()
@@ -219,6 +239,21 @@ namespace Viewer
             foreach (var unit in SelectedFieldUnits.Where(unit => IsEnemy(unit, target)))
             {
                 unit.Target = target;
+                unit.TargetIsOrdered = true;
+            }
+
+            UpdateFieldView();
+        }
+
+        /// <summary>
+        /// Tells the selected units that can (<c>STANDGROUND</c>) to hold their place, or to stop holding it: a
+        /// unit holding its place attacks the enemies that come within reach, but goes after one only when sent.
+        /// </summary>
+        public void StandGroundWithSelected(bool hold)
+        {
+            foreach (var unit in SelectedFieldUnits.Where(unit => unit.Kind.Descriptor.CanStandGround))
+            {
+                unit.StandsGround = hold;
             }
 
             UpdateFieldView();
@@ -272,22 +307,35 @@ namespace Viewer
             Fires(unit.Kind, attack)
             && FieldPath.GroundDistance(unit.Movement.Position, target.Movement.Position) < (unit.Kind.Descriptor.AttackMinRangeOf(attack.Code) ?? 0);
 
+        /// <summary>Whether a target is at a distance at which the unit chooses an attack: within its <c>DET_RADIUS</c>, if it has one.</summary>
+        private static bool IsChosenAt(FieldUnitView unit, FieldUnitView target, GameObjectState attack)
+        {
+            var away = FieldPath.GroundDistance(unit.Movement.Position, target.Movement.Position);
+            return unit.Kind.Descriptor.DetectionRadiusOf(attack.Code) is not { } band || (away >= band.Min && away <= band.Max);
+        }
+
         /// <summary>
-        /// The attack a unit makes on a target: the chosen one, or the first of its others that the target is
-        /// not too near for; null if it is too near for all of them.
+        /// The attack a unit makes on a target, of those the target is not too near for: the one it chooses at
+        /// that distance, the picked one first, or else just the picked one or the first of the others. Null if
+        /// the target is too near for all of them.
         /// </summary>
         private static GameObjectState AttackOn(FieldUnitView unit, FieldUnitView target, GameObjectState chosen)
         {
-            return IsTooNear(unit, target, chosen)
-                ? AttacksOf(unit.Kind).FirstOrDefault(attack => !IsTooNear(unit, target, attack))
-                : chosen;
+            var attacks = AttacksOf(unit.Kind).Prepend(chosen).Where(attack => !IsTooNear(unit, target, attack)).ToList();
+            return attacks.FirstOrDefault(attack => IsChosenAt(unit, target, attack)) ?? attacks.FirstOrDefault();
         }
+
+        /// <summary>Whether a unit can attack a target from where it stands.</summary>
+        private bool CanReach(FieldUnitView unit, FieldUnitView target) =>
+            ChosenAttackOf(unit.Kind) is { } chosen
+            && AttackOn(unit, target, chosen) is { } attack
+            && IsWithinReach(unit, target, attack);
 
         private static double ShotReachOf(FieldUnitView unit, string attack) =>
             unit.Kind.Descriptor.AttackRangeOf(attack) ?? ShotReach;
 
-        /// <summary>The room a unit takes on the ground, as a radius: half its selection ring.</summary>
-        private static double RadiusOf(FieldUnitView unit) => RingWidthOf(unit) / 2;
+        /// <summary>The room a unit takes on the ground, as a radius: its <c>GEOMETRY</c>'s, or half its selection ring.</summary>
+        private static double RadiusOf(FieldUnitView unit) => unit.Kind.Descriptor.Radius ?? RingWidthOf(unit) / 2;
 
         private static void Halt(FieldUnitView unit)
         {
@@ -394,6 +442,15 @@ namespace Viewer
         /// </summary>
         private void StepAlongRoute(FieldUnitView unit)
         {
+            // A slow unit turns where it stands before it walks on.
+            if (unit.Movement.Turn())
+            {
+                SetFieldState(unit, StandStateOf(unit.Kind));
+                return;
+            }
+
+            SetFieldState(unit, WalkStateOf(unit.Kind));
+
             var blocker = BlockerOf(unit);
             if (blocker == null)
             {
@@ -426,14 +483,49 @@ namespace Viewer
             WalkTo(unit, unit.Goal ?? unit.Movement.Target ?? unit.Movement.Position, other => ReferenceEquals(other, unit.Target));
         }
 
-        /// <summary>An idle unit that is attacked turns on its attacker, if it can attack at all.</summary>
+        /// <summary>
+        /// An idle unit that is attacked turns on its attacker, if it can attack at all, and if it need not
+        /// leave a place it holds.
+        /// </summary>
         private void FightBack(FieldUnitView unit, FieldUnitView attacker)
         {
-            var idle = unit.Target == null && !unit.IsDead && !unit.PlaysOnce && !unit.Movement.IsWalking;
-            if (idle && AttackStateOf(unit.Kind) != null)
+            if (CanTakeOn(unit, attacker))
             {
-                unit.Target = attacker;
+                TakeOn(unit, attacker);
             }
+        }
+
+        /// <summary>An idle unit takes on the nearest enemy within its <c>SEARCH_ENEMY_RADIUS</c>.</summary>
+        private void LookForEnemy(FieldUnitView unit)
+        {
+            if (unit.Kind.Descriptor.SearchEnemyRadius is not { } radius)
+            {
+                return;
+            }
+
+            var enemy = _fieldUnits
+                .Where(other => IsEnemy(unit, other) && !other.IsDead && CanTakeOn(unit, other))
+                .Select(other => (Unit: other, Away: FieldPath.GroundDistance(unit.Movement.Position, other.Movement.Position)))
+                .Where(found => found.Away <= radius)
+                .OrderBy(found => found.Away)
+                .Select(found => found.Unit)
+                .FirstOrDefault();
+            if (enemy != null)
+            {
+                TakeOn(unit, enemy);
+            }
+        }
+
+        private bool CanTakeOn(FieldUnitView unit, FieldUnitView enemy)
+        {
+            var idle = unit.Target == null && !unit.IsDead && !unit.PlaysOnce && !unit.Movement.IsWalking;
+            return idle && AttackStateOf(unit.Kind) != null && (!unit.StandsGround || CanReach(unit, enemy));
+        }
+
+        private static void TakeOn(FieldUnitView unit, FieldUnitView enemy)
+        {
+            unit.Target = enemy;
+            unit.TargetIsOrdered = false;
         }
 
         /// <summary>
@@ -523,7 +615,8 @@ namespace Viewer
             {
                 Halt(unit);
                 unit.Movement.TurnTo(FieldUnit.HeadingOf(way));
-                if (attack == null || resting)
+                var turning = unit.Movement.Turn();
+                if (attack == null || resting || turning)
                 {
                     SetFieldState(unit, StandStateOf(unit.Kind));
                     return;
@@ -531,6 +624,12 @@ namespace Viewer
 
                 PlayOnce(unit, attack);
                 FightBack(target, unit);
+            }
+            else if (unit.StandsGround && !unit.TargetIsOrdered)
+            {
+                unit.Target = null;
+                Halt(unit);
+                SetFieldState(unit, StandStateOf(unit.Kind));
             }
             else
             {
@@ -549,6 +648,7 @@ namespace Viewer
             Field.Children.Remove(unit.Ring);
             Field.Children.Remove(unit.Marker);
             Field.Children.Remove(unit.LifeBar);
+            Field.Children.Remove(unit.ReloadBar);
             _fieldUnits.Remove(unit);
         }
 
@@ -575,6 +675,11 @@ namespace Viewer
                 unit.PauseTicksLeft--;
             }
 
+            if (unit.Target == null)
+            {
+                LookForEnemy(unit);
+            }
+
             if (unit.Target != null)
             {
                 Pursue(unit, resting);
@@ -586,7 +691,8 @@ namespace Viewer
                 // The attack is over (its target is hit, and the unit rests), or the unit has fallen and now lies dead.
                 if (!unit.IsDead)
                 {
-                    unit.PauseTicksLeft = unit.Kind.Descriptor.AttackPauseOf(unit.State.Code) ?? 0;
+                    unit.PauseTicks = unit.Kind.Descriptor.AttackPauseOf(unit.State.Code) ?? 0;
+                    unit.PauseTicksLeft = unit.PauseTicks;
                 }
 
                 // A blow lands as the attack ends; a shot does its damage where and when it lands.
@@ -761,6 +867,7 @@ namespace Viewer
             RemoveUnitsButton.Click += (sender, args) => RemoveSelectedFromField();
             AttackButton.Click += (sender, args) => AttackWithSelected();
             KillButton.Click += (sender, args) => KillSelected();
+            StandGroundBox.Click += (sender, args) => StandGroundWithSelected(StandGroundBox.IsChecked == true);
             PlayerColorBox.SelectionChanged += (sender, args) =>
             {
                 // The color picker recolors the selected units (and is the color of units added next).
@@ -1117,14 +1224,19 @@ namespace Viewer
                 Canvas.SetLeft(unit.Ring, feet.X - ringWidth / 2);
                 Canvas.SetTop(unit.Ring, feet.Y - ringHeight / 2);
 
-                var wounded = !unit.IsDead && unit.Life < unit.FullLife;
-                unit.LifeBar.IsVisible = wounded;
-                if (wounded)
-                {
-                    unit.LifeBar.Width = Math.Max(1, Math.Round(LifeBarWidth * unit.Life / (double) unit.FullLife));
-                    Canvas.SetLeft(unit.LifeBar, feet.X - LifeBarWidth / 2);
-                    Canvas.SetTop(unit.LifeBar, (unit.DrawnBounds?.Top ?? feet.Y - 40) - 6);
-                }
+                var barsTop = (unit.DrawnBounds?.Top ?? feet.Y - 40) - 6;
+                ShowBar(
+                      unit.LifeBar
+                    , !unit.IsDead && unit.Life < unit.FullLife
+                    , unit.Life / (double) unit.FullLife
+                    , new Point(feet.X, barsTop)
+                );
+                ShowBar(
+                      unit.ReloadBar
+                    , !unit.IsDead && unit.Kind.Descriptor.ShowsDelay && unit.PauseTicksLeft > 0
+                    , 1 - unit.PauseTicksLeft / (double) Math.Max(1, unit.PauseTicks)
+                    , new Point(feet.X, barsTop + 4)
+                );
 
                 var target = unit.Goal ?? unit.Movement.Target;
                 unit.Marker.IsVisible = unit.IsSelected && target != null;
@@ -1139,10 +1251,26 @@ namespace Viewer
             RemoveUnitsButton.IsEnabled = selected > 0;
             AttackButton.IsEnabled = selected > 0;
             KillButton.IsEnabled = selected > 0;
+
+            var holders = _fieldUnits.Where(unit => unit.IsSelected && unit.Kind.Descriptor.CanStandGround).ToList();
+            StandGroundBox.IsEnabled = holders.Count > 0;
+            StandGroundBox.IsChecked = holders.Count > 0 && holders.All(unit => unit.StandsGround);
             UpdateAttackBox();
             FieldHint.Text = selected == 0
                 ? "Click a unit, or drag a box around several, to select them (Shift adds to the selection). Pick a unit in the list to put another one on the field."
                 : selected + (selected == 1 ? " unit" : " units") + " selected: right-click where to go, or an enemy (a unit of another color) to attack it. Delete removes them.";
+        }
+
+        /// <summary>Shows a bar filled to a share of its width, its top middle at a point; or hides it.</summary>
+        private static void ShowBar(Rectangle bar, bool visible, double share, Point topMiddle)
+        {
+            bar.IsVisible = visible;
+            if (visible)
+            {
+                bar.Width = Math.Max(1, Math.Round(LifeBarWidth * Math.Clamp(share, 0, 1)));
+                Canvas.SetLeft(bar, topMiddle.X - LifeBarWidth / 2);
+                Canvas.SetTop(bar, topMiddle.Y);
+            }
         }
 
         /// <summary>
@@ -1221,9 +1349,14 @@ namespace Viewer
                 var heading = unit.Movement.Heading * Math.PI / 180;
                 var ahead = new Vector(-Math.Sin(heading), Math.Cos(heading));
                 var reach = ShotReachOf(unit, unit.State.Code) / FieldPath.GroundDistance(default, new Point(ahead.X, ahead.Y));
-                var where = unit.Target != null
+                var aim = unit.Target != null
                     ? AimAt(unit.Target, takesTime ? TicksToImpact : 0)
                     : ClampToField(unit.Movement.Position + ahead * reach);
+                var where = Scattered(unit, aim);
+
+                // A shot that lands on its target hits it as high as the target is (ZPOINTS), not at its feet.
+                var onTarget = unit.Target != null && FieldPath.GroundDistance(where, aim) <= RadiusOf(unit.Target) + HitSlack;
+                var end = where - new Vector(0, onTarget ? unit.Target.Kind.Descriptor.Height ?? 0 : 0);
 
                 foreach (var flight in flying)
                 {
@@ -1232,7 +1365,7 @@ namespace Viewer
                     var projectile = AddEffect(flight.Animation, from, FieldUnit.HeadingOf(where - from));
                     if (projectile != null)
                     {
-                        projectile.Flight = (from, where, height, TicksToImpact);
+                        projectile.Flight = (from, end, height, TicksToImpact);
                     }
                 }
 
@@ -1261,6 +1394,23 @@ namespace Viewer
                     );
                 }
             }
+        }
+
+        /// <summary>
+        /// Where a shot aimed at a point lands: anywhere within the unit's scatter (<c>RAZBROS</c>) of it, which
+        /// grows with the distance.
+        /// </summary>
+        private Point Scattered(FieldUnitView unit, Point aim)
+        {
+            if (unit.Kind.Descriptor.Scatter is not { } scatter)
+            {
+                return aim;
+            }
+
+            var radius = FieldPath.GroundDistance(unit.Movement.Position, aim) * scatter / ScatterDistance;
+            var away = radius * Math.Sqrt(_random.NextDouble());
+            var angle = _random.NextDouble() * 2 * Math.PI;
+            return ClampToField(aim + new Vector(Math.Cos(angle) * away, Math.Sin(angle) * away / FieldPath.Slant));
         }
 
         /// <summary>

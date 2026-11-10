@@ -101,6 +101,57 @@ namespace GPExtractor
         /// <summary>How near an attack animation can still be made, as <see cref="AttackRangeOf"/>.</summary>
         public int? AttackMinRangeOf(string animation) => ValueOf(AttackMinRanges, animation);
 
+        /// <summary>
+        /// The <c>DET_RADIUS attack min max</c> lines, by attack: the distances, in pixels on the ground, at which
+        /// the object chooses each attack.
+        /// </summary>
+        public IReadOnlyDictionary<int, (int Min, int Max)> DetectionRadii { get; private init; } = new Dictionary<int, (int, int)>();
+
+        /// <summary>The distances at which an attack animation is chosen, as <see cref="DamageOf"/>; null if not given.</summary>
+        public (int Min, int Max)? DetectionRadiusOf(string animation) =>
+            DetectionRadii.TryGetValue(AttackNumberOf(animation), out var band) ? band : null;
+
+        /// <summary>The <c>SEARCH_ENEMY_RADIUS</c> line: how far, in pixels on the ground, the object looks for enemies.</summary>
+        public int? SearchEnemyRadius => Number(SearchEnemyRadiusKey);
+
+        /// <summary>The <c>RAZBROS</c> line: how widely the object's shots scatter around the point they are aimed at.</summary>
+        public int? Scatter => Number(ScatterKey);
+
+        /// <summary>The <c>ROTATE</c> line: how fast the object turns; null if it turns at once.</summary>
+        public int? TurnRate => Number(TurnRateKey);
+
+        /// <summary>The <c>ZPOINTS</c> line: how high above the ground the object is hit, in pixels.</summary>
+        public int? Height => Number(HeightKey);
+
+        /// <summary>The <c>GEOMETRY one radius step</c> line: the room the object takes on the ground, as a radius in pixels.</summary>
+        public int? Radius { get; private init; }
+
+        /// <summary>The step of the <c>GEOMETRY</c> line: how far the object walks at a time.</summary>
+        public int? StepSize { get; private init; }
+
+        /// <summary>The <c>SHOWDELAY</c> line: the wait before the object can attack again is shown.</summary>
+        public bool ShowsDelay => Flags.Contains("SHOWDELAY");
+
+        /// <summary>The <c>STANDGROUND</c> line: the object can be told to hold its place.</summary>
+        public bool CanStandGround => Flags.Contains("STANDGROUND");
+
+        private const string SearchEnemyRadiusKey = "SEARCH_ENEMY_RADIUS";
+        private const string ScatterKey = "RAZBROS";
+        private const string TurnRateKey = "ROTATE";
+        private const string HeightKey = "ZPOINTS";
+
+        private static readonly HashSet<string> NumberKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            SearchEnemyRadiusKey, ScatterKey, TurnRateKey, HeightKey,
+        };
+
+        // The first number of the lines named in NumberKeys, and the lines that are one word.
+        private IReadOnlyDictionary<string, int> Numbers { get; init; } = new Dictionary<string, int>();
+
+        private IReadOnlySet<string> Flags { get; init; } = new HashSet<string>();
+
+        private int? Number(string key) => Numbers.TryGetValue(key, out var value) ? value : null;
+
         /// <summary>The <c>SHIELD</c> line: armor taken off the damage of every hit; 0 if there is none.</summary>
         public int Shield { get; private init; }
 
@@ -180,12 +231,22 @@ namespace GPExtractor
             var attackMinRanges = new List<(int Attack, int Value)>();
             var weaponKinds = new List<(int Attack, string Kind)>();
             var protections = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var detectionRadii = new Dictionary<int, (int Min, int Max)>();
+            var numbers = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var flags = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var shield = 0;
             int? life = null;
+            int? radius = null;
+            int? stepSize = null;
 
             foreach (var line in text.Split('\n'))
             {
                 var tokens = line.Split(Whitespace, StringSplitOptions.RemoveEmptyEntries);
+                if (tokens.Length == 1)
+                {
+                    flags.Add(tokens[0]);
+                }
+
                 if (tokens.Length < 2)
                 {
                     continue;
@@ -256,6 +317,23 @@ namespace GPExtractor
                     attackMinRanges.Add((rangeAttack, rangeMin));
                     attackRanges.Add((rangeAttack, rangeValue));
                 }
+                else if (tokens.Length >= 4 && tokens[0].Equals("DET_RADIUS", StringComparison.OrdinalIgnoreCase)
+                         && TryInt(tokens[1], out var detectionAttack) && TryInt(tokens[2], out var detectionMin)
+                         && TryInt(tokens[3], out var detectionMax))
+                {
+                    // Some descriptors give an attack twice: the last line counts.
+                    detectionRadii[detectionAttack] = (detectionMin, detectionMax);
+                }
+                else if (tokens.Length >= 4 && tokens[0].Equals("GEOMETRY", StringComparison.OrdinalIgnoreCase)
+                         && TryInt(tokens[2], out var geometryRadius) && TryInt(tokens[3], out var geometryStep))
+                {
+                    radius = geometryRadius;
+                    stepSize = geometryStep;
+                }
+                else if (NumberKeys.Contains(tokens[0]) && TryInt(tokens[1], out var number))
+                {
+                    numbers[tokens[0]] = number;
+                }
                 else if (tokens[0].Equals("SHIELD", StringComparison.OrdinalIgnoreCase) && TryInt(tokens[1], out var shieldValue))
                 {
                     shield = shieldValue;
@@ -308,6 +386,11 @@ namespace GPExtractor
                 AttackPauses = attackPauses,
                 AttackRanges = attackRanges,
                 AttackMinRanges = attackMinRanges,
+                DetectionRadii = detectionRadii,
+                Numbers = numbers,
+                Flags = flags,
+                Radius = radius,
+                StepSize = stepSize,
                 Shield = shield,
                 Protections = protections,
                 WeaponKinds = weaponKinds,

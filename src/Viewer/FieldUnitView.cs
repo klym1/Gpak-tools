@@ -30,6 +30,15 @@ namespace Viewer
         /// <summary>Ticks the unit still rests after its last attack before it can attack again.</summary>
         public int PauseTicksLeft { get; internal set; }
 
+        /// <summary>How long the rest after its last attack is in all.</summary>
+        internal int PauseTicks { get; set; }
+
+        /// <summary>Whether the unit holds its place: it attacks what comes within reach but does not go after it.</summary>
+        public bool StandsGround { get; internal set; }
+
+        /// <summary>Whether the unit was sent against its target, and did not pick it itself.</summary>
+        internal bool TargetIsOrdered { get; set; }
+
         /// <summary>The kind of unit (its descriptor).</summary>
         public GameObject Kind { get; }
 
@@ -92,6 +101,9 @@ namespace Viewer
 
         /// <summary>Shows the life left, above a wounded unit.</summary>
         internal Rectangle LifeBar { get; set; }
+
+        /// <summary>Shows how far the rest after an attack has got, under the life bar.</summary>
+        internal Rectangle ReloadBar { get; set; }
 
         /// <summary>The frames drawn last; kept until the frames for a new state or direction are ready.</summary>
         internal FieldFrames Shown { get; set; }
