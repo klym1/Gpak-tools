@@ -110,12 +110,18 @@ namespace UnitTests
             var palette = ImageRenderer.Palette.Load(paletteFile);
             File.Delete(paletteFile);
 
-            var file = GpFile.Parse(GpTestFiles.Build(new[]
-            {
-                GpTestFiles.Line(0, 0, 1, 255),
-                GpTestFiles.Line(1, 0, 1, 128),
-                GpTestFiles.Line(2, 0, 1, 7),
-            }));
+            // One pixel each of the grays 255, 128 and 7, as plain palette colors.
+            GpTestFiles.Part Pixel(int x, byte color) => new GpTestFiles.Part(
+                  GpPartType.Uncompressed
+                , 1
+                , new byte[] { 0x01, 0, 1 }
+                , 1
+                , new[] { color }
+                , X: x
+                , Width: 1
+            );
+
+            var file = GpFile.Parse(GpTestFiles.Build(new[] { Pixel(0, 255), Pixel(1, 128), Pixel(2, 7) }));
             var fog = System.Drawing.Color.FromArgb(255, 180, 180, 170);
             var renderer = new ImageRenderer.GpRenderer(palette) { Fog = fog };
 
@@ -123,6 +129,31 @@ namespace UnitTests
 
             image.Pixels.Take(3).Select(pixel => (int) pixel.A).Should().Equal(255, 16 * 255 / 31, 0);
             image.Pixels.Take(2).Select(pixel => (pixel.R, pixel.G, pixel.B)).Should().AllBeEquivalentTo((fog.R, fog.G, fog.B));
+        }
+
+        [Test]
+        public void DrawsTranslucentPartsAsLightNotAsPaletteColors()
+        {
+            // Values are brightness level x 8 + step, as in the game's explosions: level 2 (gray 28) at step 1,
+            // level 12 (gray 132) at steps 4 and 7, level 19 (gray 216) at step 7.
+            var file = GpFile.Parse(GpTestFiles.Build(new[]
+            {
+                GpTestFiles.Line(0, 0, 1, 2 * 8 + 1),
+                GpTestFiles.Line(1, 0, 1, 12 * 8 + 4),
+                GpTestFiles.Line(2, 0, 1, 12 * 8 + 7),
+                GpTestFiles.Line(3, 0, 1, 19 * 8 + 7),
+            }));
+            var paletteFile = Path.Combine(Path.GetTempPath(), "light-test-" + Guid.NewGuid() + ".pal");
+            File.WriteAllBytes(paletteFile, new byte[768]);
+            var palette = ImageRenderer.Palette.Load(paletteFile);
+            File.Delete(paletteFile);
+
+            var image = new ImageRenderer.GpRenderer(palette).Render(file, file.Frames[0]).Image;
+
+            // Laid over black each gives its gray whatever the step; the step is how much of the background it hides.
+            image.Pixels.Take(4).Select(pixel => (int) pixel.A).Should().Equal(64, 159, 255, 255);
+            image.Pixels.Take(4).Select(pixel => (int) Math.Round(pixel.R * pixel.A / 255.0)).Should().Equal(28, 132, 132, 216);
+            image.Pixels[1].Should().Match<System.Drawing.Color>(pixel => pixel.R == pixel.G && pixel.G == pixel.B);
         }
 
         [Test]

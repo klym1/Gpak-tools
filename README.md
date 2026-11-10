@@ -93,12 +93,12 @@ After the rows comes one unused byte, then the color data. The pixel values fill
 | 1 | Player color | 2 bits per pixel, lowest bits first: palette index `player base + value` (e.g. `0xD0` red); padded with 1-4 values at the end |
 | 2, 3, 4 | Anti-aliased edges (2 outermost, 4 innermost) | One palette index per pixel |
 | 5 | Shadow | None |
-| 7 | Translucent effects (smoke, water) | One palette index per pixel |
+| 7 | Light: smoke, explosions, splashes | One value per pixel: brightness level × 8 + step, a row of the light table (below) |
 | 39 | Interface graphics and fonts | One palette index per pixel |
 | 42 | Unknown | Not decoded yet; skipped when rendering |
 | 255 | Empty frame | None |
 
-The opacity of types 2, 3, 4 and 7 is not stored in the file. The renderer uses 25 %, 50 %, 75 % and 50 %, which is an estimate; the game probably blends through its `.XLT` tables.
+The opacity of types 2, 3 and 4 is not stored in the file. The renderer uses 25 %, 50 % and 75 %; the game's 256-row tables `AGEW_TR4.GRD` and `AGEW_TR.GRD` mix two palette colors 1:3 and 1:1, which fits. Type 7 goes through the light table `ALPHAW.GRD`: of its rows 0-159, row level × 8 + step maps every background color to that color dimmed to (7 − step) / 8 plus the gray of the level (20 levels, 0 to 216). So step 0 is a faint glow and step 7 solid gray; the renderer draws the same as a gray at an opacity of (step + 1) / 8.
 
 ### Directions
 

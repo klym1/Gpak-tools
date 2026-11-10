@@ -126,6 +126,34 @@ namespace ImageRenderer
             return new RenderedFrame(image, Array.Empty<GpFramePart>());
         }
 
+        // The grays of the 20 brightness levels of the game's light table (ALPHAW.GRD).
+        private static readonly int[] LightLevels =
+        {
+            0, 20, 28, 40, 52, 64, 76, 88, 88, 100, 108, 120, 132, 144, 156, 168, 180, 192, 204, 216,
+        };
+
+        private const int LightSteps = 8;
+
+        /// <summary>
+        /// A pixel of a translucent part (smoke, explosions, splashes) is not a palette color but a row of the
+        /// light table: brightness level × 8 + step. The game adds the level's gray to what is behind, dimmed
+        /// to (7 - step) / 8: step 0 is a faint glow, step 7 solid gray.
+        /// </summary>
+        private static Color LightOf(int value)
+        {
+            var gray = LightLevels[Math.Min(value / LightSteps, LightLevels.Length - 1)];
+            var opacity = (value % LightSteps + 1) / (double) LightSteps;
+
+            // The gray is what is added, so the color to lay over at this opacity is brighter.
+            var shade = (int) Math.Min(255, Math.Round(gray / opacity));
+            return Color.FromArgb(
+                  (int) Math.Round(255 * opacity)
+                , shade
+                , shade
+                , shade
+            );
+        }
+
         private const int FogLevels = 32;
 
         /// <summary>The strength of a pixel laid over the picture as fog: its brightness in 32 steps.</summary>
@@ -157,10 +185,17 @@ namespace ImageRenderer
                         else if (next < pixels.Length)
                         {
                             var index = pixels[next++];
-                            color = part.Type == GpPartType.PlayerColor ? _palette[PlayerColor.Offset + index] : _palette[index];
-                            color = Fog is { } fog
-                                ? Color.FromArgb(FogLevelOf(color) * 255 / (FogLevels - 1), fog)
-                                : Color.FromArgb(alpha, color);
+                            if (part.Type == GpPartType.Translucent)
+                            {
+                                color = LightOf(index);
+                            }
+                            else
+                            {
+                                color = part.Type == GpPartType.PlayerColor ? _palette[PlayerColor.Offset + index] : _palette[index];
+                                color = Fog is { } fog
+                                    ? Color.FromArgb(FogLevelOf(color) * 255 / (FogLevels - 1), fog)
+                                    : Color.FromArgb(alpha, color);
+                            }
                         }
                         else
                         {

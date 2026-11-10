@@ -211,7 +211,8 @@ namespace UnitTests
             // The smoke is laid over the picture with the table of its transparency.
             catalog.BlendTable("white")[31, 5].Should().Be(109);
             catalog.BlendTable("NONE").Should().BeNull();
-            catalog.BlendTable("ALPHAGB").Should().BeNull("its table is not known");
+            catalog.BlendTable("ALPHAGB")[31, 5].Should().Be(109, "it is taken to be laid over like WHITE");
+            catalog.BlendTable("YELLOW").Should().BeNull("its table is not known");
             flying.Should().Equal(new WeaponFlight("SHELL", 45, 40));
             var nothing = catalog.Weapons.EffectsOf("NOTHING");
             nothing.Muzzle.Should().BeEmpty("an unknown weapon shows nothing");

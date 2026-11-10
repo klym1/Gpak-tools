@@ -73,6 +73,7 @@ namespace GPExtractor
         private static readonly Dictionary<string, string> BlendTableFiles = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             ["WHITE"] = "AGEW_1W",
+            ["ALPHAGB"] = "AGEW_1W",
             ["DARK"] = "AGEW_1D",
             ["RED"] = "AGEW_1R",
             ["BRIGHT"] = "AGEW_1BR",
@@ -122,8 +123,8 @@ namespace GPExtractor
         /// <summary>
         /// The table (<c>*.GRD</c>) the game lays a weapon of a transparency over the picture with: of its 32
         /// rows, row n is what every palette color turns into under a pixel of strength n: all the way to one
-        /// color in the last row (light gray for <c>WHITE</c>, smoke). Null for <c>NONE</c> and for kinds
-        /// that are not known.
+        /// color in the last row (light gray for <c>WHITE</c>, smoke). <c>ALPHAGB</c>, the smoke of the mortar, is
+        /// taken to be laid over like <c>WHITE</c>. Null for <c>NONE</c> and for kinds that are not known.
         /// </summary>
         public GrdTable BlendTable(string transparency)
         {
