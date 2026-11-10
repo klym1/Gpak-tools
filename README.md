@@ -114,6 +114,10 @@ Each descriptor (`*.MD`) describes one game object. Objects whose animations hav
 
 `GameCatalog` reads the descriptors from a folder or straight from a `.gsc` archive (`GameFiles`) and loads sprites on demand. The viewer places every sprite of a unit with its anchor at the same point, so the unit stays in place across states and directions.
 
+### Sounds
+
+A descriptor line `SOUND frame #ANIMATION name` plays a sound at a frame of an animation (a drum beat in `MOTION_L`, a cry in `DEATH`). `SOUNDLIST.TXT` gives the wave files of each name, relative to the game folder: a line `NAME count`, an optional line `DANGER`, then `count` file lines, of which the game plays one. `GameCatalog.SoundsOf` matches the two.
+
 ## RLC sprite format
 
 Fonts, cursors and a few older sprites are `.rlc` files (`RlcFile`): the signature `RLC` `0x1B`, a uint32 number of frames *N*, and *N* uint32 frame offsets. A frame is a uint16 width, a uint16 height, and one entry per row: a byte with the number of runs, then per run a byte of transparent pixels to skip, a byte with the length and that many palette indices. The viewer draws units whose descriptors name an RLC sprite (the drummer, `BA1`, stands in one).

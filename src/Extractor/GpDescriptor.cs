@@ -55,6 +55,9 @@ namespace GPExtractor
 
         public IReadOnlyList<GpDescriptorAnimation> Animations { get; }
 
+        /// <summary>The <c>SOUND frame #ANIMATION name</c> lines.</summary>
+        public IReadOnlyList<GpDescriptorSound> Sounds { get; private init; } = Array.Empty<GpDescriptorSound>();
+
         /// <summary>Whether any animation has several directions: units, ships, cannons.</summary>
         public bool HasDirections => Animations.Any(animation => animation.Directions > 1);
 
@@ -76,6 +79,7 @@ namespace GPExtractor
             string displayName = null;
             var sprites = new List<GpDescriptorSprite>();
             var animations = new List<GpDescriptorAnimation>();
+            var sounds = new List<GpDescriptorSound>();
 
             foreach (var line in text.Split('\n'))
             {
@@ -106,6 +110,11 @@ namespace GPExtractor
 
                     sprites.Add(new GpDescriptorSprite(index, tokens[2], anchorX, anchorY));
                 }
+                else if (tokens.Length >= 4 && tokens[0].Equals("SOUND", StringComparison.OrdinalIgnoreCase)
+                         && TryInt(tokens[1], out var soundFrame) && tokens[2].StartsWith('#'))
+                {
+                    sounds.Add(new GpDescriptorSound(tokens[2].Substring(1), soundFrame, tokens[3]));
+                }
                 else if (tokens.Length >= 3 && tokens[0].StartsWith('#') && TryInt(tokens[1], out var directions)
                          && TryInt(tokens[2], out var count) && directions > 0)
                 {
@@ -128,7 +137,7 @@ namespace GPExtractor
                 }
             }
 
-            return new GpDescriptor(fileName, name ?? fileName, displayName, sprites, animations);
+            return new GpDescriptor(fileName, name ?? fileName, displayName, sprites, animations) { Sounds = sounds };
         }
 
         /// <summary>
@@ -179,5 +188,8 @@ namespace GPExtractor
     /// <param name="Name">e.g. <c>MOTION_L</c>.</param>
     /// <param name="Directions">Number of directions stored in the sprite for each pose.</param>
     /// <param name="Frames">The animation's frames as (sprite index, pose) pairs.</param>
+    /// <summary>A sound (a name in <c>SOUNDLIST.TXT</c>) played at a frame of an animation.</summary>
+    public sealed record GpDescriptorSound(string Animation, int Frame, string Sound);
+
     public sealed record GpDescriptorAnimation(string Name, int Directions, IReadOnlyList<(int Sprite, int Pose)> Frames);
 }

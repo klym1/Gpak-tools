@@ -122,6 +122,27 @@ namespace UnitTests
             catalog.Sprite("tstg").Should().BeSameAs(catalog.Sprite("tstg"), "sprites are loaded once");
         }
 
+        [TestCase(false)]
+        [TestCase(true)]
+        public void MatchesSoundsWithUnits(bool archive)
+        {
+            using var catalog = GameCatalog.Load(archive ? Archive() : ExtractedFolder());
+
+            catalog.Sounds.Sounds.Select(sound => sound.Name).Should().Equal("STEP", "ALARM");
+            catalog.Sounds.Find("alarm").Should().BeEquivalentTo(new GameSound("ALARM", new[] { @"Sound\Alarm.wav" }, true));
+
+            var unit = catalog.Units.Single();
+            unit.Descriptor.Sounds.Should().Equal(
+                new GpDescriptorSound("MOTION_L", 1, "STEP"),
+                new GpDescriptorSound("DEATH", 3, "GONE"));
+
+            // GONE is not in the sound list.
+            var sound = catalog.SoundsOf(unit).Should().ContainSingle().Subject;
+            (sound.Animation, sound.Frame).Should().Be(("MOTION_L", 1));
+            sound.Sound.Files.Should().Equal(@"Sound\Step1.wav", @"Sound\Step2.wav");
+            sound.Sound.Danger.Should().BeFalse();
+        }
+
         [Test]
         public void LoadsRlcSpritesByName()
         {

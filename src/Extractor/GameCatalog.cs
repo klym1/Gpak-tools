@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace GPExtractor
 {
@@ -44,6 +45,9 @@ namespace GPExtractor
     /// <summary>
     /// The game objects described in the game files, and their sprites.
     /// </summary>
+    /// <summary>A sound an object plays at a frame of an animation (e.g. <c>DEATH</c>).</summary>
+    public sealed record GameObjectSound(string Animation, int Frame, GameSound Sound);
+
     public sealed class GameCatalog : IDisposable
     {
         private static readonly Dictionary<string, string> KnownStates = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -68,6 +72,21 @@ namespace GPExtractor
         {
             Files = files;
             Objects = objects;
+
+            var soundList = files.Find("SOUNDLIST", ".TXT");
+            Sounds = soundList == null ? SoundList.Empty : SoundList.Parse(Encoding.Latin1.GetString(files.Read(soundList)));
+        }
+
+        /// <summary>The sounds of <c>SOUNDLIST.TXT</c>; empty if the game files have none.</summary>
+        public SoundList Sounds { get; }
+
+        /// <summary>The sounds an object plays, with their wave files: at which frame of which animation.</summary>
+        public IReadOnlyList<GameObjectSound> SoundsOf(GameObject gameObject)
+        {
+            return gameObject.Descriptor.Sounds
+                .Select(sound => new GameObjectSound(sound.Animation, sound.Frame, Sounds.Find(sound.Sound)))
+                .Where(sound => sound.Sound != null)
+                .ToList();
         }
 
         public GameFiles Files { get; }

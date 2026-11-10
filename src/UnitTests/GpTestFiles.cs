@@ -112,6 +112,8 @@ namespace UnitTests
                 "@MOTION_L  9 1 0 2",
                 "@MOTION_R  9 1 2 4",
                 "@MOTION_LB 9 1 3 1",
+                "SOUND 1 #MOTION_L STEP",
+                "SOUND 3 #DEATH GONE",
                 "LIFE 50",
                 ""));
 
@@ -127,6 +129,15 @@ namespace UnitTests
                 ("TSTS.GP", UnitAt(poses: 1, anchorX: 20, anchorY: 10)),
                 ("TSTG.GP", UnitAt(poses: 4, anchorX: 30, anchorY: 15)),
                 ("DEPO.MD", building),
+                ("SOUNDLIST.TXT", Encoding.ASCII.GetBytes(string.Join("\r\n",
+                    "STEP 2",
+                    @"Sound\Step1.wav",
+                    @"Sound\Step2.wav",
+                    "",
+                    "ALARM 1",
+                    "DANGER",
+                    @"Sound\Alarm.wav",
+                    ""))),
             };
         }
 
