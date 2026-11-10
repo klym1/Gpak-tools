@@ -63,8 +63,8 @@ namespace Viewer
         /// <summary><c>ROTATE</c> is taken as parts of a turn per tick, a full turn being this many.</summary>
         private const double TurnParts = 256;
 
-        /// <summary><c>RAZBROS</c> is taken as how far, in pixels, a shot at this distance may land from its aim.</summary>
-        private const double ScatterDistance = 2048;
+        /// <summary><c>RAZBROS</c> is how far, in pixels each way, a shot at this distance may land from its aim.</summary>
+        private const double ScatterDistance = 2000;
 
         /// <summary>How far, in pixels, an enemy moves before the way to it is planned again.</summary>
         private const double RetargetDistance = 12;
@@ -159,24 +159,12 @@ namespace Viewer
                 TurnsUnderWay = descriptor.TurnsUnderWay,
             };
 
-            var unit = new FieldUnitView(kind, color ?? PlayerColor, StandStateOf(kind), movement)
-            {
-                Ring = new Ellipse { Stroke = RingBrush, StrokeThickness = 2, IsHitTestVisible = false, IsVisible = false },
-                Marker = new Ellipse { Width = 14, Height = 7, Stroke = Brushes.White, StrokeThickness = 1.5, IsHitTestVisible = false, IsVisible = false },
-                LifeBar = Bar(3, RingBrush),
-                ReloadBar = Bar(2, Brushes.White),
-            };
-
-            Field.Children.Add(unit.LifeBar);
-            Field.Children.Add(unit.ReloadBar);
-
-            Field.Children.Add(unit.Ring);
-            Field.Children.Add(unit.Marker);
-            Field.Children.Add(unit.Image);
+            var unit = new FieldUnitView(kind, color ?? PlayerColor, StandStateOf(kind), movement);
             _fieldUnits.Add(unit);
 
             Select(new[] { unit }, add: false);
             Play(descriptor.BornSound);
+            Score(unit.Color, WorthOf(unit));
             return unit;
         }
 
@@ -193,11 +181,6 @@ namespace Viewer
 
         internal void RemoveFromField(FieldUnitView unit)
         {
-            Field.Children.Remove(unit.Image);
-            Field.Children.Remove(unit.Ring);
-            Field.Children.Remove(unit.Marker);
-            Field.Children.Remove(unit.LifeBar);
-            Field.Children.Remove(unit.ReloadBar);
             _fieldUnits.Remove(unit);
         }
 
@@ -265,7 +248,7 @@ namespace Viewer
                 var fires = ShotsOf(unit.Kind, unit.State).Count > 0;
                 if (!unit.IsDead && wasAttack && !fires && unit.Target is { IsDead: false } hit)
                 {
-                    Hit(unit.Kind, unit.State.Code, hit);
+                    Hit(unit, unit.State.Code, hit);
                 }
 
                 if (unit.IsDead)
@@ -374,23 +357,9 @@ namespace Viewer
         /// <summary>Removes every unit and the frames rendered for them.</summary>
         private void ClearField()
         {
-            foreach (var unit in _fieldUnits)
-            {
-                Field.Children.Remove(unit.Image);
-                Field.Children.Remove(unit.Ring);
-                Field.Children.Remove(unit.Marker);
-                Field.Children.Remove(unit.LifeBar);
-            }
-
             _fieldUnits.Clear();
             _readyFrames.Clear();
             _renderingFrames.Clear();
-            foreach (var effect in _effects)
-            {
-                Field.Children.Remove(effect.Image);
-                Field.Children.Remove(effect.Shadow);
-            }
-
             _effects.Clear();
             _impactEffects.Clear();
             _shotsInFlight.Clear();
@@ -436,7 +405,7 @@ namespace Viewer
         private FieldUnitView UnitAt(Point point)
         {
             return _fieldUnits
-                .Where(unit => !unit.IsDead)
+                .Where(unit => !unit.IsDead && IsSeen(unit))
                 .OrderByDescending(unit => unit.Movement.Position.Y)
                 .FirstOrDefault(unit => unit.DrawnBounds is { } bounds
                     ? bounds.Inflate(3).Contains(point)

@@ -174,8 +174,26 @@ namespace GPExtractor
         // The first word after the keyword of the lines named in WordKeys.
         private IReadOnlyDictionary<string, string> Words { get; init; } = new Dictionary<string, string>();
 
-        /// <summary>The <c>ZPOINTS</c> line: how high above the ground the object is hit, in pixels.</summary>
-        public int? Height => Number(HeightKey);
+        /// <summary>
+        /// The second number of the <c>ZPOINTS from to</c> line: how high above the ground the object is hit, in
+        /// pixels (the first is how high its own shots leave from).
+        /// </summary>
+        public int? Height { get; private init; }
+
+        /// <summary>
+        /// The <c>VISION</c> line: how far the object sees, as one of the game's nine sights (0, the nearest, to 8);
+        /// null if it has none, which the game takes as 0.
+        /// </summary>
+        public int? Vision => Number(VisionKey);
+
+        /// <summary>The <c>FORCE</c> line: what the object counts for in the strength of an army; null if it has none.</summary>
+        public int? Force => Number(ForceKey);
+
+        /// <summary>
+        /// The <c>VES</c> line: what the object is worth in its player's score, which gains it when the object
+        /// appears; null if it has none.
+        /// </summary>
+        public int? Worth => Number(WorthKey);
 
         /// <summary>The <c>GEOMETRY one radius step</c> line: the room the object takes on the ground, as a radius in pixels.</summary>
         public int? Radius { get; private init; }
@@ -192,11 +210,13 @@ namespace GPExtractor
         private const string SearchEnemyRadiusKey = "SEARCH_ENEMY_RADIUS";
         private const string ScatterKey = "RAZBROS";
         private const string TurnRateKey = "ROTATE";
-        private const string HeightKey = "ZPOINTS";
+        private const string VisionKey = "VISION";
+        private const string ForceKey = "FORCE";
+        private const string WorthKey = "VES";
 
         private static readonly HashSet<string> NumberKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
-            SearchEnemyRadiusKey, ScatterKey, TurnRateKey, HeightKey,
+            SearchEnemyRadiusKey, ScatterKey, TurnRateKey, VisionKey, ForceKey, WorthKey,
         };
 
         // The first number of the lines named in NumberKeys, and the lines that are one word.
@@ -293,6 +313,7 @@ namespace GPExtractor
             int? radius = null;
             int? stepSize = null;
             string motionStyle = null;
+            int? height = null;
             var words = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             var materials = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var canKill = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -410,6 +431,10 @@ namespace GPExtractor
                 {
                     motionStyle = tokens[1];
                 }
+                else if (tokens.Length >= 3 && tokens[0].Equals("ZPOINTS", StringComparison.OrdinalIgnoreCase) && TryInt(tokens[2], out var hitHeight))
+                {
+                    height = hitHeight;
+                }
                 else if (NumberKeys.Contains(tokens[0]) && TryInt(tokens[1], out var number))
                 {
                     numbers[tokens[0]] = number;
@@ -470,6 +495,7 @@ namespace GPExtractor
                 Numbers = numbers,
                 Flags = flags,
                 MotionStyle = motionStyle,
+                Height = height,
                 Words = words,
                 Materials = materials,
                 CanKill = canKill,

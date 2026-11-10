@@ -95,7 +95,10 @@ namespace UnitTests
                 "MATHERIAL 1 BODY",
                 "CANKILL   2 IRON  STENA WOOD",
                 "ATTMASK 2 2 BUILDING WOOD STENA",
-                "ZPOINTS 30 30",
+                "ZPOINTS 12 30",
+                "VISION 3",
+                "FORCE 7",
+                "VES 300",
                 "SHOWDELAY",
                 "STANDGROUND");
             var descriptor = GpDescriptor.Parse("TST", files[0].Content);
@@ -119,7 +122,10 @@ namespace UnitTests
             descriptor.CanKill.Should().BeEquivalentTo(new[] { "IRON", "STENA" }, "the count says two");
             descriptor.CanAttack(descriptor, "ATTACK").Should().BeFalse("without a mask of its own an attack is for what the unit can kill");
             GpDescriptor.Parse("X", "MATHERIAL 1 BODY").CanAttack(descriptor, "ATTACK").Should().BeTrue("with neither line an attack is made on anything");
-            descriptor.Height.Should().Be(30);
+            descriptor.Height.Should().Be(30, "the second number: the first is where its own shots leave from");
+            descriptor.Vision.Should().Be(3);
+            descriptor.Force.Should().Be(7);
+            descriptor.Worth.Should().Be(300);
             descriptor.ShowsDelay.Should().BeTrue();
             descriptor.CanStandGround.Should().BeTrue();
 

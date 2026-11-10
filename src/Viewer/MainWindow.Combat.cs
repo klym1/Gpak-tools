@@ -89,8 +89,10 @@ namespace Viewer
         private static bool IsEnemy(FieldUnitView unit, FieldUnitView other) =>
             !ReferenceEquals(unit, other) && unit.Color.Offset != other.Color.Offset;
 
-        private void Kill(FieldUnitView unit)
+        /// <param name="by">The side whose attack killed the unit, if one did.</param>
+        private void Kill(FieldUnitView unit, NationColorOffset? by = null)
         {
+            ScoreDeath(unit, by);
             Halt(unit);
             unit.Next.Clear();
             unit.Target = null;
@@ -112,8 +114,9 @@ namespace Viewer
         }
 
         /// <summary>
-        /// Whether a unit is near enough to hit with an attack: one that fires a weapon reaches as far as its
-        /// <c>ATTACK_RADIUS</c>, measured on the ground.
+        /// Whether a unit is near enough to hit with an attack: as far as the attack's <c>ATTACK_RADIUS</c>,
+        /// measured on the ground. Without one, a weapon is fired from <see cref="ShotReach"/> and a blow struck
+        /// from <see cref="MeleeReach"/>.
         /// </summary>
         private static bool IsWithinReach(FieldUnitView unit, FieldUnitView target, GameObjectState attack)
         {
@@ -122,8 +125,9 @@ namespace Viewer
 
             // Large units cannot come as near as small ones.
             var room = RadiusOf(unit) + RadiusOf(target) + 4;
-            return Fires(unit.Kind, attack)
-                ? FieldPath.GroundDistance(from, to) <= Math.Max(ShotReachOf(unit, attack.Code), room)
+            var range = unit.Kind.Descriptor.AttackRangeOf(attack.Code);
+            return range != null || Fires(unit.Kind, attack)
+                ? FieldPath.GroundDistance(from, to) <= Math.Max(range ?? ShotReach, room)
                 : Distance(from, to) <= Math.Max(MeleeReach, room);
         }
 
@@ -233,18 +237,19 @@ namespace Viewer
         /// An attack lands on a unit: it loses the attack's damage (or the share of it that reaches the unit),
         /// less its armor, from its life (all of it, if the attacker has no damage given) and dies when none is left.
         /// </summary>
-        private void Hit(GameObject attacker, string attack, FieldUnitView target, double share = 1)
+        private void Hit(FieldUnitView attacker, string attack, FieldUnitView target, double share = 1)
         {
-            if (!attacker.Descriptor.CanAttack(target.Kind.Descriptor, attack))
+            var descriptor = attacker.Kind.Descriptor;
+            if (!descriptor.CanAttack(target.Kind.Descriptor, attack))
             {
                 return;
             }
 
-            var damage = attacker.Descriptor.DamageTo(target.Kind.Descriptor, attack, share) ?? target.Life;
+            var damage = descriptor.DamageTo(target.Kind.Descriptor, attack, share) ?? target.Life;
             target.Life = Math.Max(0, target.Life - damage);
             if (target.Life == 0)
             {
-                Kill(target);
+                Kill(target, attacker.Color);
             }
         }
 

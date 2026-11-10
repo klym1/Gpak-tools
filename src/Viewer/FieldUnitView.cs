@@ -1,14 +1,12 @@
 using System.Collections.Generic;
 using Avalonia;
-using Avalonia.Controls;
-using Avalonia.Controls.Shapes;
 using GPExtractor;
 
 namespace Viewer
 {
     /// <summary>
     /// One unit on the field: what it is, its player color, what it is doing (state and pose), where it is
-    /// going, and the controls that draw it.
+    /// going, and how it is drawn.
     /// </summary>
     public sealed class FieldUnitView
     {
@@ -81,8 +79,8 @@ namespace Viewer
 
         internal int FlightAge { get; set; }
 
-        /// <summary>For a projectile: its shadow on the ground.</summary>
-        internal Ellipse Shadow { get; set; }
+        /// <summary>For a projectile: where its shadow is on the ground.</summary>
+        internal Point? Shadow { get; set; }
 
         /// <summary>How long the unit's last shot takes to land, in ticks: its impact is heard then.</summary>
         internal int ShotTicks { get; set; }
@@ -110,17 +108,14 @@ namespace Viewer
         public int Direction => Directions?.DirectionAt(Movement.Heading) ?? 0;
 
         // Drawing.
-        internal Image Image { get; } = new Image { Stretch = Avalonia.Media.Stretch.None, IsHitTestVisible = false };
-
-        internal Ellipse Ring { get; set; }
-
-        internal Ellipse Marker { get; set; }
+        /// <summary>Whether the unit is drawn: not when it is hidden by the fog of war.</summary>
+        internal bool IsShown { get; set; } = true;
 
         /// <summary>Shows the life left, above a wounded unit.</summary>
-        internal Rectangle LifeBar { get; set; }
+        internal FieldBar LifeBar { get; set; }
 
         /// <summary>Shows how far the rest after an attack has got, under the life bar.</summary>
-        internal Rectangle ReloadBar { get; set; }
+        internal FieldBar ReloadBar { get; set; }
 
         /// <summary>The frames drawn last; kept until the frames for a new state or direction are ready.</summary>
         internal FieldFrames Shown { get; set; }
@@ -138,6 +133,9 @@ namespace Viewer
             ? new Rect(Origin.X + opaque.X, Origin.Y + opaque.Y, opaque.Width, opaque.Height)
             : null;
     }
+
+    /// <summary>A bar over a unit: whether it is shown, and how wide its filled part is.</summary>
+    internal readonly record struct FieldBar(bool IsVisible, double Width);
 
     /// <summary>An attack in the attack list, with the weapon it fires, if any.</summary>
     public sealed record AttackOption(GameObjectState State, string Weapon)

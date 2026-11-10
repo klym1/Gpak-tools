@@ -33,7 +33,7 @@ namespace Viewer
             foreach (var (unit, away) in struck)
             {
                 Hit(
-                      attacker.Kind
+                      attacker
                     , attack
                     , unit
                     , blastRadius > HitSlack ? 1 - away / blastRadius : 1
@@ -127,16 +127,7 @@ namespace Viewer
                     if (projectile != null)
                     {
                         projectile.Flight = (from, end, height, ticks);
-                        projectile.Shadow = new Ellipse
-                        {
-                            Width = 6,
-                            Height = 3,
-                            Fill = Brushes.Black,
-                            Opacity = 0.35,
-                            IsHitTestVisible = false,
-                            ZIndex = 2,
-                        };
-                        Field.Children.Add(projectile.Shadow);
+                        projectile.Shadow = from;
                     }
                 }
 
@@ -168,8 +159,8 @@ namespace Viewer
         }
 
         /// <summary>
-        /// Where a shot aimed at a point lands: anywhere within the unit's scatter (<c>RAZBROS</c>) of it, which
-        /// grows with the distance.
+        /// Where a shot aimed at a point lands: off it, along and across the ground, by anything up to the unit's
+        /// scatter (<c>RAZBROS</c>), which grows with the distance.
         /// </summary>
         private Point Scattered(FieldUnitView unit, Point aim)
         {
@@ -178,10 +169,9 @@ namespace Viewer
                 return aim;
             }
 
-            var radius = FieldPath.GroundDistance(unit.Movement.Position, aim) * scatter / ScatterDistance;
-            var away = radius * Math.Sqrt(_random.NextDouble());
-            var angle = _random.NextDouble() * 2 * Math.PI;
-            return ClampToField(aim + new Vector(Math.Cos(angle) * away, Math.Sin(angle) * away / FieldPath.Slant));
+            var most = FieldPath.GroundDistance(unit.Movement.Position, aim) * scatter / ScatterDistance;
+            double Off() => (2 * _random.NextDouble() - 1) * most;
+            return ClampToField(aim + new Vector(Off(), Off() / FieldPath.Slant));
         }
 
         /// <summary>
@@ -244,7 +234,6 @@ namespace Viewer
             {
                 Fog = blend == null ? null : _palette[blend[blend.Rows - 1, 0]],
             };
-            Field.Children.Add(effect.Image);
             _effects.Add(effect);
             return effect;
         }
@@ -273,15 +262,11 @@ namespace Viewer
                     }
 
                     // Its shadow runs along the ground, under where it would be without the arc.
-                    var foot = onGround;
-                    Canvas.SetLeft(effect.Shadow, foot.X - effect.Shadow.Width / 2);
-                    Canvas.SetTop(effect.Shadow, foot.Y - effect.Shadow.Height / 2);
+                    effect.Shadow = onGround;
                 }
 
                 if (over)
                 {
-                    Field.Children.Remove(effect.Image);
-                    Field.Children.Remove(effect.Shadow);
                     _effects.Remove(effect);
                 }
             }

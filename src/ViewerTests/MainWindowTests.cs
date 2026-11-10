@@ -557,7 +557,7 @@ namespace ViewerTests
                 Assert.That(smoke.Direction, Is.EqualTo(4), "west, like the unit");
                 await window.RenderingCompleted;
                 window.Tick();
-                Assert.That(smoke.Image.Source, Is.Not.Null, "it is drawn");
+                Assert.That(smoke.Frame?.Bitmap, Is.Not.Null, "it is drawn");
 
                 // The smoke plays once (2 frames) and is gone; the shell is on its way.
                 window.Tick();
@@ -1226,8 +1226,8 @@ namespace ViewerTests
         [AvaloniaTest]
         public Task ShotsScatterAroundTheirAimAndHitATargetAtItsHeight()
         {
-            // At 200 pixels a scatter of 512 (per 2048) is 50 pixels; the unit is 30 pixels high.
-            return OnFieldWith(new[] { "RAZBROS 512", "ZPOINTS 30 30" }, async (window, unit) =>
+            // At 300 pixels a scatter of 500 (per 2000) is up to 75 pixels each way on the ground.
+            return OnFieldWith(new[] { "RAZBROS 500", "ZPOINTS 30 30" }, async (window, unit) =>
             {
                 unit.Movement.TurnTo(90);
                 var aim = unit.Movement.Position + new Vector(-300, 0);
@@ -1243,7 +1243,8 @@ namespace ViewerTests
                 }
 
                 Assert.That(landings, Is.Not.Empty);
-                Assert.That(landings.Select(landing => FieldPath.GroundDistance(landing, aim)), Is.All.LessThanOrEqualTo(300 * 512 / 2048.0 + 1e-6));
+                Assert.That(landings.Select(landing => Math.Abs(landing.X - aim.X)), Is.All.LessThanOrEqualTo(75 + 1e-6));
+                Assert.That(landings.Select(landing => Math.Abs(landing.Y - aim.Y) * FieldPath.Slant), Is.All.LessThanOrEqualTo(75 + 1e-6));
                 Assert.That(landings.Distinct().Count(), Is.GreaterThan(5));
             });
         }
@@ -1251,7 +1252,7 @@ namespace ViewerTests
         [AvaloniaTest]
         public Task AShotThatLandsOnItsTargetFliesToItsHeight()
         {
-            return OnFieldWith(new[] { "ZPOINTS 30 30" }, async (window, unit) =>
+            return OnFieldWith(new[] { "ZPOINTS 12 30" }, async (window, unit) =>
             {
                 var enemy = await AddEnemy(window, unit.Movement.Position + new Vector(-200, 0));
                 enemy.StandsGround = true;
@@ -1408,6 +1409,85 @@ namespace ViewerTests
             });
         }
 
+        [AvaloniaTest]
+        public Task ABlowIsStruckFromAsFarAsItsAttackRadius()
+        {
+            // Attack 1 fires nothing: a blow, struck from up to 60 pixels on the ground.
+            var lines = new[] { "@ATTACK1 9 1 0 2", "ATTACK_RADIUS 1 20 60", "DAMAGE 1 1" };
+            return OnFieldWith(lines, async (window, unit) =>
+            {
+                var enemy = await AddEnemy(window, unit.Movement.Position + new Vector(0, 100));
+                enemy.StandsGround = true;
+                var attacks = window.FindControl<ComboBox>("AttackBox");
+                attacks.SelectedIndex = attacks.Items.Select(item => item.ToString()).ToList().IndexOf("ATTACK1");
+                Click(window, enemy.Movement.Position, MouseButton.Right);
+                for (var i = 0; i < 40 && unit.State.Code != "ATTACK1"; i++)
+                {
+                    window.Tick();
+                }
+
+                // 30 pixels up the screen are 60 on the ground.
+                Assert.That(unit.State.Code, Is.EqualTo("ATTACK1"));
+                Assert.That(enemy.Movement.Position.Y - unit.Movement.Position.Y, Is.InRange(30 - FieldUnit.DefaultStepLength, 30.0));
+            });
+        }
+
+        [AvaloniaTest]
+        public Task TheSidesStrengthAndScoreAreShown()
+        {
+            // A unit counts 7 in its army's strength and is worth 300 (shown as 3) in its side's score.
+            return OnFieldWith(new[] { "FORCE 7", "VES 300" }, async (window, unit) =>
+            {
+                var armies = window.FindControl<TextBlock>("ArmiesText");
+                Assert.That(armies.Text, Is.EqualTo("Blue: 1 unit, strength 7, score 3"));
+
+                var enemy = await AddEnemy(window, unit.Movement.Position + new Vector(150, 0));
+                window.Tick();
+                Assert.That(armies.Text, Does.StartWith("Blue: 1 unit, strength 7, score 3   ·   "));
+                Assert.That(armies.Text, Does.Contain(": 1 unit, strength 7, score "));
+                var before = armies.Text.Substring(armies.Text.LastIndexOf("score ", StringComparison.Ordinal));
+
+                // Killing the enemy (the mortar has no damage given, and kills) gains twice its worth; it loses as much.
+                enemy.PauseTicksLeft = 1000;
+                window.FindControl<ComboBox>("AttackBox").SelectedIndex = 1;
+                Click(window, enemy.Movement.Position, MouseButton.Right);
+                for (var i = 0; i < 40 && !enemy.IsDead; i++)
+                {
+                    window.Tick();
+                }
+
+                Assert.That(enemy.IsDead, Is.True);
+                Assert.That(armies.Text, Is.EqualTo("Blue: 1 unit, strength 7, score 9"));
+                Assert.That(before, Is.EqualTo("score 6"), "the red side had two units put on the field");
+            });
+        }
+
+        [AvaloniaTest]
+        public Task InTheFogOfWarOnlyWhatThePickedSideSeesIsShown()
+        {
+            // Sight 3 reaches two steps of 128 pixels beyond the nearest 200.
+            return OnFieldWith(new[] { "VISION 3" }, async (window, unit) =>
+            {
+                var enemy = await AddEnemy(window, unit.Movement.Position + new Vector(-380, 0));
+                await window.SetPlayerColor(unit.Color);
+                window.Tick();
+                Assert.That(enemy.IsShown, Is.True);
+
+                window.FindControl<CheckBox>("FogBox").IsChecked = true;
+                window.Tick();
+                Assert.That(enemy.IsShown, Is.True, "380 pixels away is within 456");
+                Assert.That(unit.IsShown, Is.True);
+
+                unit.Movement.PlaceAt(unit.Movement.Position + new Vector(100, 0));
+                window.Tick();
+                Assert.That(enemy.IsShown, Is.False, "480 is not");
+
+                // What is not seen cannot be sent against either: the unit just walks there.
+                Click(window, enemy.Movement.Position, MouseButton.Right);
+                Assert.That(unit.Target, Is.Null);
+            });
+        }
+
         /// <summary>The first of the units the field starts with, the others taken off it.</summary>
         private static FieldUnitView OnlyUnit(MainWindow window)
         {
@@ -1474,8 +1554,12 @@ namespace ViewerTests
             return enemy;
         }
 
-        private static Point OnWindow(MainWindow window, Point fieldPoint) =>
-            window.FindControl<Canvas>("Field").TranslatePoint(fieldPoint, window).Value;
+        private static Point OnWindow(MainWindow window, Point fieldPoint)
+        {
+            // The toolbar may have wrapped since the last layout, moving the field.
+            window.UpdateLayout();
+            return window.FindControl<Canvas>("Field").TranslatePoint(fieldPoint, window).Value;
+        }
 
         private static void Click(MainWindow window, Point fieldPoint, MouseButton button, RawInputModifiers modifiers = RawInputModifiers.None)
         {
@@ -1495,11 +1579,10 @@ namespace ViewerTests
         /// <summary>Columns of the unit's row (its feet) that are drawn on the field, relative to the feet.</summary>
         private static int[] DrawnColumnsAtFeet(FieldUnitView unit)
         {
-            var image = unit.Image;
-            var bitmap = (WriteableBitmap)image.Source;
+            var bitmap = (WriteableBitmap)unit.Frame.Bitmap;
             var feet = unit.Movement.Position;
-            var left = (int)Canvas.GetLeft(image);
-            var y = (int)Math.Round(feet.Y) - (int)Canvas.GetTop(image);
+            var left = (int)unit.Origin.X;
+            var y = (int)Math.Round(feet.Y) - (int)unit.Origin.Y;
             var width = bitmap.PixelSize.Width;
             var row = new byte[width * 4];
 

@@ -30,6 +30,8 @@
                 ToolTip.Tip="The selected units die and leave the field" />
         <CheckBox x:Name="StandGroundBox" Content="Stand ground" IsEnabled="False"
                   ToolTip.Tip="The selected units hold their place: they attack enemies within reach but do not go after them" />
+        <CheckBox x:Name="FogBox" Content="Fog of war"
+                  ToolTip.Tip="Hide the units of other colors that no unit of the picked color sees" />
       </StackPanel>
 
       <StackPanel Orientation="Horizontal" Spacing="8">
@@ -58,12 +60,14 @@
     </WrapPanel>
 
     <!-- The field: units stand with their feet (anchor) at their positions and walk where they are sent -->
-    <Panel Grid.Row="1" x:Name="ViewArea">
-      <Canvas x:Name="Field" Focusable="True" Background="#5D7044" ClipToBounds="True">
-        <!-- Units (image, selection ring, target marker) are added in code; images are ordered front to back by their feet. -->
+    <Panel Grid.Row="1" x:Name="ViewArea" Background="#5D7044">
+      <!-- Units (image, selection ring, target marker) are drawn here, ordered front to back by their feet. -->
+      <local:FieldLayer x:Name="Sprites" IsHitTestVisible="False" ClipToBounds="True" />
+      <Canvas x:Name="Field" Focusable="True" Background="Transparent" ClipToBounds="True">
         <Rectangle x:Name="SelectionRectangle" Stroke="#9CFF57" StrokeThickness="1" Fill="#269CFF57"
                    IsVisible="False" IsHitTestVisible="False" ZIndex="100000" />
         <TextBlock x:Name="FieldHint" Canvas.Left="10" Canvas.Top="8" Foreground="#E8F0DC" IsHitTestVisible="False" ZIndex="100001" />
+        <TextBlock x:Name="ArmiesText" Canvas.Left="10" Canvas.Top="26" Foreground="#E8F0DC" IsHitTestVisible="False" ZIndex="100001" />
       </Canvas>
     </Panel>
 
