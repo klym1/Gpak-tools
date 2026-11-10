@@ -12,7 +12,7 @@ namespace Viewer
     }
 
     /// <summary>
-    /// Plays wave files through the Windows multimedia interface; silent on other systems.
+    /// Plays wave files through the Windows multimedia interface (see <see cref="SoundPlayers"/> for other systems).
     /// Different files overlap; a file that is still playing is not started again.
     /// </summary>
     public sealed class SoundPlayer : ISoundPlayer, IDisposable

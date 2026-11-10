@@ -96,7 +96,7 @@ namespace Viewer
         private readonly Random _random = new Random();
 
         /// <summary>What plays the units' sounds.</summary>
-        public ISoundPlayer SoundPlayer { get; set; } = new SoundPlayer();
+        public ISoundPlayer SoundPlayer { get; set; } = SoundPlayers.ForThisSystem();
 
         /// <summary>How long a killed unit lies on the field, in ticks.</summary>
         private const int TicksLyingDead = 100;
