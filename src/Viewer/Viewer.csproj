@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="ViewerTests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Avalonia" Version="12.1.6" />
     <PackageReference Include="Avalonia.Desktop" Version="12.1.6" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.6" />
@@ -22,7 +26,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\..\gp\test.gp" Link="gp\test.gp" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\palette\0\agew_1.pal" Link="palette\0\agew_1.pal" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

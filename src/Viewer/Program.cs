@@ -5,7 +5,7 @@ namespace Viewer
 {
     internal static class Program
     {
-        // Usage: Viewer [path-to-gp-file]   (defaults to gp/test.gp next to the executable)
+        // Usage: Viewer [All.gsc | extracted-folder | sprite-in-one]
         [STAThread]
         public static void Main(string[] args)
         {

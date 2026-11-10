@@ -8,61 +8,32 @@
 
   <Grid RowDefinitions="Auto,*,Auto" Margin="12" RowSpacing="12">
 
-    <!-- File and playback controls -->
     <WrapPanel Grid.Row="0" Orientation="Horizontal" ItemSpacing="20" LineSpacing="8">
       <StackPanel Orientation="Horizontal" Spacing="8">
         <Button x:Name="OpenButton" Content="Open…"
-                ToolTip.Tip="Open a .gp sprite, or the game's All.gsc archive to browse its units (or drop either on the window)" />
+                ToolTip.Tip="Open the game's All.gsc, a folder extracted from it, or a sprite inside one (or drop one on the window)" />
         <TextBlock x:Name="FileNameText" VerticalAlignment="Center" FontWeight="SemiBold" MinWidth="120" />
       </StackPanel>
 
-      <!-- Shown when game data (descriptors) is available -->
+      <!-- Shown once game data with units is open -->
       <StackPanel x:Name="UnitPanel" Orientation="Horizontal" Spacing="8" IsVisible="False">
-        <TextBlock Text="Unit" VerticalAlignment="Center" />
+        <TextBlock Text="Add unit" VerticalAlignment="Center" />
         <ComboBox x:Name="UnitBox" Width="260" MaxDropDownHeight="520" IsTextSearchEnabled="True"
-                  PlaceholderText="Pick a unit…" ToolTip.Tip="Units described in the game data (type to search)" />
-        <TextBlock Text="State" VerticalAlignment="Center" />
-        <ComboBox x:Name="StateBox" Width="280" MaxDropDownHeight="520" ToolTip.Tip="Animation of the unit" />
-        <ToggleButton x:Name="FieldButton" Content="Field" IsEnabled="False"
-                      ToolTip.Tip="Put the unit on a field: left-click it to select it, right-click somewhere to send it there" />
+                  PlaceholderText="Pick a unit…" ToolTip.Tip="Pick a unit to put it on the field, in the picked color" />
+        <Button x:Name="RemoveUnitsButton" Content="Remove" IsEnabled="False"
+                ToolTip.Tip="Remove the selected units from the field (Delete)" />
       </StackPanel>
 
       <StackPanel Orientation="Horizontal" Spacing="8">
-        <Button x:Name="PreviousButton" Content="◀" ToolTip.Tip="Previous frame" />
-        <Button x:Name="PlayButton" Content="▶ Play" MinWidth="84" ToolTip.Tip="Play or pause the animation" />
-        <Button x:Name="NextButton" Content="▶|" ToolTip.Tip="Next frame" />
-        <TextBlock x:Name="FrameText" VerticalAlignment="Center" MinWidth="64"
-                   ToolTip.Tip="Frame (or, by direction, pose) shown / last one" />
-      </StackPanel>
-
-      <StackPanel Orientation="Horizontal" Spacing="8">
-        <TextBlock Text="Frames" VerticalAlignment="Center" />
-        <NumericUpDown x:Name="FromFrame" Minimum="0" Increment="1" FormatString="0" Width="106" ToolTip.Tip="First frame of the loop" />
-        <TextBlock Text="to" VerticalAlignment="Center" />
-        <NumericUpDown x:Name="ToFrame" Minimum="0" Increment="1" FormatString="0" Width="106" ToolTip.Tip="Last frame of the loop" />
-      </StackPanel>
-
-      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Button x:Name="PlayButton" Content="▶ Play" MinWidth="84" ToolTip.Tip="Run or pause the field" />
         <TextBlock Text="FPS" VerticalAlignment="Center" />
-        <NumericUpDown x:Name="FramesPerSecond" Minimum="1" Maximum="60" Increment="1" Value="12" FormatString="0" Width="108" />
-      </StackPanel>
-
-      <StackPanel x:Name="DirectionPanel" Orientation="Horizontal" Spacing="8" IsVisible="False">
-        <CheckBox x:Name="ByDirectionBox" Content="Direction" IsChecked="True"
-                  ToolTip.Tip="Play the poses of one direction instead of all frames in file order" />
-        <TextBlock x:Name="DirectionLabel" Text="Direction" VerticalAlignment="Center" IsVisible="False" />
-        <ComboBox x:Name="DirectionBox" MinWidth="96" MaxDropDownHeight="420" ToolTip.Tip="Direction the unit faces">
-          <ComboBox.ItemTemplate>
-            <DataTemplate x:DataType="local:DirectionOption">
-              <TextBlock Text="{Binding Label}" />
-            </DataTemplate>
-          </ComboBox.ItemTemplate>
-        </ComboBox>
+        <NumericUpDown x:Name="FramesPerSecond" Minimum="1" Maximum="60" Increment="1" Value="25" FormatString="0" Width="108"
+                       ToolTip.Tip="Animation frames per second; units walk one step per frame" />
       </StackPanel>
 
       <StackPanel Orientation="Horizontal" Spacing="8">
         <TextBlock Text="Color" VerticalAlignment="Center" />
-        <ComboBox x:Name="PlayerColorBox" MinWidth="112" ToolTip.Tip="Player color of units and buildings">
+        <ComboBox x:Name="PlayerColorBox" MinWidth="112" ToolTip.Tip="Player color of the selected units and of units added next">
           <ComboBox.ItemTemplate>
             <DataTemplate x:DataType="local:PlayerColorOption">
               <StackPanel Orientation="Horizontal" Spacing="8">
@@ -75,30 +46,17 @@
       </StackPanel>
     </WrapPanel>
 
-    <!-- Rendered image at its native size (no scaling). Frames share the same origin, so they line up. -->
+    <!-- The field: units stand with their feet (anchor) at their positions and walk where they are sent -->
     <Panel Grid.Row="1" x:Name="ViewArea">
-      <ScrollViewer x:Name="ImageScroller"
-                    HorizontalScrollBarVisibility="Auto"
-                    VerticalScrollBarVisibility="Auto">
-        <Image x:Name="ImageView"
-               Stretch="None"
-               HorizontalAlignment="Left"
-               VerticalAlignment="Top" />
-      </ScrollViewer>
-
-      <!-- The field: the unit stands with its feet (anchor) at its position and walks where it is sent -->
-      <Canvas x:Name="Field" IsVisible="False" Background="#5D7044" ClipToBounds="True">
-        <Ellipse x:Name="TargetMarker" Width="14" Height="7" Stroke="White" StrokeThickness="1.5"
-                 IsVisible="False" IsHitTestVisible="False" />
-        <Ellipse x:Name="SelectionMarker" Stroke="#9CFF57" StrokeThickness="2"
-                 IsVisible="False" IsHitTestVisible="False" />
-        <Image x:Name="FieldImage" Stretch="None" IsHitTestVisible="False" />
-        <TextBlock x:Name="FieldHint" Canvas.Left="10" Canvas.Top="8" Foreground="#E8F0DC" IsHitTestVisible="False"
-                   Text="Left-click the unit to select it, then right-click where it should go." />
+      <Canvas x:Name="Field" Focusable="True" Background="#5D7044" ClipToBounds="True">
+        <!-- Units (image, selection ring, target marker) are added in code; images are ordered front to back by their feet. -->
+        <Rectangle x:Name="SelectionRectangle" Stroke="#9CFF57" StrokeThickness="1" Fill="#269CFF57"
+                   IsVisible="False" IsHitTestVisible="False" ZIndex="100000" />
+        <TextBlock x:Name="FieldHint" Canvas.Left="10" Canvas.Top="8" Foreground="#E8F0DC" IsHitTestVisible="False" ZIndex="100001" />
       </Canvas>
     </Panel>
 
-    <!-- Loading progress, errors and skipped parts -->
+    <!-- Loading progress and errors -->
     <TextBlock Grid.Row="2" x:Name="StatusText" TextWrapping="Wrap" Foreground="Gray" />
   </Grid>
 </Window>
