@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -30,7 +31,11 @@ namespace Viewer
             Patterns = new[] { "*.gsc", "*.GSC", "*.gp", "*.GP" },
         };
 
+        private const double RealFpsPeriodSeconds = 0.5;
+
         private readonly DispatcherTimer _timer = new DispatcherTimer();
+        private readonly Stopwatch _realFpsClock = new Stopwatch();
+        private int _ticksCounted;
         private readonly Palette _palette = Palette.Load(PaletteFile);
 
         private GameCatalog _catalog;
@@ -74,7 +79,11 @@ namespace Viewer
             AddHandler(DragDrop.DragOverEvent, OnDragOver);
             AddHandler(DragDrop.DropEvent, OnDrop);
 
-            _timer.Tick += (sender, args) => Tick();
+            _timer.Tick += (sender, args) =>
+            {
+                Tick();
+                CountTick();
+            };
             UpdateTimerInterval();
 
             Opened += (sender, args) =>
@@ -118,13 +127,30 @@ namespace Viewer
         public void Play()
         {
             _timer.Start();
+            _ticksCounted = 0;
+            _realFpsClock.Restart();
             PlayButton.Content = "⏸ Pause";
         }
 
         public void Pause()
         {
             _timer.Stop();
+            RealFpsText.Text = "";
             PlayButton.Content = "▶ Play";
+        }
+
+        private void CountTick()
+        {
+            _ticksCounted++;
+            var seconds = _realFpsClock.Elapsed.TotalSeconds;
+            if (seconds < RealFpsPeriodSeconds)
+            {
+                return;
+            }
+
+            RealFpsText.Text = (_ticksCounted / seconds).ToString("0.0");
+            _ticksCounted = 0;
+            _realFpsClock.Restart();
         }
 
         public void TogglePlayback()

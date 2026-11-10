@@ -37,6 +37,8 @@
         <TextBlock Text="FPS" VerticalAlignment="Center" />
         <NumericUpDown x:Name="FramesPerSecond" Minimum="1" Maximum="60" Increment="1" Value="25" FormatString="0" Width="108"
                        ToolTip.Tip="Animation frames per second; units walk one step per frame" />
+        <TextBlock x:Name="RealFpsText" VerticalAlignment="Center" MinWidth="36" Foreground="Gray"
+                   ToolTip.Tip="Frames per second the field actually runs at" />
         <CheckBox x:Name="SoundBox" Content="Sound" IsChecked="True" ToolTip.Tip="Play the units' sounds (drums, hooves)" />
       </StackPanel>
 
