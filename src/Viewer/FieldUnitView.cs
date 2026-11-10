@@ -35,6 +35,14 @@ namespace Viewer
 
         public bool IsSelected { get; internal set; }
 
+        /// <summary>Whether the state is played once (an attack, dying) instead of looping.</summary>
+        public bool PlaysOnce { get; internal set; }
+
+        /// <summary>Whether the unit was killed: it dies, lies for a while and leaves the field.</summary>
+        public bool IsDead { get; internal set; }
+
+        internal int TicksLyingDead { get; set; }
+
         /// <summary>Directions of the current state, or null if it is drawn from one direction only.</summary>
         public GpDirections Directions => State.Directions > 1
             ? new GpDirections(State.Directions, 1, 0, GpDirectionsSource.Descriptor, Kind.Descriptor.FileName)

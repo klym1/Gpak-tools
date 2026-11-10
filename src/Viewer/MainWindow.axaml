@@ -22,6 +22,10 @@
                   PlaceholderText="Pick a unit…" ToolTip.Tip="Pick a unit to put it on the field, in the picked color" />
         <Button x:Name="RemoveUnitsButton" Content="Remove" IsEnabled="False"
                 ToolTip.Tip="Remove the selected units from the field (Delete)" />
+        <Button x:Name="AttackButton" Content="Attack" IsEnabled="False"
+                ToolTip.Tip="The selected units attack once where they stand" />
+        <Button x:Name="KillButton" Content="Kill" IsEnabled="False"
+                ToolTip.Tip="The selected units die and leave the field" />
       </StackPanel>
 
       <StackPanel Orientation="Horizontal" Spacing="8">

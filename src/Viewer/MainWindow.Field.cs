@@ -39,6 +39,9 @@ namespace Viewer
         /// <summary>What plays the units' sounds.</summary>
         public ISoundPlayer SoundPlayer { get; set; } = new SoundPlayer();
 
+        /// <summary>How long a killed unit lies on the field, in ticks.</summary>
+        private const int TicksLyingDead = 100;
+
         // A selection box being dragged.
         private Point? _dragStart;
         private bool _dragging;
@@ -89,13 +92,92 @@ namespace Viewer
         {
             foreach (var unit in SelectedFieldUnits)
             {
-                Field.Children.Remove(unit.Image);
-                Field.Children.Remove(unit.Ring);
-                Field.Children.Remove(unit.Marker);
-                _fieldUnits.Remove(unit);
+                RemoveFromField(unit);
             }
 
             UpdateFieldView();
+        }
+
+        /// <summary>The selected units stop and play their attack once, with its sound, then stand again.</summary>
+        public void AttackWithSelected()
+        {
+            foreach (var unit in SelectedFieldUnits)
+            {
+                var attack = StateOf(unit.Kind, "ATTACK");
+                if (attack == null)
+                {
+                    continue;
+                }
+
+                unit.Movement.Stop();
+                PlayOnce(unit, attack);
+            }
+
+            UpdateFieldView();
+        }
+
+        /// <summary>
+        /// The selected units die, with their death sound: they play their death once, lie dead for a while and
+        /// leave the field.
+        /// </summary>
+        public void KillSelected()
+        {
+            foreach (var unit in SelectedFieldUnits)
+            {
+                unit.Movement.Stop();
+                unit.IsDead = true;
+                unit.IsSelected = false;
+
+                var death = StateOf(unit.Kind, "DEATH");
+                if (death != null)
+                {
+                    PlayOnce(unit, death);
+                }
+            }
+
+            UpdateFieldView();
+        }
+
+        private void RemoveFromField(FieldUnitView unit)
+        {
+            Field.Children.Remove(unit.Image);
+            Field.Children.Remove(unit.Ring);
+            Field.Children.Remove(unit.Marker);
+            _fieldUnits.Remove(unit);
+        }
+
+        private void PlayOnce(FieldUnitView unit, GameObjectState state)
+        {
+            unit.State = state;
+            unit.Pose = 0;
+            unit.PlaysOnce = true;
+            PlaySounds(unit);
+        }
+
+        /// <summary>The unit's next frame; false when it has lain dead long enough and leaves the field.</summary>
+        private bool Advance(FieldUnitView unit)
+        {
+            if (unit.IsDead && !unit.PlaysOnce)
+            {
+                return ++unit.TicksLyingDead <= TicksLyingDead;
+            }
+
+            unit.Pose++;
+            if (unit.PlaysOnce && unit.Pose >= unit.State.Frames.Count)
+            {
+                // The attack is over, or the unit has fallen and now lies dead.
+                SetFieldState(unit, unit.IsDead ? StateOf(unit.Kind, "DEATHLIE") ?? unit.State : StandStateOf(unit.Kind));
+                unit.Pose = unit.IsDead ? unit.State.Frames.Count - 1 : 0;
+                return true;
+            }
+
+            PlaySounds(unit);
+            if (unit.Movement.IsWalking && unit.Movement.Step())
+            {
+                SetFieldState(unit, StandStateOf(unit.Kind));
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -135,13 +217,11 @@ namespace Viewer
                 return;
             }
 
-            foreach (var unit in _fieldUnits)
+            foreach (var unit in _fieldUnits.ToList())
             {
-                unit.Pose++;
-                PlaySounds(unit);
-                if (unit.Movement.IsWalking && unit.Movement.Step())
+                if (!Advance(unit))
                 {
-                    SetFieldState(unit, StandStateOf(unit.Kind));
+                    RemoveFromField(unit);
                 }
             }
 
@@ -206,6 +286,8 @@ namespace Viewer
                 }
             };
             RemoveUnitsButton.Click += (sender, args) => RemoveSelectedFromField();
+            AttackButton.Click += (sender, args) => AttackWithSelected();
+            KillButton.Click += (sender, args) => KillSelected();
             PlayerColorBox.SelectionChanged += (sender, args) =>
             {
                 // The color picker recolors the selected units (and is the color of units added next).
@@ -271,7 +353,14 @@ namespace Viewer
                 unit.State = state;
                 unit.Pose = 0;
             }
+
+            unit.PlaysOnce = false;
         }
+
+        /// <summary>The unit's state of a code, or the first whose code starts with it; null if it has none.</summary>
+        private static GameObjectState StateOf(GameObject unit, string code) =>
+            unit.States.FirstOrDefault(state => state.Code == code)
+            ?? unit.States.FirstOrDefault(state => state.Code.StartsWith(code, StringComparison.Ordinal));
 
         private Size FieldSize()
         {
@@ -312,6 +401,7 @@ namespace Viewer
         private FieldUnitView UnitAt(Point point)
         {
             return _fieldUnits
+                .Where(unit => !unit.IsDead)
                 .OrderByDescending(unit => unit.Movement.Position.Y)
                 .FirstOrDefault(unit => unit.DrawnBounds is { } bounds
                     ? bounds.Inflate(3).Contains(point)
@@ -324,7 +414,7 @@ namespace Viewer
             var chosen = units.ToHashSet();
             foreach (var unit in _fieldUnits)
             {
-                unit.IsSelected = chosen.Contains(unit) || (add && unit.IsSelected);
+                unit.IsSelected = !unit.IsDead && (chosen.Contains(unit) || (add && unit.IsSelected));
             }
 
             UpdateFieldView();
@@ -454,6 +544,8 @@ namespace Viewer
             {
                 FieldHint.Text = "Open the game's All.gsc (or a folder extracted from it) to put its units on the field.";
                 RemoveUnitsButton.IsEnabled = false;
+                AttackButton.IsEnabled = false;
+                KillButton.IsEnabled = false;
                 return;
             }
 
@@ -510,6 +602,8 @@ namespace Viewer
 
             var selected = _fieldUnits.Count(unit => unit.IsSelected);
             RemoveUnitsButton.IsEnabled = selected > 0;
+            AttackButton.IsEnabled = selected > 0;
+            KillButton.IsEnabled = selected > 0;
             FieldHint.Text = selected == 0
                 ? "Click a unit, or drag a box around several, to select them (Shift adds to the selection). Pick a unit in the list to put another one on the field."
                 : selected + (selected == 1 ? " unit" : " units") + " selected: right-click where to go. Delete removes them.";

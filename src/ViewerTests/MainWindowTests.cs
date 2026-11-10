@@ -219,6 +219,71 @@ namespace ViewerTests
             }
         }
 
+        [AvaloniaTest]
+        public async Task AttacksAndDiesWithSounds()
+        {
+            var folder = UnitArchiveFolder(out var archive);
+            Directory.CreateDirectory(Path.Combine(folder, "Sound"));
+            File.WriteAllBytes(Path.Combine(folder, "Sound", "Alarm.wav"), new byte[4]);
+
+            try
+            {
+                var player = new RecordingSoundPlayer();
+                var window = new MainWindow(archive) { SoundPlayer = player };
+                window.Show();
+                await window.RenderingCompleted;
+                window.Pause();
+                window.UpdateLayout();
+
+                var attackButton = window.FindControl<Button>("AttackButton");
+                var unit = window.FieldUnits.Single();
+                Assert.That(attackButton.IsEnabled, Is.True, "a unit is selected");
+
+                // The attack plays once (3 frames, its sound at frame 1), then the unit stands again.
+                window.SendSelectedTo(unit.Movement.Position + new Vector(-100, 0));
+                window.AttackWithSelected();
+                Assert.That(unit.State.Code, Is.EqualTo("ATTACK"));
+                Assert.That(unit.Movement.IsWalking, Is.False, "it stops to attack");
+                Assert.That(unit.Direction, Is.EqualTo(4), "facing the way it was going");
+                window.Tick();
+                Assert.That(player.Played.Select(Path.GetFileName), Is.EqualTo(new[] { "Alarm.wav" }));
+                window.Tick();
+                Assert.That(unit.State.Code, Is.EqualTo("ATTACK"));
+                window.Tick();
+                Assert.That(unit.State.Code, Is.EqualTo("STAND"));
+                window.Tick();
+                Assert.That(player.Played, Has.Count.EqualTo(1));
+
+                // Killed: it dies with its sound (at frame 2), lies dead and cannot be selected or sent.
+                window.KillSelected();
+                Assert.That(unit.State.Code, Is.EqualTo("DEATH"));
+                Assert.That(window.SelectedFieldUnits, Is.Empty);
+                window.Tick();
+                window.Tick();
+                Assert.That(player.Played, Has.Count.EqualTo(2));
+                window.Tick();
+                Assert.That(unit.State.Code, Is.EqualTo("DEATHLIE1"));
+                Click(window, unit.Movement.Position, MouseButton.Left);
+                Assert.That(window.SelectedFieldUnits, Is.Empty);
+                Assert.That(attackButton.IsEnabled, Is.False);
+
+                // After a while the body is gone.
+                for (var i = 0; i < 120; i++)
+                {
+                    window.Tick();
+                }
+
+                Assert.That(window.FieldUnits, Is.Empty);
+                Assert.That(player.Played, Has.Count.EqualTo(2));
+
+                window.Close();
+            }
+            finally
+            {
+                Directory.Delete(folder, true);
+            }
+        }
+
         private sealed class RecordingSoundPlayer : ISoundPlayer
         {
             public System.Collections.Generic.List<string> Played { get; } = new System.Collections.Generic.List<string>();

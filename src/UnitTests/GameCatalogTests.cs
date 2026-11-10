@@ -101,7 +101,7 @@ namespace UnitTests
             unit.Label.Should().Be("Тестовый воин (TST)");
             catalog.Objects.Single(o => !o.IsUnit).Descriptor.FileName.Should().Be("DEPO");
 
-            unit.States.Select(s => s.Code).Should().Equal("STAND", "MOTION_L+MOTION_R", "MOTION_L", "MOTION_R", "MOTION_LB");
+            unit.States.Select(s => s.Code).Should().Equal("STAND", "MOTION_L+MOTION_R", "MOTION_L", "MOTION_R", "MOTION_LB", "ATTACK", "DEATH", "DEATHLIE1");
 
             var walk = unit.States[1];
             walk.Label.Should().Be("Walk (MOTION_L+MOTION_R)");
@@ -135,11 +135,13 @@ namespace UnitTests
             unit.Descriptor.Sounds.Should().Equal(
                 new GpDescriptorSound("MOTION_L", 1, "STEP"),
                 new GpDescriptorSound("MOTION_R", 0, "STEP"),
+                new GpDescriptorSound("ATTACK", 1, "ALARM"),
+                new GpDescriptorSound("DEATH", 2, "ALARM"),
                 new GpDescriptorSound("DEATH", 3, "GONE"));
 
             // GONE is not in the sound list.
             var sounds = catalog.SoundsOf(unit);
-            sounds.Should().HaveCount(2);
+            sounds.Should().HaveCount(4);
             var sound = sounds[0];
             (sound.Animation, sound.Frame).Should().Be(("MOTION_L", 1));
             sound.Sound.Files.Should().Equal(@"Sound\Step1.wav", @"Sound\Step2.wav");
