@@ -397,6 +397,124 @@ namespace ViewerTests
             }
         }
 
+        [AvaloniaTest]
+        public async Task WalksAroundUnitsInsteadOfThroughThem()
+        {
+            var folder = UnitArchiveFolder(out var archive);
+            try
+            {
+                var window = new MainWindow(archive) { SoundPlayer = new RecordingSoundPlayer() };
+                window.Show();
+                await window.RenderingCompleted;
+                window.Pause();
+                window.UpdateLayout();
+
+                // A unit stands right on the walker's way east.
+                var walker = window.FieldUnits.Single();
+                walker.Movement.PlaceAt(new Point(100, 200));
+                var standing = window.AddToField("TST", new Point(300, 200));
+                window.Tick();
+                await window.RenderingCompleted;
+                window.Tick();
+
+                // The two take 20 pixels between them; routes may cut a cell (8) into that.
+                const double room = 20 - FieldPath.CellSize;
+
+                Click(window, walker.Movement.Position, MouseButton.Left);
+                Click(window, new Point(500, 200), MouseButton.Right);
+                Assert.That(walker.Goal, Is.EqualTo(new Point(500, 200)));
+
+                var nearest = double.MaxValue;
+                var furthestAside = 0.0;
+                for (var i = 0; i < 400 && walker.Movement.IsWalking; i++)
+                {
+                    window.Tick();
+                    nearest = Math.Min(nearest, FieldPath.GroundDistance(walker.Movement.Position, standing.Movement.Position));
+                    furthestAside = Math.Max(furthestAside, Math.Abs(walker.Movement.Position.Y - 200));
+                }
+
+                Assert.That(walker.Movement.Position, Is.EqualTo(new Point(500, 200)), "it arrives");
+                Assert.That(walker.State.Code, Is.EqualTo("STAND"));
+                Assert.That(nearest, Is.GreaterThanOrEqualTo(room), "it never walks through the unit");
+                Assert.That(furthestAside, Is.InRange(4.0, 40.0), "it steps aside, but not far");
+                Assert.That(standing.Movement.Position, Is.EqualTo(new Point(300, 200)));
+
+                // Two units sent to each other's places pass each other and both arrive.
+                standing.Movement.PlaceAt(new Point(100, 200));
+                Click(window, walker.Movement.Position, MouseButton.Left);
+                Click(window, new Point(100, 300), MouseButton.Right);
+                for (var i = 0; i < 400 && walker.Movement.IsWalking; i++)
+                {
+                    window.Tick();
+                }
+
+                Click(window, walker.Movement.Position, MouseButton.Left);
+                Click(window, new Point(500, 300), MouseButton.Right);
+                Click(window, standing.Movement.Position, MouseButton.Left);
+                Click(window, new Point(100, 300), MouseButton.Right);
+                // They now walk the same line towards each other: (100, 300) to (500, 300) and (100, 200) to (100, 300).
+                nearest = double.MaxValue;
+                for (var i = 0; i < 600 && (walker.Movement.IsWalking || standing.Movement.IsWalking); i++)
+                {
+                    window.Tick();
+                    nearest = Math.Min(nearest, FieldPath.GroundDistance(walker.Movement.Position, standing.Movement.Position));
+                }
+
+                Assert.That(walker.Movement.Position, Is.EqualTo(new Point(500, 300)));
+                Assert.That(nearest, Is.GreaterThanOrEqualTo(room - FieldUnit.DefaultStepLength));
+
+                window.Close();
+            }
+            finally
+            {
+                Directory.Delete(folder, true);
+            }
+        }
+
+        [AvaloniaTest]
+        public async Task UnitsMeetingHeadOnPassEachOther()
+        {
+            var folder = UnitArchiveFolder(out var archive);
+            try
+            {
+                var window = new MainWindow(archive) { SoundPlayer = new RecordingSoundPlayer() };
+                window.Show();
+                await window.RenderingCompleted;
+                window.Pause();
+                window.UpdateLayout();
+
+                var east = window.FieldUnits.Single();
+                east.Movement.PlaceAt(new Point(100, 200));
+                var west = window.AddToField("TST", new Point(500, 200));
+                window.Tick();
+                await window.RenderingCompleted;
+                window.Tick();
+
+                // Each is sent to where the other stands.
+                Click(window, east.Movement.Position, MouseButton.Left);
+                Click(window, new Point(500, 200), MouseButton.Right);
+                Click(window, west.Movement.Position, MouseButton.Left);
+                Click(window, new Point(100, 200), MouseButton.Right);
+
+                var nearest = double.MaxValue;
+                for (var i = 0; i < 800 && (east.Movement.IsWalking || west.Movement.IsWalking); i++)
+                {
+                    window.Tick();
+                    nearest = Math.Min(nearest, FieldPath.GroundDistance(east.Movement.Position, west.Movement.Position));
+                }
+
+                Assert.That(east.Movement.Position, Is.EqualTo(new Point(500, 200)));
+                Assert.That(west.Movement.Position, Is.EqualTo(new Point(100, 200)));
+                Assert.That(nearest, Is.GreaterThanOrEqualTo(20 - FieldPath.CellSize - FieldUnit.DefaultStepLength), "they do not walk through each other");
+
+                window.Close();
+            }
+            finally
+            {
+                Directory.Delete(folder, true);
+            }
+        }
+
         private sealed class RecordingSoundPlayer : ISoundPlayer
         {
             public System.Collections.Generic.List<string> Played { get; } = new System.Collections.Generic.List<string>();

@@ -53,6 +53,17 @@ namespace Viewer
 
         internal int TicksLyingDead { get; set; }
 
+        /// <summary>Where the unit is going, by way of <see cref="Route"/>; null when it has nowhere to go.</summary>
+        public Point? Goal { get; internal set; }
+
+        /// <summary>The points still to walk to after the one it is walking to now.</summary>
+        internal Queue<Point> Route { get; set; } = new Queue<Point>();
+
+        /// <summary>Ticks spent waiting for a unit in the way, and ways round tried since the last step.</summary>
+        internal int WaitTicks { get; set; }
+
+        internal int Detours { get; set; }
+
         /// <summary>The enemy the unit was sent to attack, or null.</summary>
         public FieldUnitView Target { get; internal set; }
 

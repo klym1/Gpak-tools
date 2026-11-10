@@ -44,6 +44,13 @@ namespace Viewer
 
         private const double LifeBarWidth = 30;
 
+        /// <summary>How far, in pixels, an enemy moves before the way to it is planned again.</summary>
+        private const double RetargetDistance = 12;
+
+        /// <summary>Ticks a unit waits behind one walking its way, and ways round it tries, before something else is done.</summary>
+        private const int MaxWaitTicks = 25;
+        private const int MaxDetours = 6;
+
         /// <summary>How long after the shot a weapon lands, in ticks.</summary>
         private const int TicksToImpact = 20;
 
@@ -132,7 +139,7 @@ namespace Viewer
                 }
 
                 unit.Target = null;
-                unit.Movement.Stop();
+                Halt(unit);
                 PlayOnce(unit, attack);
             }
 
@@ -172,7 +179,7 @@ namespace Viewer
 
         private void Kill(FieldUnitView unit)
         {
-            unit.Movement.Stop();
+            Halt(unit);
             unit.Target = null;
             unit.IsDead = true;
             unit.IsSelected = false;
@@ -192,10 +199,152 @@ namespace Viewer
         }
 
         /// <summary>How near a unit must be to hit with an attack: far for one that fires a weapon.</summary>
-        private static double ReachOf(GameObject kind, GameObjectState attack)
+        private static double ReachOf(FieldUnitView unit, FieldUnitView target, GameObjectState attack)
         {
-            var fires = kind.Descriptor.Weapons.Any(weapon => GameCatalog.SameAnimation(weapon.Animation, attack.Code));
-            return fires ? ShotReach : MeleeReach;
+            var fires = unit.Kind.Descriptor.Weapons.Any(weapon => GameCatalog.SameAnimation(weapon.Animation, attack.Code));
+
+            // Large units cannot come as near as small ones.
+            return Math.Max(fires ? ShotReach : MeleeReach, RadiusOf(unit) + RadiusOf(target) + 4);
+        }
+
+        /// <summary>The room a unit takes on the ground, as a radius: half its selection ring.</summary>
+        private static double RadiusOf(FieldUnitView unit) => RingWidthOf(unit) / 2;
+
+        private static void Halt(FieldUnitView unit)
+        {
+            unit.Movement.Stop();
+            unit.Route.Clear();
+            unit.Goal = null;
+        }
+
+        /// <summary>
+        /// Sends a unit to a point by a way around the other units, except those that
+        /// <paramref name="passes"/> names (units about to move as well, or the enemy it goes for).
+        /// </summary>
+        private void WalkTo(FieldUnitView unit, Point goal, Func<FieldUnitView, bool> passes)
+        {
+            var obstacles = _fieldUnits
+                .Where(other => !ReferenceEquals(other, unit) && !other.IsDead && !passes(other))
+                .Select(other => new FieldObstacle(other.Movement.Position, RadiusOf(other) + RadiusOf(unit)))
+                .ToList();
+
+            unit.Route = new Queue<Point>(FieldPath.Find(
+                  unit.Movement.Position
+                , goal
+                , obstacles
+                , FieldSize()
+            ));
+            unit.Goal = goal;
+            unit.WaitTicks = 0;
+
+            if (NextLeg(unit))
+            {
+                SetFieldState(unit, WalkStateOf(unit.Kind));
+            }
+            else
+            {
+                Halt(unit);
+                SetFieldState(unit, StandStateOf(unit.Kind));
+            }
+        }
+
+        /// <summary>Turns the unit to the next point of its route; false when there is none left.</summary>
+        private static bool NextLeg(FieldUnitView unit)
+        {
+            while (unit.Route.Count > 0)
+            {
+                unit.Movement.MoveTo(unit.Route.Dequeue());
+                if (unit.Movement.IsWalking)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// The unit its next step would walk into, or null if the way is free. A unit already too near
+        /// does not stop it from walking away.
+        /// </summary>
+        private FieldUnitView BlockerOf(FieldUnitView unit)
+        {
+            var here = unit.Movement.Position;
+            var next = unit.Movement.NextPosition();
+
+            return _fieldUnits.FirstOrDefault(other =>
+            {
+                if (ReferenceEquals(other, unit) || other.IsDead || ReferenceEquals(other, unit.Target))
+                {
+                    return false;
+                }
+
+                // Routes may cut a cell's width into the room of a unit they pass.
+                var room = RadiusOf(unit) + RadiusOf(other) - FieldPath.CellSize;
+                var distance = FieldPath.GroundDistance(next, other.Movement.Position);
+                return distance < room && distance < FieldPath.GroundDistance(here, other.Movement.Position);
+            });
+        }
+
+        /// <summary>
+        /// A route ends beside the goal when a unit stood on it; if that unit has left since, the unit walks the
+        /// rest straight. False if it is at its goal or the goal is still taken.
+        /// </summary>
+        private bool FinishAtGoal(FieldUnitView unit)
+        {
+            if (unit.Goal is not { } goal || Distance(goal, unit.Movement.Position) < 0.5)
+            {
+                return false;
+            }
+
+            var taken = _fieldUnits.Any(other =>
+                !ReferenceEquals(other, unit) && !other.IsDead
+                && FieldPath.GroundDistance(goal, other.Movement.Position) < RadiusOf(unit) + RadiusOf(other));
+            if (taken)
+            {
+                return false;
+            }
+
+            unit.Movement.MoveTo(goal);
+            return unit.Movement.IsWalking;
+        }
+
+        /// <summary>
+        /// One step along the route. With a unit in the way it waits its turn behind one walking the same way,
+        /// and otherwise finds a way round; it gives up when no way round helps.
+        /// </summary>
+        private void StepAlongRoute(FieldUnitView unit)
+        {
+            var blocker = BlockerOf(unit);
+            if (blocker == null)
+            {
+                unit.WaitTicks = 0;
+                unit.Detours = 0;
+                if (unit.Movement.Step() && !NextLeg(unit) && !FinishAtGoal(unit))
+                {
+                    Halt(unit);
+                    SetFieldState(unit, StandStateOf(unit.Kind));
+                }
+
+                return;
+            }
+
+            unit.WaitTicks++;
+            var turn = Math.Abs((blocker.Movement.Heading - unit.Movement.Heading + 540) % 360 - 180);
+            var follows = blocker.Movement.IsWalking && turn < 90;
+            if (unit.WaitTicks < (follows ? MaxWaitTicks : 2))
+            {
+                return;
+            }
+
+            if (++unit.Detours > MaxDetours)
+            {
+                Halt(unit);
+                SetFieldState(unit, StandStateOf(unit.Kind));
+                return;
+            }
+
+            WalkTo(unit, unit.Goal ?? unit.Movement.Target ?? unit.Movement.Position, other => ReferenceEquals(other, unit.Target));
         }
 
         /// <summary>An idle unit that is attacked turns on its attacker, if it can attack at all.</summary>
@@ -233,7 +382,7 @@ namespace Viewer
             if (target.IsDead || !_fieldUnits.Contains(target) || attack == null)
             {
                 unit.Target = null;
-                unit.Movement.Stop();
+                Halt(unit);
                 SetFieldState(unit, StandStateOf(unit.Kind));
                 return;
             }
@@ -244,9 +393,9 @@ namespace Viewer
             }
 
             var way = target.Movement.Position - unit.Movement.Position;
-            if (Distance(target.Movement.Position, unit.Movement.Position) <= ReachOf(unit.Kind, attack))
+            if (Distance(target.Movement.Position, unit.Movement.Position) <= ReachOf(unit, target, attack))
             {
-                unit.Movement.Stop();
+                Halt(unit);
                 unit.Movement.TurnTo(FieldUnit.HeadingOf(way));
                 if (resting)
                 {
@@ -259,8 +408,12 @@ namespace Viewer
             }
             else
             {
-                unit.Movement.MoveTo(target.Movement.Position);
-                SetFieldState(unit, WalkStateOf(unit.Kind));
+                // Plan the way again when the enemy has moved, or the unit was stopped on its way.
+                var goal = target.Movement.Position;
+                if (unit.Goal is not { } planned || Distance(planned, goal) > RetargetDistance || !unit.Movement.IsWalking)
+                {
+                    WalkTo(unit, goal, other => ReferenceEquals(other, target));
+                }
             }
         }
 
@@ -320,9 +473,9 @@ namespace Viewer
             }
 
             PlaySounds(unit);
-            if (unit.Movement.IsWalking && unit.Movement.Step())
+            if (unit.Movement.IsWalking)
             {
-                SetFieldState(unit, StandStateOf(unit.Kind));
+                StepAlongRoute(unit);
             }
 
             return true;
@@ -348,8 +501,8 @@ namespace Viewer
             {
                 var unit = group[i];
                 unit.Target = null;
-                unit.Movement.MoveTo(places[assignment[i]]);
-                SetFieldState(unit, unit.Movement.IsWalking ? WalkStateOf(unit.Kind) : StandStateOf(unit.Kind));
+                unit.Detours = 0;
+                WalkTo(unit, places[assignment[i]], group.Contains);
             }
 
             UpdateFieldView();
@@ -842,7 +995,7 @@ namespace Viewer
                     Canvas.SetTop(unit.LifeBar, (unit.DrawnBounds?.Top ?? feet.Y - 40) - 6);
                 }
 
-                var target = unit.Movement.Target;
+                var target = unit.Goal ?? unit.Movement.Target;
                 unit.Marker.IsVisible = unit.IsSelected && target != null;
                 if (target is { } t)
                 {

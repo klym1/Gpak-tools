@@ -69,17 +69,27 @@ namespace Viewer
                 return false;
             }
 
-            var way = target - Position;
-            var length = Length(way);
-            if (length <= StepLength)
+            Position = NextPosition();
+            if (Position != target)
             {
-                Position = target;
-                Target = null;
-                return true;
+                return false;
             }
 
-            Position += way * (StepLength / length);
-            return false;
+            Target = null;
+            return true;
+        }
+
+        /// <summary>Where the next step takes the unit: towards the target, or onto it if it is near enough.</summary>
+        public Point NextPosition()
+        {
+            if (Target is not { } target)
+            {
+                return Position;
+            }
+
+            var way = target - Position;
+            var length = Length(way);
+            return length <= StepLength ? target : Position + way * (StepLength / length);
         }
 
         /// <summary>
