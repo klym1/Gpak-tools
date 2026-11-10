@@ -95,6 +95,12 @@ namespace GPExtractor
         /// <summary>How far an attack animation reaches, as <see cref="DamageOf"/>; null if the descriptor does not give it.</summary>
         public int? AttackRangeOf(string animation) => ValueOf(AttackRanges, animation);
 
+        /// <summary>The minimum of the <c>ATTACK_RADIUS</c> lines: how near each attack can still be made.</summary>
+        public IReadOnlyList<(int Attack, int Value)> AttackMinRanges { get; private init; } = Array.Empty<(int, int)>();
+
+        /// <summary>How near an attack animation can still be made, as <see cref="AttackRangeOf"/>.</summary>
+        public int? AttackMinRangeOf(string animation) => ValueOf(AttackMinRanges, animation);
+
         /// <summary>The <c>SHIELD</c> line: armor taken off the damage of every hit; 0 if there is none.</summary>
         public int Shield { get; private init; }
 
@@ -170,6 +176,7 @@ namespace GPExtractor
             var damages = new List<(int Attack, int Value)>();
             var attackPauses = new List<(int Attack, int Value)>();
             var attackRanges = new List<(int Attack, int Value)>();
+            var attackMinRanges = new List<(int Attack, int Value)>();
             var weaponKinds = new List<(int Attack, string Kind)>();
             var protections = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             var shield = 0;
@@ -242,8 +249,10 @@ namespace GPExtractor
                     attackPauses.Add((pauseAttack, pauseValue));
                 }
                 else if (tokens.Length >= 4 && tokens[0].Equals("ATTACK_RADIUS", StringComparison.OrdinalIgnoreCase)
-                         && TryInt(tokens[1], out var rangeAttack) && TryInt(tokens[3], out var rangeValue))
+                         && TryInt(tokens[1], out var rangeAttack) && TryInt(tokens[2], out var rangeMin)
+                         && TryInt(tokens[3], out var rangeValue))
                 {
+                    attackMinRanges.Add((rangeAttack, rangeMin));
                     attackRanges.Add((rangeAttack, rangeValue));
                 }
                 else if (tokens[0].Equals("SHIELD", StringComparison.OrdinalIgnoreCase) && TryInt(tokens[1], out var shieldValue))
@@ -297,6 +306,7 @@ namespace GPExtractor
                 Damages = damages,
                 AttackPauses = attackPauses,
                 AttackRanges = attackRanges,
+                AttackMinRanges = attackMinRanges,
                 Shield = shield,
                 Protections = protections,
                 WeaponKinds = weaponKinds,

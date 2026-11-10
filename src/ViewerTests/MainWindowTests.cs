@@ -709,6 +709,30 @@ namespace ViewerTests
 
                 Assert.That(south.Life, Is.EqualTo(0));
 
+                // Sent against an enemy with ATTACK2 picked: 150 pixels away it is used, but 60 is nearer than
+                // its minimum of 100, so the unit makes its other attack.
+                Click(window, new Point(600, 50), MouseButton.Left);
+                await window.SetPlayerColor(NationColorOffset.Red);
+                var enemy = window.AddToField("TST", new Point(650, 200));
+                window.Tick();
+                await window.RenderingCompleted;
+                Click(window, unit.Movement.Position, MouseButton.Left);
+                window.FindControl<ComboBox>("AttackBox").SelectedIndex = 1;
+                Click(window, enemy.Movement.Position, MouseButton.Right);
+                window.Tick();
+                Assert.That(unit.State.Code, Is.EqualTo("ATTACK2"));
+                Assert.That(unit.Movement.Position, Is.EqualTo(new Point(500, 200)));
+
+                var near = window.AddToField("TST", new Point(500, 170));
+                unit.Target = near;
+                for (var i = 0; i < 10 && unit.State.Code != "ATTACK"; i++)
+                {
+                    window.Tick();
+                }
+
+                Assert.That(unit.State.Code, Is.EqualTo("ATTACK"));
+                Assert.That(unit.Movement.Position, Is.EqualTo(new Point(500, 200)));
+
                 window.Close();
             }
             finally

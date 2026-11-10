@@ -225,13 +225,31 @@ namespace Viewer
         {
             var from = unit.Movement.Position;
             var to = target.Movement.Position;
-            var fires = unit.Kind.Descriptor.Weapons.Any(weapon => GameCatalog.SameAnimation(weapon.Animation, attack.Code));
 
             // Large units cannot come as near as small ones.
             var room = RadiusOf(unit) + RadiusOf(target) + 4;
-            return fires
+            return Fires(unit.Kind, attack)
                 ? FieldPath.GroundDistance(from, to) <= Math.Max(ShotReachOf(unit, attack.Code), room)
                 : Distance(from, to) <= Math.Max(MeleeReach, room);
+        }
+
+        private static bool Fires(GameObject kind, GameObjectState attack) =>
+            kind.Descriptor.Weapons.Any(weapon => GameCatalog.SameAnimation(weapon.Animation, attack.Code));
+
+        /// <summary>Whether a target is nearer than an attack that fires a weapon can be made: the minimum of its <c>ATTACK_RADIUS</c>.</summary>
+        private static bool IsTooNear(FieldUnitView unit, FieldUnitView target, GameObjectState attack) =>
+            Fires(unit.Kind, attack)
+            && FieldPath.GroundDistance(unit.Movement.Position, target.Movement.Position) < (unit.Kind.Descriptor.AttackMinRangeOf(attack.Code) ?? 0);
+
+        /// <summary>
+        /// The attack a unit makes on a target: the chosen one, or the first of its others that the target is
+        /// not too near for; null if it is too near for all of them.
+        /// </summary>
+        private static GameObjectState AttackOn(FieldUnitView unit, FieldUnitView target, GameObjectState chosen)
+        {
+            return IsTooNear(unit, target, chosen)
+                ? AttacksOf(unit.Kind).FirstOrDefault(attack => !IsTooNear(unit, target, attack))
+                : chosen;
         }
 
         private static double ShotReachOf(FieldUnitView unit, string attack) =>
@@ -462,11 +480,12 @@ namespace Viewer
             }
 
             var way = target.Movement.Position - unit.Movement.Position;
-            if (IsWithinReach(unit, target, attack))
+            attack = AttackOn(unit, target, attack);
+            if (attack == null || IsWithinReach(unit, target, attack))
             {
                 Halt(unit);
                 unit.Movement.TurnTo(FieldUnit.HeadingOf(way));
-                if (resting)
+                if (attack == null || resting)
                 {
                     SetFieldState(unit, StandStateOf(unit.Kind));
                     return;

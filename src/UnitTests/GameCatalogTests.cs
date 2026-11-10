@@ -68,6 +68,8 @@ namespace UnitTests
             descriptor.AttackPauseOf("ATTACK2").Should().BeNull();
             descriptor.AttackRangeOf("ATTACK2").Should().Be(200, "the far end of ATTACK_RADIUS 2 100 200");
             descriptor.AttackRangeOf("ATTACK").Should().BeNull();
+            descriptor.AttackMinRangeOf("ATTACK2").Should().Be(100);
+            descriptor.AttackMinRangeOf("ATTACK").Should().BeNull();
 
             // Armor: the shield and the protection against the attack's kind of weapon come off the damage.
             descriptor.Shield.Should().Be(4);
