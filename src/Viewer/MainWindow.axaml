@@ -23,8 +23,12 @@
                   PlaceholderText="Pick a unit…" ToolTip.Tip="Units described in the game data (type to search)" />
         <TextBlock Text="State" VerticalAlignment="Center" />
         <ComboBox x:Name="StateBox" Width="280" MaxDropDownHeight="520" ToolTip.Tip="Animation of the unit" />
-        <ToggleButton x:Name="FieldButton" Content="Field" IsEnabled="False"
-                      ToolTip.Tip="Put the unit on a field: left-click it to select it, right-click somewhere to send it there" />
+        <ToggleButton x:Name="FieldButton" Content="Field"
+                      ToolTip.Tip="Put units on a field: select them with a click or by dragging a box, right-click to send them somewhere" />
+        <Button x:Name="AddUnitButton" Content="Add unit" IsVisible="False"
+                ToolTip.Tip="Add the picked unit to the field, in the picked color" />
+        <Button x:Name="RemoveUnitsButton" Content="Remove" IsVisible="False" IsEnabled="False"
+                ToolTip.Tip="Remove the selected units from the field (Delete)" />
       </StackPanel>
 
       <StackPanel Orientation="Horizontal" Spacing="8">
@@ -86,15 +90,12 @@
                VerticalAlignment="Top" />
       </ScrollViewer>
 
-      <!-- The field: the unit stands with its feet (anchor) at its position and walks where it is sent -->
-      <Canvas x:Name="Field" IsVisible="False" Background="#5D7044" ClipToBounds="True">
-        <Ellipse x:Name="TargetMarker" Width="14" Height="7" Stroke="White" StrokeThickness="1.5"
-                 IsVisible="False" IsHitTestVisible="False" />
-        <Ellipse x:Name="SelectionMarker" Stroke="#9CFF57" StrokeThickness="2"
-                 IsVisible="False" IsHitTestVisible="False" />
-        <Image x:Name="FieldImage" Stretch="None" IsHitTestVisible="False" />
-        <TextBlock x:Name="FieldHint" Canvas.Left="10" Canvas.Top="8" Foreground="#E8F0DC" IsHitTestVisible="False"
-                   Text="Left-click the unit to select it, then right-click where it should go." />
+      <!-- The field: units stand with their feet (anchor) at their positions and walk where they are sent -->
+      <Canvas x:Name="Field" IsVisible="False" Focusable="True" Background="#5D7044" ClipToBounds="True">
+        <!-- Units (image, selection ring, target marker) are added in code; images are ordered front to back by their feet. -->
+        <Rectangle x:Name="SelectionRectangle" Stroke="#9CFF57" StrokeThickness="1" Fill="#269CFF57"
+                   IsVisible="False" IsHitTestVisible="False" ZIndex="100000" />
+        <TextBlock x:Name="FieldHint" Canvas.Left="10" Canvas.Top="8" Foreground="#E8F0DC" IsHitTestVisible="False" ZIndex="100001" />
       </Canvas>
     </Panel>
 

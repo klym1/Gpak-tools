@@ -29,7 +29,7 @@ dotnet build src/GPExtractor.sln
 dotnet test src/GPExtractor.sln
 ```
 
-View and animate a `.gp` file (defaults to `gp/test.gp`; files can also be opened or dropped in the window). Open the game's `All.gsc` (or a folder extracted from it) to browse its units instead: pick a unit, its state (stand, walk, attack, death, …), direction and player color. With **Field**, the unit stands on a field: left-click it to select it, right-click somewhere to send it there; it turns to the nearest direction, walks (one step of a few pixels per animation frame) and stands again when it arrives:
+View and animate a `.gp` file (defaults to `gp/test.gp`; files can also be opened or dropped in the window). Open the game's `All.gsc` (or a folder extracted from it) to browse its units instead: pick a unit, its state (stand, walk, attack, death, …), direction and player color. With **Field**, units stand on a field: **Add unit** puts the picked unit there in the picked color. Click a unit, or drag a box around several, to select them (Shift adds to the selection; Delete or **Remove** takes them off), then right-click to send them somewhere: each turns to the nearest direction, walks (one step of a few pixels per animation frame) to its own place in a block around the point and stands again when it arrives:
 
 ```
 dotnet run --project src/Viewer -- [gp-file | All.gsc | extracted-folder]

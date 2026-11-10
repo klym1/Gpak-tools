@@ -381,59 +381,53 @@ namespace ViewerTests
         }
 
         [AvaloniaTest]
-        public async Task SelectsAndWalksTheUnitOnTheField()
+        public async Task SelectsAndWalksAUnitOnTheField()
         {
-            var folder = Path.Combine(Path.GetTempPath(), "viewer-field-" + Guid.NewGuid());
-            Directory.CreateDirectory(folder);
-            var archive = Path.Combine(folder, "All.gsc");
-            File.WriteAllBytes(archive, UnitTests.GpTestFiles.GameArchive(UnitTests.GpTestFiles.UnitGameData()));
-
+            var folder = UnitArchiveFolder(out var archive);
             try
             {
                 var window = new MainWindow(archive);
                 window.Show();
                 await window.RenderingCompleted;
-                await window.SetDirection(4);
 
-                // On the field the unit stands, facing the way it faced, and the animation plays.
+                // On the field the picked unit stands in the middle, selected, and the animation plays.
                 await window.SetFieldMode(true);
                 window.Pause(); // the test drives the ticks
                 window.UpdateLayout();
+                await window.RenderingCompleted;
 
                 var field = window.FindControl<Canvas>("Field");
                 Assert.That(field.IsVisible, Is.True);
                 Assert.That(window.FindControl<ScrollViewer>("ImageScroller").IsVisible, Is.False);
-                Assert.That(window.CurrentState.Code, Is.EqualTo("STAND"));
-                Assert.That(window.CurrentDirection, Is.EqualTo(4), "west");
-                var unit = window.FieldUnit;
-                var start = unit.Position;
-                Assert.That(DrawnColumnsAtFeet(window), Is.EqualTo(new[] { 0, 1, 2, 3, 4 }), "feet at the anchor, line to the right");
+                Assert.That(window.FindControl<ComboBox>("StateBox").IsEnabled, Is.False, "every unit has its own state");
+                var unit = window.FieldUnits.Single();
+                Assert.That(unit.State.Code, Is.EqualTo("STAND"));
+                Assert.That(unit.IsSelected, Is.True);
+                Assert.That(unit.Direction, Is.EqualTo(0), "faces the viewer");
+                Assert.That(DrawnColumnsAtFeet(unit), Is.EqualTo(new[] { 0 }), "feet at the anchor");
 
-                // Right-click does nothing until the unit is selected; a left-click elsewhere does not select it.
-                Click(window, start + new Vector(0, -100), MouseButton.Right);
-                Assert.That(unit.IsWalking, Is.False);
+                // A click on empty field deselects; right-click then does nothing.
+                var start = unit.Movement.Position;
                 Click(window, start + new Vector(60, 60), MouseButton.Left);
-                Assert.That(window.IsUnitSelected, Is.False);
+                Assert.That(unit.IsSelected, Is.False);
+                Click(window, start + new Vector(0, -100), MouseButton.Right);
+                Assert.That(unit.Movement.IsWalking, Is.False);
 
+                // Selected and sent north: it turns and walks.
                 Click(window, start, MouseButton.Left);
-                Assert.That(window.IsUnitSelected, Is.True);
-                Assert.That(window.FindControl<Avalonia.Controls.Shapes.Ellipse>("SelectionMarker").IsVisible, Is.True);
-
-                // Sent north: it turns and walks.
+                Assert.That(unit.IsSelected, Is.True);
                 Click(window, start + new Vector(0, -100), MouseButton.Right);
                 await window.RenderingCompleted;
-                Assert.That(unit.IsWalking, Is.True);
-                Assert.That(window.CurrentState.Code, Is.EqualTo("MOTION_L+MOTION_R"));
-                Assert.That(window.CurrentDirection, Is.EqualTo(8), "north");
-                Assert.That(window.FrameCount, Is.EqualTo(4));
+                Assert.That(unit.Movement.IsWalking, Is.True);
+                Assert.That(unit.State.Code, Is.EqualTo("MOTION_L+MOTION_R"));
+                Assert.That(unit.Direction, Is.EqualTo(8), "north");
 
                 for (var i = 0; i < 10; i++)
                 {
                     window.Tick();
                 }
 
-                Assert.That(unit.Position, Is.EqualTo(start + new Vector(0, -10 * FieldUnit.DefaultStepLength)));
-                Assert.That(window.CurrentState.Code, Is.EqualTo("MOTION_L+MOTION_R"));
+                Assert.That(unit.Movement.Position, Is.EqualTo(start + new Vector(0, -10 * FieldUnit.DefaultStepLength)));
 
                 // On arrival it stands again, still facing north.
                 for (var i = 0; i < 15; i++)
@@ -442,34 +436,30 @@ namespace ViewerTests
                 }
 
                 await window.RenderingCompleted;
-                Assert.That(unit.IsWalking, Is.False);
-                Assert.That(unit.Position, Is.EqualTo(start + new Vector(0, -100)));
-                Assert.That(window.CurrentState.Code, Is.EqualTo("STAND"));
-                Assert.That(window.CurrentDirection, Is.EqualTo(8));
+                Assert.That(unit.Movement.IsWalking, Is.False);
+                Assert.That(unit.Movement.Position, Is.EqualTo(start + new Vector(0, -100)));
+                Assert.That(unit.State.Code, Is.EqualTo("STAND"));
+                Assert.That(unit.Direction, Is.EqualTo(8));
 
                 // Sent east: the mirrored frames are drawn with the feet at the unit's position too.
-                var here = unit.Position;
-                Click(window, here + new Vector(80, 0), MouseButton.Right);
-                await window.RenderingCompleted;
-                Assert.That(window.CurrentState.Code, Is.EqualTo("MOTION_L+MOTION_R"));
-                Assert.That(window.CurrentDirection, Is.EqualTo(12), "east");
+                Click(window, unit.Movement.Position + new Vector(80, 0), MouseButton.Right);
+                Assert.That(unit.Direction, Is.EqualTo(12), "east");
                 window.Tick();
                 await window.RenderingCompleted;
-                Assert.That(DrawnColumnsAtFeet(window), Is.EqualTo(new[] { -5, -4, -3, -2, -1 }));
+                window.Tick();
+                Assert.That(DrawnColumnsAtFeet(unit), Is.EqualTo(new[] { -5, -4, -3, -2, -1 }));
 
                 // Turning while walking keeps the step it is in.
-                window.Tick();
-                var pose = window.CurrentFrame;
-                Click(window, unit.Position + new Vector(-50, 50), MouseButton.Right);
-                await window.RenderingCompleted;
-                Assert.That(window.CurrentDirection, Is.EqualTo(2), "south-west");
-                Assert.That(window.CurrentFrame, Is.EqualTo(pose));
+                var pose = unit.Pose;
+                Click(window, unit.Movement.Position + new Vector(-50, 50), MouseButton.Right);
+                Assert.That(unit.Direction, Is.EqualTo(2), "south-west");
+                Assert.That(unit.Pose, Is.EqualTo(pose));
 
-                // Leaving the field goes back to the plain view.
+                // Leaving the field goes back to the animation view; the units stay for next time.
                 await window.SetFieldMode(false);
-                Assert.That(window.FieldUnit, Is.Null);
                 Assert.That(field.IsVisible, Is.False);
-                Assert.That(window.CurrentState.Code, Is.EqualTo("MOTION_L+MOTION_R"));
+                Assert.That(window.FindControl<ComboBox>("StateBox").IsEnabled, Is.True);
+                Assert.That(window.FieldUnits, Has.Count.EqualTo(1));
 
                 window.Close();
             }
@@ -479,19 +469,118 @@ namespace ViewerTests
             }
         }
 
-        private static void Click(MainWindow window, Point fieldPoint, MouseButton button)
+        [AvaloniaTest]
+        public async Task SelectsSeveralUnitsWithABoxAndSendsThemTogether()
         {
-            var point = window.FindControl<Canvas>("Field").TranslatePoint(fieldPoint, window).Value;
-            window.MouseDown(point, button);
-            window.MouseUp(point, button);
+            var folder = UnitArchiveFolder(out var archive);
+            try
+            {
+                var window = new MainWindow(archive);
+                window.Show();
+                await window.RenderingCompleted;
+                await window.SetFieldMode(true);
+                window.Pause();
+                window.UpdateLayout();
+
+                // Two more units; the color picker recolors the selected unit and colors the ones added next.
+                var first = window.FieldUnits.Single();
+                first.Movement.PlaceAt(new Point(100, 200));
+                var second = window.AddToField(new Point(150, 210));
+                await window.SetPlayerColor(NationColorOffset.Red);
+                var third = window.AddToField(new Point(400, 200));
+                Assert.That(window.FieldUnits, Has.Count.EqualTo(3));
+                Assert.That(window.SelectedFieldUnits, Is.EqualTo(new[] { third }), "a new unit is selected");
+                Assert.That(second.Color.Offset, Is.EqualTo(NationColorOffset.Red.Offset));
+                Assert.That(third.Color.Offset, Is.EqualTo(NationColorOffset.Red.Offset));
+                Assert.That(first.Color.Offset, Is.Not.EqualTo(NationColorOffset.Red.Offset), "only the selected unit is recolored");
+                window.Tick();
+                await window.RenderingCompleted;
+
+                // A box around the first two selects them (and only them).
+                Drag(window, new Point(80, 180), new Point(170, 230));
+                Assert.That(window.SelectedFieldUnits, Is.EqualTo(new[] { first, second }));
+                Assert.That(window.FindControl<Avalonia.Controls.Shapes.Rectangle>("SelectionRectangle").IsVisible, Is.False);
+
+                // Shift-click adds the third; a click on empty field deselects; a shift-drag box adds too.
+                Click(window, third.Movement.Position, MouseButton.Left, RawInputModifiers.Shift);
+                Assert.That(window.SelectedFieldUnits, Has.Count.EqualTo(3));
+                Click(window, new Point(300, 50), MouseButton.Left);
+                Assert.That(window.SelectedFieldUnits, Is.Empty);
+                Drag(window, new Point(80, 180), new Point(120, 230));
+                Drag(window, new Point(380, 180), new Point(420, 230), RawInputModifiers.Shift);
+                Assert.That(window.SelectedFieldUnits, Is.EqualTo(new[] { first, third }));
+                Click(window, second.Movement.Position, MouseButton.Left, RawInputModifiers.Shift);
+
+                // All three are sent north together: each walks to its own place in a block around the point.
+                var target = new Point(250, 60);
+                Click(window, target, MouseButton.Right);
+                var units = new[] { first, second, third };
+                Assert.That(units.Select(u => u.Movement.IsWalking), Is.All.True);
+                Assert.That(units.Select(u => u.State.Code), Is.All.EqualTo("MOTION_L+MOTION_R"));
+                var places = units.Select(u => u.Movement.Target.Value).ToList();
+                Assert.That(places.Distinct().Count(), Is.EqualTo(3), "no two units go to the same place");
+                Assert.That(places.Average(p => p.X), Is.EqualTo(target.X).Within(40));
+                Assert.That(units[0].Direction, Is.Not.EqualTo(units[2].Direction), "each heads for its own place");
+                foreach (var u in units)
+                {
+                    Assert.That(u.Movement.Heading, Is.EqualTo(FieldUnit.HeadingOf(u.Movement.Target.Value - u.Movement.Position)).Within(1e-9));
+                }
+
+                for (var i = 0; i < 200 && units.Any(u => u.Movement.IsWalking); i++)
+                {
+                    window.Tick();
+                }
+
+                await window.RenderingCompleted;
+                Assert.That(units.Select(u => u.State.Code), Is.All.EqualTo("STAND"));
+                Assert.That(units.Select(u => u.Movement.Position), Is.EqualTo(places));
+
+                // Remove takes the selected units off the field.
+                Click(window, third.Movement.Position, MouseButton.Left);
+                window.FindControl<Button>("RemoveUnitsButton").RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+                Assert.That(window.FieldUnits, Is.EqualTo(new[] { first, second }));
+
+                window.Close();
+            }
+            finally
+            {
+                Directory.Delete(folder, true);
+            }
+        }
+
+        private static string UnitArchiveFolder(out string archive)
+        {
+            var folder = Path.Combine(Path.GetTempPath(), "viewer-field-" + Guid.NewGuid());
+            Directory.CreateDirectory(folder);
+            archive = Path.Combine(folder, "All.gsc");
+            File.WriteAllBytes(archive, UnitTests.GpTestFiles.GameArchive(UnitTests.GpTestFiles.UnitGameData()));
+            return folder;
+        }
+
+        private static Point OnWindow(MainWindow window, Point fieldPoint) =>
+            window.FindControl<Canvas>("Field").TranslatePoint(fieldPoint, window).Value;
+
+        private static void Click(MainWindow window, Point fieldPoint, MouseButton button, RawInputModifiers modifiers = RawInputModifiers.None)
+        {
+            var point = OnWindow(window, fieldPoint);
+            window.MouseDown(point, button, modifiers);
+            window.MouseUp(point, button, modifiers);
+        }
+
+        private static void Drag(MainWindow window, Point from, Point to, RawInputModifiers modifiers = RawInputModifiers.None)
+        {
+            window.MouseDown(OnWindow(window, from), MouseButton.Left, modifiers);
+            window.MouseMove(OnWindow(window, (from + to) / 2), modifiers | RawInputModifiers.LeftMouseButton);
+            window.MouseMove(OnWindow(window, to), modifiers | RawInputModifiers.LeftMouseButton);
+            window.MouseUp(OnWindow(window, to), MouseButton.Left, modifiers);
         }
 
         /// <summary>Columns of the unit's row (its feet) that are drawn on the field, relative to the feet.</summary>
-        private static int[] DrawnColumnsAtFeet(MainWindow window)
+        private static int[] DrawnColumnsAtFeet(FieldUnitView unit)
         {
-            var image = window.FindControl<Image>("FieldImage");
+            var image = unit.Image;
             var bitmap = (WriteableBitmap)image.Source;
-            var feet = window.FieldUnit.Position;
+            var feet = unit.Movement.Position;
             var left = (int)Canvas.GetLeft(image);
             var y = (int)Math.Round(feet.Y) - (int)Canvas.GetTop(image);
             var width = bitmap.PixelSize.Width;
