@@ -342,7 +342,7 @@ namespace Viewer
             _updatingControls = true;
             try
             {
-                var units = catalog?.Units.ToList() ?? new List<GameObject>();
+                var units = catalog?.Units.Concat(catalog.Buildings).ToList() ?? new List<GameObject>();
                 UnitBox.ItemsSource = units;
                 UnitBox.SelectedItem = null;
                 UnitPanel.IsVisible = units.Count > 0;
@@ -380,6 +380,7 @@ namespace Viewer
             };
 
             var (jobs, width, height, anchor) = PlanUnit(request);
+            var layered = request.Unit.IsBuilding && IsLayered(request.State);
 
             var results = jobs.Select(job =>
                 {
@@ -408,7 +409,54 @@ namespace Viewer
                 })
                 .ToArray();
 
-            return (results, anchor);
+            return (layered ? new[] { Layered(results) } : results, anchor);
+        }
+
+        /// <summary>The states of a building whose frames are its layers: all but its work, which is animated.</summary>
+        private static bool IsLayered(GameObjectState state) =>
+            new[] { "STAND", "BUILD", "DEATHLIE" }.Any(prefix => state.Code.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+
+        /// <summary>Lays the images over each other, the first at the bottom, into one.</summary>
+        private static RenderResult Layered(IReadOnlyList<RenderResult> layers)
+        {
+            var images = layers.Where(layer => layer.Image != null).Select(layer => layer.Image).ToList();
+            if (images.Count == 0)
+            {
+                return layers[0];
+            }
+
+            var merged = new ImageView(images[0].Width, images[0].Height);
+            foreach (var image in images)
+            {
+                for (var i = 0; i < merged.Pixels.Length && i < image.Pixels.Length; i++)
+                {
+                    var over = image.Pixels[i];
+                    var under = merged.Pixels[i];
+                    if (over.A == 255 || under.A == 0)
+                    {
+                        merged.Pixels[i] = over.A == 0 ? under : over;
+                        continue;
+                    }
+
+                    // "Over" of two see-through pixels.
+                    var alpha = over.A + under.A * (255 - over.A) / 255;
+                    int Mix(int top, int bottom) => alpha == 0 ? 0 : (top * over.A + bottom * under.A * (255 - over.A) / 255) / alpha;
+                    merged.Pixels[i] = Color.FromArgb(
+                          alpha
+                        , Mix(over.R, under.R)
+                        , Mix(over.G, under.G)
+                        , Mix(over.B, under.B)
+                    );
+                }
+            }
+
+            return new RenderResult(
+                  0
+                , merged
+                , null
+                , layers.Sum(layer => layer.SkippedParts)
+                , OpaqueBounds(merged)
+            );
         }
 
         /// <summary>The smallest rectangle around the drawn (not fully transparent) pixels, or null if there are none.</summary>
@@ -462,6 +510,19 @@ namespace Viewer
                 sprites[index] = (file,
                     descriptor.AnchorX ?? file.EstimateAnchorX(Math.Min(directions, file.FrameCount)),
                     descriptor.AnchorY ?? 0);
+            }
+
+            // A building's descriptor anchors it at the corner of its picture; it stands on the middle of its ground layer.
+            var ground = unit.IsBuilding
+                ? unit.States.Where(state => state.Code.StartsWith("STANDLO", StringComparison.OrdinalIgnoreCase)).SelectMany(state => state.Frames).FirstOrDefault()
+                : default;
+            if (unit.IsBuilding && sprites.TryGetValue(ground.Sprite, out var groundSprite)
+                && ground.Pose < groundSprite.File.FrameCount && groundSprite.File.BoundsOf(ground.Pose) is { } footprint)
+            {
+                foreach (var index in sprites.Keys.ToList())
+                {
+                    sprites[index] = (sprites[index].File, footprint.X + footprint.Width / 2, footprint.Y + footprint.Height / 2);
+                }
             }
 
             // Canvas: symmetric around the anchor horizontally (for mirroring), tall enough for every sprite.

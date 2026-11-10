@@ -34,6 +34,12 @@ namespace GPExtractor
         /// <summary>Whether it has directions: units, ships, cannons.</summary>
         public bool IsUnit => Descriptor.HasDirections;
 
+        /// <summary>
+        /// Whether it is a building: an object without directions that stands (<c>STANDLO</c>). The frames of
+        /// such a state are not shown in turn but together, as layers: the ground with the shadow, then the walls.
+        /// </summary>
+        public bool IsBuilding => !IsUnit && States.Any(state => state.Code.StartsWith("STANDLO", StringComparison.OrdinalIgnoreCase));
+
         /// <summary>Display name with the internal name, e.g. "Барабанщик 17в (BA1)".</summary>
         public string Label => (Descriptor.DisplayName ?? Descriptor.Name) + " (" + Descriptor.FileName + ")";
 
@@ -254,6 +260,8 @@ namespace GPExtractor
         public IReadOnlyList<GameObject> Objects { get; }
 
         public IEnumerable<GameObject> Units => Objects.Where(gameObject => gameObject.IsUnit);
+
+        public IEnumerable<GameObject> Buildings => Objects.Where(gameObject => gameObject.IsBuilding);
 
         /// <summary>Reads every descriptor (<c>*.MD</c>) in the game files.</summary>
         public static GameCatalog Load(GameFiles files)

@@ -110,7 +110,7 @@ namespace ViewerTests
                 await window.RenderingCompleted;
 
                 Assert.That(window.FindControl<StackPanel>("UnitPanel").IsVisible, Is.True);
-                Assert.That(window.FindControl<ComboBox>("UnitBox").ItemCount, Is.EqualTo(1), "only units, not buildings");
+                Assert.That(window.FindControl<ComboBox>("UnitBox").ItemCount, Is.EqualTo(2), "the unit, then the building");
                 Assert.That(window.FindControl<Button>("AddUnitButton"), Is.Null);
                 Assert.That(window.FieldUnits.Select(unit => unit.Kind.Descriptor.FileName), Is.EqualTo(new[] { "TST", "TST" }));
                 Assert.That(
@@ -837,6 +837,68 @@ namespace ViewerTests
             finally
             {
                 Directory.Delete(folder, true);
+            }
+        }
+
+        [AvaloniaTest]
+        public async Task PutsBuildingsOnTheField()
+        {
+            var folder = UnitArchiveFolder(out var archive);
+            try
+            {
+                var window = new MainWindow(archive) { SoundPlayer = new RecordingSoundPlayer() };
+                window.Show();
+                await window.RenderingCompleted;
+                window.Pause();
+                window.UpdateLayout();
+
+                // The building is in the list after the units; picked, it stands on the field.
+                var walker = OnlyUnit(window);
+                walker.Movement.PlaceAt(new Point(100, 200));
+                var depot = window.AddToField("DEPO", new Point(300, 200));
+                window.Tick();
+                await window.RenderingCompleted;
+                window.Tick();
+                Assert.That(depot.Kind.IsBuilding, Is.True);
+                Assert.That(depot.State.Code, Is.EqualTo("STANDLO"));
+
+                // Its two frames are layers drawn together (1 and 2 pixels wide), standing on the middle of the first.
+                Assert.That(DrawnColumnsAtFeet(depot), Is.EqualTo(new[] { 0, 1 }));
+
+                // It does not go anywhere when sent, and units walk around it.
+                Click(window, new Point(500, 200), MouseButton.Right);
+                Assert.That(depot.Movement.IsWalking, Is.False);
+                Click(window, walker.Movement.Position, MouseButton.Left);
+                Click(window, new Point(500, 200), MouseButton.Right);
+                var nearest = double.MaxValue;
+                for (var i = 0; i < 400 && walker.Movement.IsWalking; i++)
+                {
+                    window.Tick();
+                    nearest = Math.Min(nearest, FieldPath.GroundDistance(walker.Movement.Position, depot.Movement.Position));
+                }
+
+                Assert.That(walker.Movement.Position, Is.EqualTo(new Point(500, 200)));
+                Assert.That(nearest, Is.GreaterThanOrEqualTo(20 - FieldPath.CellSize));
+
+                // Destroyed, it lies in ruins for a while and is gone.
+                Click(window, depot.Movement.Position, MouseButton.Left);
+                Assert.That(window.SelectedFieldUnits, Is.EqualTo(new[] { depot }));
+                window.KillSelected();
+                window.Tick();
+                window.Tick();
+                Assert.That(depot.State.Code, Is.EqualTo("DEATHLIE1"));
+                for (var i = 0; i < 120; i++)
+                {
+                    window.Tick();
+                }
+
+                Assert.That(window.FieldUnits, Is.EqualTo(new[] { walker }));
+
+                window.Close();
+            }
+            finally
+            {
+                try { Directory.Delete(folder, true); } catch (IOException) { }
             }
         }
 

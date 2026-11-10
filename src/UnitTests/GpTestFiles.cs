@@ -138,7 +138,9 @@ namespace UnitTests
             var building = Encoding.ASCII.GetBytes(string.Join("\r\n",
                 "NAME Depo",
                 "USERLC 0 tsts",
-                "#STANDLO 1 1 0 0",
+                "#STANDLO 1 2 0 0 0 1",
+                "#DEATHLIE1 1 1 0 2",
+                "LIFE 100",
                 ""));
 
             return new[]

@@ -24,6 +24,25 @@ namespace Viewer
             ? _gp.Frames.SelectMany(frame => frame.Parts).Select(part => new PixelRect(part.X, part.Y, part.Width, part.Height))
             : _rlc.Frames.Select(frame => new PixelRect(0, 0, frame.Width, frame.Height));
 
+        /// <summary>The rectangle around what a frame draws, or null if it draws nothing.</summary>
+        public PixelRect? BoundsOf(int frame)
+        {
+            if (_rlc != null)
+            {
+                return new PixelRect(0, 0, _rlc.Frames[frame].Width, _rlc.Frames[frame].Height);
+            }
+
+            var parts = _gp.Frames[frame].Parts;
+            if (parts.Count == 0)
+            {
+                return null;
+            }
+
+            var left = parts.Min(part => part.X);
+            var top = parts.Min(part => part.Y);
+            return new PixelRect(left, top, parts.Max(part => part.X + part.Width) - left, parts.Max(part => part.Y + part.Height) - top);
+        }
+
         public static UnitSprite Load(GameCatalog catalog, string fileName)
         {
             if (catalog.Sprite(fileName) is { } gp)

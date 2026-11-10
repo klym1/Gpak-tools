@@ -129,7 +129,7 @@ namespace Viewer
         }
 
         private static GameObject FindUnit(GameCatalog catalog, string descriptorName) =>
-            catalog?.Units.FirstOrDefault(o => o.Descriptor.FileName.Equals(descriptorName, StringComparison.OrdinalIgnoreCase));
+            catalog?.Units.Concat(catalog.Buildings).FirstOrDefault(o => o.Descriptor.FileName.Equals(descriptorName, StringComparison.OrdinalIgnoreCase));
 
         /// <summary>
         /// Puts two armies on the field, either side of the middle: one unit of each kind in the picked color
@@ -857,7 +857,8 @@ namespace Viewer
         /// </summary>
         public void SendSelectedTo(Point target)
         {
-            var group = SelectedFieldUnits;
+            // Buildings stay where they are.
+            var group = SelectedFieldUnits.Where(unit => !unit.Kind.IsBuilding).ToList();
             if (group.Count == 0)
             {
                 return;

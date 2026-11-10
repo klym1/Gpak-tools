@@ -159,6 +159,8 @@ namespace UnitTests
             var unit = catalog.Units.Should().ContainSingle().Subject;
             unit.Label.Should().Be("Тестовый воин (TST)");
             catalog.Objects.Single(o => !o.IsUnit).Descriptor.FileName.Should().Be("DEPO");
+            catalog.Buildings.Should().ContainSingle().Which.States[0].Frames.Should().Equal(new[] { (0, 0), (0, 1) }, "the layers of the building");
+            unit.IsBuilding.Should().BeFalse();
 
             unit.States.Select(s => s.Code).Should().Equal("STAND", "MOTION_L+MOTION_R", "MOTION_L", "MOTION_R", "MOTION_LB", "ATTACK", "ATTACK2", "DEATH", "DEATHLIE1");
 
