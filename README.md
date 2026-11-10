@@ -114,6 +114,14 @@ Each descriptor (`*.MD`) describes one game object. Objects whose animations hav
 
 `GameCatalog` reads the descriptors from a folder or straight from a `.gsc` archive (`GameFiles`) and loads sprites on demand. The viewer places every sprite of a unit with its anchor at the same point, so the unit stays in place across states and directions.
 
+## RLC sprite format
+
+Fonts, cursors and a few older sprites are `.rlc` files (`RlcFile`): the signature `RLC` `0x1B`, a uint32 number of frames *N*, and *N* uint32 frame offsets. A frame is a uint16 width, a uint16 height, and one entry per row: a byte with the number of runs, then per run a byte of transparent pixels to skip, a byte with the length and that many palette indices.
+
+## GRD color tables
+
+`.grd` files (`GrdTable`) have no header: they are rows of 256 palette indices, each mapping every palette color to another one. The game data has tables of 12, 16, 32, 160 and 256 rows.
+
 ## GSC archive format
 
 Cossacks keeps its data in `.gsc` archives (`All.gsc` holds about 2,400 files: GP sprites, palettes, bitmaps, unit definitions, texts). Integers are little-endian:
