@@ -27,6 +27,9 @@ namespace Viewer
         /// <summary>The life left; the unit dies when an attack takes the last of it.</summary>
         public int Life { get; internal set; }
 
+        /// <summary>Ticks the unit still rests after its last attack before it can attack again.</summary>
+        public int PauseTicksLeft { get; internal set; }
+
         /// <summary>The kind of unit (its descriptor).</summary>
         public GameObject Kind { get; }
 

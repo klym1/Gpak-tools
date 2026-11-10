@@ -64,6 +64,8 @@ namespace UnitTests
             descriptor.DamageOf("ATTACK").Should().Be(30);
             descriptor.DamageOf("ATTACK0").Should().Be(30);
             descriptor.DamageOf("ATTACK2").Should().BeNull();
+            descriptor.AttackPauseOf("ATTACK").Should().Be(2);
+            descriptor.AttackPauseOf("ATTACK2").Should().BeNull();
         }
 
         [Test]

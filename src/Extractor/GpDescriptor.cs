@@ -76,14 +76,22 @@ namespace GPExtractor
         /// The damage of an attack animation (<c>ATTACK</c> or <c>ATTACK0</c> is attack 0, <c>ATTACK1</c>
         /// attack 1, …); null if the descriptor does not give it.
         /// </summary>
-        public int? DamageOf(string animation)
+        public int? DamageOf(string animation) => ValueOf(Damages, animation);
+
+        /// <summary>The <c>ATTACK_PAUSE attack value</c> lines: how long each attack rests before it can be made again.</summary>
+        public IReadOnlyList<(int Attack, int Value)> AttackPauses { get; private init; } = Array.Empty<(int, int)>();
+
+        /// <summary>The pause after an attack animation, as <see cref="DamageOf"/>; null if the descriptor does not give it.</summary>
+        public int? AttackPauseOf(string animation) => ValueOf(AttackPauses, animation);
+
+        private static int? ValueOf(IReadOnlyList<(int Attack, int Value)> values, string animation)
         {
             var number = animation.Substring(animation.IndexOf("ATTACK", StringComparison.OrdinalIgnoreCase) + "ATTACK".Length);
             var attack = TryInt(number, out var parsed) ? parsed : 0;
 
-            return Damages
-                .Where(damage => damage.Attack == attack)
-                .Select(damage => (int?) damage.Value)
+            return values
+                .Where(value => value.Attack == attack)
+                .Select(value => (int?) value.Value)
                 .FirstOrDefault();
         }
 
@@ -112,6 +120,7 @@ namespace GPExtractor
             var weapons = new List<GpDescriptorWeapon>();
             var firingFrames = new List<(string Animation, int Frame)>();
             var damages = new List<(int Attack, int Value)>();
+            var attackPauses = new List<(int Attack, int Value)>();
             int? life = null;
 
             foreach (var line in text.Split('\n'))
@@ -167,6 +176,11 @@ namespace GPExtractor
                 {
                     damages.Add((damageAttack, damageValue));
                 }
+                else if (tokens.Length >= 3 && tokens[0].Equals("ATTACK_PAUSE", StringComparison.OrdinalIgnoreCase)
+                         && TryInt(tokens[1], out var pauseAttack) && TryInt(tokens[2], out var pauseValue))
+                {
+                    attackPauses.Add((pauseAttack, pauseValue));
+                }
                 else if (tokens.Length >= 3 && tokens[0].StartsWith('#') && TryInt(tokens[1], out var directions)
                          && TryInt(tokens[2], out var count) && directions > 0)
                 {
@@ -196,6 +210,7 @@ namespace GPExtractor
                 FiringFrames = firingFrames,
                 Life = life,
                 Damages = damages,
+                AttackPauses = attackPauses,
             };
         }
 

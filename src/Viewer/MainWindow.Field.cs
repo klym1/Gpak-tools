@@ -225,7 +225,7 @@ namespace Viewer
         /// <summary>
         /// Goes after the unit's target: walks until it is within reach, then turns to it and attacks.
         /// </summary>
-        private void Pursue(FieldUnitView unit)
+        private void Pursue(FieldUnitView unit, bool resting)
         {
             var target = unit.Target;
             var attack = ChosenAttackOf(unit.Kind);
@@ -247,6 +247,12 @@ namespace Viewer
             {
                 unit.Movement.Stop();
                 unit.Movement.TurnTo(FieldUnit.HeadingOf(way));
+                if (resting)
+                {
+                    SetFieldState(unit, StandStateOf(unit.Kind));
+                    return;
+                }
+
                 PlayOnce(unit, attack);
                 FightBack(target, unit);
             }
@@ -282,15 +288,26 @@ namespace Viewer
                 return ++unit.TicksLyingDead <= TicksLyingDead;
             }
 
+            var resting = unit.PauseTicksLeft > 0;
+            if (resting)
+            {
+                unit.PauseTicksLeft--;
+            }
+
             if (unit.Target != null)
             {
-                Pursue(unit);
+                Pursue(unit, resting);
             }
 
             unit.Pose++;
             if (unit.PlaysOnce && unit.Pose >= unit.State.Frames.Count)
             {
-                // The attack is over (and its target falls), or the unit has fallen and now lies dead.
+                // The attack is over (its target is hit, and the unit rests), or the unit has fallen and now lies dead.
+                if (!unit.IsDead)
+                {
+                    unit.PauseTicksLeft = unit.Kind.Descriptor.AttackPauseOf(unit.State.Code) ?? 0;
+                }
+
                 if (!unit.IsDead && unit.Target is { IsDead: false } hit)
                 {
                     Hit(unit, hit);

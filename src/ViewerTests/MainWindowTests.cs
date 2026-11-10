@@ -366,7 +366,13 @@ namespace ViewerTests
                 Assert.That(enemy.LifeBar.IsVisible, Is.True);
                 window.Tick();
                 Assert.That(unit.Life, Is.EqualTo(20));
-                Assert.That(unit.State.Code, Is.EqualTo("ATTACK"), "it attacks again");
+
+                // After its attack the unit rests for its pause (2 ticks), then attacks again.
+                Assert.That(unit.State.Code, Is.EqualTo("STAND"));
+                window.Tick();
+                Assert.That(unit.State.Code, Is.EqualTo("STAND"));
+                window.Tick();
+                Assert.That(unit.State.Code, Is.EqualTo("ATTACK"));
 
                 // ... so its second attack kills the enemy before the enemy's second lands; it stands again.
                 for (var i = 0; i < 10 && !enemy.IsDead; i++)

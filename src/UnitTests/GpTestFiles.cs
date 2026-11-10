@@ -126,6 +126,7 @@ namespace UnitTests
                 "SOUND 3 #DEATH GONE",
                 "LIFE 50",
                 "DAMAGE 0 30",
+                "ATTACK_PAUSE 0 2",
                 ""));
 
             var building = Encoding.ASCII.GetBytes(string.Join("\r\n",
