@@ -279,7 +279,8 @@ namespace ViewerTests
                 }
 
                 Assert.That(window.FieldUnits, Is.Empty);
-                Assert.That(player.Played, Has.Count.EqualTo(3));
+                Assert.That(player.Played.Select(Path.GetFileName).Last(), Is.EqualTo("Alarm.wav"), "the shot landed a while after it was fired");
+                Assert.That(player.Played, Has.Count.EqualTo(4));
 
                 window.Close();
             }

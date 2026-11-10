@@ -46,7 +46,8 @@ namespace GPExtractor
     /// The game objects described in the game files, and their sprites.
     /// </summary>
     /// <summary>A sound an object plays at a frame of an animation (e.g. <c>DEATH</c>).</summary>
-    public sealed record GameObjectSound(string Animation, int Frame, GameSound Sound);
+    /// <param name="Impact">Whether it is the sound of a weapon landing, some time after the frame it is fired at.</param>
+    public sealed record GameObjectSound(string Animation, int Frame, GameSound Sound, bool Impact = false);
 
     public sealed class GameCatalog : IDisposable
     {
@@ -90,17 +91,17 @@ namespace GPExtractor
         /// The sounds of a state by its frame. In a state joined from several animations (<c>MOTION_L+MOTION_R</c>),
         /// the frames of the later ones follow those before.
         /// </summary>
-        public IReadOnlyList<(int Frame, GameSound Sound)> SoundsOf(GameObject gameObject, GameObjectState state)
+        public IReadOnlyList<(int Frame, GameSound Sound, bool Impact)> SoundsOf(GameObject gameObject, GameObjectState state)
         {
             var sounds = SoundsOf(gameObject);
-            var result = new List<(int Frame, GameSound Sound)>();
+            var result = new List<(int Frame, GameSound Sound, bool Impact)>();
             var offset = 0;
 
             foreach (var code in state.Code.Split('+'))
             {
                 result.AddRange(sounds
                     .Where(sound => SameAnimation(sound.Animation, code))
-                    .Select(sound => (offset + sound.Frame, sound.Sound)));
+                    .Select(sound => (offset + sound.Frame, sound.Sound, sound.Impact)));
 
                 offset += gameObject.Descriptor.Animations
                     .FirstOrDefault(animation => animation.Name.Equals(code, StringComparison.OrdinalIgnoreCase))
@@ -120,28 +121,37 @@ namespace GPExtractor
 
         /// <summary>
         /// The sounds an object plays, with their wave files: at which frame of which animation. These are its
-        /// <c>SOUND</c> lines and the shots of its weapons.
+        /// <c>SOUND</c> lines and the shots and impacts of its weapons.
         /// </summary>
         public IReadOnlyList<GameObjectSound> SoundsOf(GameObject gameObject)
         {
             var descriptor = gameObject.Descriptor;
 
             // A weapon sounds when it fires: at the attack's firing frame, or its first frame if none is given.
-            var shots = descriptor.Weapons
-                .Select(weapon => (weapon.Animation, Sound: Weapons.ShotSoundOf(weapon.Weapon)))
-                .Where(shot => shot.Sound != null)
-                .Select(shot => new GpDescriptorSound(
-                      shot.Animation
-                    , descriptor.FiringFrames
-                        .Where(firing => SameAnimation(firing.Animation, shot.Animation))
-                        .Select(firing => firing.Frame)
-                        .FirstOrDefault()
-                    , shot.Sound
-                ));
+            var shots = descriptor.Weapons.SelectMany(weapon =>
+            {
+                var frame = descriptor.FiringFrames
+                    .Where(firing => SameAnimation(firing.Animation, weapon.Animation))
+                    .Select(firing => firing.Frame)
+                    .FirstOrDefault();
+
+                return new[]
+                {
+                    (weapon.Animation, Frame: frame, Sound: Weapons.ShotSoundOf(weapon.Weapon), Impact: false),
+                    (weapon.Animation, Frame: frame, Sound: Weapons.ImpactSoundOf(weapon.Weapon), Impact: true),
+                };
+            });
 
             return descriptor.Sounds
+                .Select(sound => (sound.Animation, sound.Frame, sound.Sound, Impact: false))
                 .Concat(shots)
-                .Select(sound => new GameObjectSound(sound.Animation, sound.Frame, Sounds.Find(sound.Sound)))
+                .Where(sound => sound.Sound != null)
+                .Select(sound => new GameObjectSound(
+                      sound.Animation
+                    , sound.Frame
+                    , Sounds.Find(sound.Sound)
+                    , sound.Impact
+                ))
                 .Where(sound => sound.Sound != null)
                 .ToList();
         }

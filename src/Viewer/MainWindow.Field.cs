@@ -33,7 +33,12 @@ namespace Viewer
         private readonly Dictionary<FieldFramesKey, Task> _renderingFrames = new Dictionary<FieldFramesKey, Task>();
 
         // Sounds per unit kind and state.
-        private readonly Dictionary<(GameObject, GameObjectState), IReadOnlyList<(int Frame, GameSound Sound)>> _stateSounds = new();
+        private readonly Dictionary<(GameObject, GameObjectState), IReadOnlyList<(int Frame, GameSound Sound, bool Impact)>> _stateSounds = new();
+
+        /// <summary>How long after the shot a weapon lands, in ticks.</summary>
+        private const int TicksToImpact = 20;
+
+        private readonly List<(int TicksLeft, GameSound Sound)> _impacts = new();
         private readonly Random _random = new Random();
 
         /// <summary>What plays the units' sounds.</summary>
@@ -217,6 +222,8 @@ namespace Viewer
                 return;
             }
 
+            PlayImpacts();
+
             foreach (var unit in _fieldUnits.ToList())
             {
                 if (!Advance(unit))
@@ -244,19 +251,56 @@ namespace Viewer
             }
 
             var frame = unit.Pose % unit.State.Frames.Count;
-            foreach (var (_, sound) in sounds.Where(sound => sound.Frame == frame && sound.Sound.Files.Count > 0))
+            foreach (var (_, sound, impact) in sounds.Where(sound => sound.Frame == frame))
             {
-                var file = sound.Files[_random.Next(sound.Files.Count)];
-                var path = SoundPath(file);
-                if (path != null)
+                if (impact)
                 {
-                    SoundPlayer.Play(path);
+                    _impacts.Add((TicksToImpact, sound));
                 }
-                else if (StatusText.Text.Length == 0)
+                else
                 {
-                    StatusText.Text = "No sound: " + file + " was not found around " + _catalog.Files.Source
-                        + ". The sounds are in the game's Sound folder; open the All.gsc next to it to hear them.";
+                    Play(sound);
                 }
+            }
+        }
+
+        /// <summary>Plays the impacts whose time has come.</summary>
+        private void PlayImpacts()
+        {
+            for (var i = _impacts.Count - 1; i >= 0; i--)
+            {
+                var (ticksLeft, sound) = _impacts[i];
+                if (ticksLeft > 1)
+                {
+                    _impacts[i] = (ticksLeft - 1, sound);
+                    continue;
+                }
+
+                _impacts.RemoveAt(i);
+                if (SoundBox.IsChecked == true)
+                {
+                    Play(sound);
+                }
+            }
+        }
+
+        private void Play(GameSound sound)
+        {
+            if (sound.Files.Count == 0)
+            {
+                return;
+            }
+
+            var file = sound.Files[_random.Next(sound.Files.Count)];
+            var path = SoundPath(file);
+            if (path != null)
+            {
+                SoundPlayer.Play(path);
+            }
+            else if (StatusText.Text.Length == 0)
+            {
+                StatusText.Text = "No sound: " + file + " was not found around " + _catalog.Files.Source
+                    + ". The sounds are in the game's Sound folder; open the All.gsc next to it to hear them.";
             }
         }
 
@@ -329,6 +373,7 @@ namespace Viewer
             _readyFrames.Clear();
             _renderingFrames.Clear();
             _stateSounds.Clear();
+            _impacts.Clear();
             EndDrag();
         }
 

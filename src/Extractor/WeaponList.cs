@@ -6,13 +6,15 @@ namespace GPExtractor
 {
     /// <summary>
     /// The game's weapons (<c>WEAPON.NDS</c>), as far as their sounds go. The file has sections like
-    /// <c>[SOUND]</c> (lines <c>weapon sound</c>) and <c>[SYNCWEAPON]</c> (lines <c>weapon count weapons…</c>:
-    /// weapons launched together with one), and <c>//</c> comments.
+    /// <c>[SOUND]</c> (lines <c>weapon sound</c>), <c>[SYNCWEAPON]</c> (lines <c>weapon count weapons…</c>:
+    /// weapons launched together with one) and <c>[CHILDWEAPON]</c> (lines <c>weapon min max frame count
+    /// weapons…</c>: weapons born when one explodes), and <c>//</c> comments.
     /// </summary>
     public sealed class WeaponList
     {
         public static readonly WeaponList Empty = new WeaponList(
               new Dictionary<string, string>()
+            , new Dictionary<string, IReadOnlyList<string>>()
             , new Dictionary<string, IReadOnlyList<string>>()
         );
 
@@ -20,11 +22,17 @@ namespace GPExtractor
 
         private readonly Dictionary<string, string> _sounds;
         private readonly Dictionary<string, IReadOnlyList<string>> _launchedTogether;
+        private readonly Dictionary<string, IReadOnlyList<string>> _bornOnExplosion;
 
-        private WeaponList(Dictionary<string, string> sounds, Dictionary<string, IReadOnlyList<string>> launchedTogether)
+        private WeaponList(
+              Dictionary<string, string> sounds
+            , Dictionary<string, IReadOnlyList<string>> launchedTogether
+            , Dictionary<string, IReadOnlyList<string>> bornOnExplosion
+        )
         {
             _sounds = sounds;
             _launchedTogether = launchedTogether;
+            _bornOnExplosion = bornOnExplosion;
         }
 
         /// <summary>
@@ -33,20 +41,42 @@ namespace GPExtractor
         /// </summary>
         public string ShotSoundOf(string weapon)
         {
+            return NearestSound(
+                  weapon
+                , candidate => _launchedTogether.GetValueOrDefault(candidate) ?? Array.Empty<string>()
+                , null
+            );
+        }
+
+        /// <summary>
+        /// The name of the sound of a weapon's impact: that of the nearest weapon born when it, or a weapon
+        /// launched with it, explodes. Null if it lands silently.
+        /// </summary>
+        public string ImpactSoundOf(string weapon)
+        {
+            return NearestSound(
+                  weapon
+                , candidate => (_launchedTogether.GetValueOrDefault(candidate) ?? Array.Empty<string>())
+                    .Concat(_bornOnExplosion.GetValueOrDefault(candidate) ?? Array.Empty<string>())
+                , ShotSoundOf(weapon)
+            );
+        }
+
+        /// <summary>The sound, other than <paramref name="except"/>, of the weapon or the nearest one linked to it.</summary>
+        private string NearestSound(string weapon, Func<string, IEnumerable<string>> linked, string except)
+        {
             var level = new List<string> { weapon };
             for (var depth = 0; depth < MaxDepth && level.Count > 0; depth++)
             {
                 foreach (var candidate in level)
                 {
-                    if (_sounds.TryGetValue(candidate, out var sound))
+                    if (_sounds.TryGetValue(candidate, out var sound) && sound != except)
                     {
                         return sound;
                     }
                 }
 
-                level = level
-                    .SelectMany(candidate => _launchedTogether.GetValueOrDefault(candidate) ?? Array.Empty<string>())
-                    .ToList();
+                level = level.SelectMany(linked).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
             }
 
             return null;
@@ -56,6 +86,7 @@ namespace GPExtractor
         {
             var sounds = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             var launchedTogether = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase);
+            var bornOnExplosion = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase);
             var section = "";
 
             foreach (var rawLine in text.Split('\n'))
@@ -81,9 +112,17 @@ namespace GPExtractor
                 {
                     launchedTogether.TryAdd(tokens[0], tokens.Skip(2).ToList());
                 }
+                else if (section == "CHILDWEAPON" && tokens.Length >= 6)
+                {
+                    bornOnExplosion.TryAdd(tokens[0], tokens.Skip(5).ToList());
+                }
             }
 
-            return new WeaponList(sounds, launchedTogether);
+            return new WeaponList(
+                  sounds
+                , launchedTogether
+                , bornOnExplosion
+            );
         }
     }
 }
