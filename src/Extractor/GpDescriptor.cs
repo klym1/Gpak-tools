@@ -120,6 +120,15 @@ namespace GPExtractor
         /// <summary>The <c>ROTATE</c> line: how fast the object turns; null if it turns at once.</summary>
         public int? TurnRate => Number(TurnRateKey);
 
+        /// <summary>
+        /// The <c>MOTIONSTYLE</c> line: how an object that turns slowly moves. <c>SLOWROTATE</c> (cannons, mortars)
+        /// turns where it stands, <c>SHEEPS</c> (ships) as it goes; null if there is none.
+        /// </summary>
+        public string MotionStyle { get; private init; }
+
+        /// <summary>Whether the object turns as it goes, like a ship, and does not stop to turn.</summary>
+        public bool TurnsUnderWay => "SHEEPS".Equals(MotionStyle, StringComparison.OrdinalIgnoreCase);
+
         /// <summary>The <c>ZPOINTS</c> line: how high above the ground the object is hit, in pixels.</summary>
         public int? Height => Number(HeightKey);
 
@@ -238,6 +247,7 @@ namespace GPExtractor
             int? life = null;
             int? radius = null;
             int? stepSize = null;
+            string motionStyle = null;
 
             foreach (var line in text.Split('\n'))
             {
@@ -330,6 +340,10 @@ namespace GPExtractor
                     radius = geometryRadius;
                     stepSize = geometryStep;
                 }
+                else if (tokens[0].Equals("MOTIONSTYLE", StringComparison.OrdinalIgnoreCase))
+                {
+                    motionStyle = tokens[1];
+                }
                 else if (NumberKeys.Contains(tokens[0]) && TryInt(tokens[1], out var number))
                 {
                     numbers[tokens[0]] = number;
@@ -389,6 +403,7 @@ namespace GPExtractor
                 DetectionRadii = detectionRadii,
                 Numbers = numbers,
                 Flags = flags,
+                MotionStyle = motionStyle,
                 Radius = radius,
                 StepSize = stepSize,
                 Shield = shield,

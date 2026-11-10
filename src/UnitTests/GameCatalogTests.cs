@@ -74,6 +74,8 @@ namespace UnitTests
             descriptor.Radius.Should().BeNull();
             descriptor.SearchEnemyRadius.Should().BeNull();
             descriptor.ShowsDelay.Should().BeFalse();
+            descriptor.MotionStyle.Should().BeNull();
+            descriptor.TurnsUnderWay.Should().BeFalse();
         }
 
         [Test]
@@ -87,6 +89,7 @@ namespace UnitTests
                 "SEARCH_ENEMY_RADIUS 550",
                 "RAZBROS 250",
                 "ROTATE 4",
+                "MOTIONSTYLE SHEEPS",
                 "ZPOINTS 30 30",
                 "SHOWDELAY",
                 "STANDGROUND");
@@ -100,6 +103,8 @@ namespace UnitTests
             descriptor.SearchEnemyRadius.Should().Be(550);
             descriptor.Scatter.Should().Be(250);
             descriptor.TurnRate.Should().Be(4);
+            descriptor.MotionStyle.Should().Be("SHEEPS");
+            descriptor.TurnsUnderWay.Should().BeTrue();
             descriptor.Height.Should().Be(30);
             descriptor.ShowsDelay.Should().BeTrue();
             descriptor.CanStandGround.Should().BeTrue();

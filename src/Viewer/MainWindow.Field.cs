@@ -160,6 +160,7 @@ namespace Viewer
             {
                 StepLength = FieldUnit.DefaultStepLength * (descriptor.StepSize is > 0 and var step ? step : FootStepSize) / FootStepSize,
                 TurnRate = descriptor.TurnRate * 360 / TurnParts,
+                TurnsUnderWay = descriptor.TurnsUnderWay,
             };
 
             var unit = new FieldUnitView(kind, color ?? PlayerColor, StandStateOf(kind), movement)

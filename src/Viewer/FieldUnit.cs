@@ -28,7 +28,13 @@ namespace Viewer
         /// <summary>Whether the unit has not yet turned the way it was told to face.</summary>
         public bool IsTurning => TurnRate != null && Heading != _facing;
 
-        /// <summary>Turns a slow unit one tick further the shorter way round. Returns false if it already faces its way.</summary>
+        /// <summary>Whether a slow unit turns as it walks, like a ship, and does not stop to turn.</summary>
+        public bool TurnsUnderWay { get; set; }
+
+        /// <summary>
+        /// Turns a slow unit one tick further the shorter way round. Returns whether the turn keeps it where it
+        /// is: false if it already faces its way, or turns as it walks.
+        /// </summary>
         public bool Turn()
         {
             if (!IsTurning)
@@ -38,7 +44,7 @@ namespace Viewer
 
             var left = (_facing - Heading + 540) % 360 - 180;
             Heading = Math.Abs(left) <= TurnRate ? _facing : Normalized(Heading + Math.Sign(left) * TurnRate.Value);
-            return true;
+            return !(TurnsUnderWay && IsWalking);
         }
 
         private void Face(double heading)

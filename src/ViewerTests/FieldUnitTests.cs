@@ -37,6 +37,27 @@ namespace ViewerTests
             Assert.That(unit.Step(), Is.False, "a standing unit stays put");
         }
 
+        [TestCase(false, true, TestName = "A slow unit stops to turn")]
+        [TestCase(true, false, TestName = "A ship turns as it goes")]
+        public void ASlowUnitTurnsATickAtATime(bool turnsUnderWay, bool keptInPlace)
+        {
+            var unit = new FieldUnit(new Point(100, 100)) { TurnRate = 45, TurnsUnderWay = turnsUnderWay };
+
+            // South to east is a quarter turn the shorter way round, through 315.
+            unit.MoveTo(new Point(200, 100));
+            Assert.That(unit.Heading, Is.EqualTo(0));
+            Assert.That(unit.Turn(), Is.EqualTo(keptInPlace));
+            Assert.That(unit.Heading, Is.EqualTo(315));
+            Assert.That(unit.Turn(), Is.EqualTo(keptInPlace));
+            Assert.That(unit.Heading, Is.EqualTo(270));
+            Assert.That(unit.Turn(), Is.False, "it faces its way");
+
+            // Standing, even a ship turns before anything else.
+            unit.Stop();
+            unit.TurnTo(0);
+            Assert.That(unit.Turn(), Is.True);
+        }
+
         [Test]
         public void ClickingOnItselfStopsTheUnitWithoutTurning()
         {
