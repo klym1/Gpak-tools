@@ -121,7 +121,8 @@ namespace GPExtractor
         /// The damage an attack of this object does to another: its damage less the target's shield and its
         /// protection against the attack's kind of weapon, but at least 1. Null if the attack has no damage given.
         /// </summary>
-        public int? DamageTo(GpDescriptor target, string animation)
+        /// <param name="share">The part of the damage that reaches the target, e.g. 0.5 halfway out of a blast.</param>
+        public int? DamageTo(GpDescriptor target, string animation, double share = 1)
         {
             if (DamageOf(animation) is not { } damage)
             {
@@ -130,7 +131,7 @@ namespace GPExtractor
 
             var kind = WeaponKindOf(animation);
             var protection = kind != null && target.Protections.TryGetValue(kind, out var value) ? value : 0;
-            return Math.Max(1, damage - target.Shield - protection);
+            return Math.Max(1, (int) Math.Round(damage * share) - target.Shield - protection);
         }
 
         private static int AttackNumberOf(string animation)

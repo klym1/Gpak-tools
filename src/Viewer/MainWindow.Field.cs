@@ -406,12 +406,12 @@ namespace Viewer
         }
 
         /// <summary>
-        /// An attack lands on a unit: it loses the attack's damage, less its armor, from its life (all of it, if
-        /// the attacker has no damage given) and dies when none is left.
+        /// An attack lands on a unit: it loses the attack's damage (or the share of it that reaches the unit),
+        /// less its armor, from its life (all of it, if the attacker has no damage given) and dies when none is left.
         /// </summary>
-        private void Hit(GameObject attacker, string attack, FieldUnitView target)
+        private void Hit(GameObject attacker, string attack, FieldUnitView target, double share = 1)
         {
-            var damage = attacker.Descriptor.DamageTo(target.Kind.Descriptor, attack) ?? target.Life;
+            var damage = attacker.Descriptor.DamageTo(target.Kind.Descriptor, attack, share) ?? target.Life;
             target.Life = Math.Max(0, target.Life - damage);
             if (target.Life == 0)
             {
@@ -421,19 +421,26 @@ namespace Viewer
 
         /// <summary>
         /// A shot lands at a point: it hits the units within its blast, whoever they are, but not the one that
-        /// fired it.
+        /// fired it. A unit it lands on takes all the damage; in a blast the damage falls off evenly to nothing
+        /// at the edge.
         /// </summary>
         private void Land(FieldUnitView attacker, string attack, Point where, double blastRadius)
         {
             var reach = Math.Max(blastRadius, HitSlack);
             var struck = _fieldUnits
-                .Where(unit => !ReferenceEquals(unit, attacker) && !unit.IsDead
-                               && FieldPath.GroundDistance(unit.Movement.Position, where) <= RadiusOf(unit) + reach)
+                .Where(unit => !ReferenceEquals(unit, attacker) && !unit.IsDead)
+                .Select(unit => (Unit: unit, Away: Math.Max(0, FieldPath.GroundDistance(unit.Movement.Position, where) - RadiusOf(unit))))
+                .Where(hit => hit.Away <= reach)
                 .ToList();
 
-            foreach (var unit in struck)
+            foreach (var (unit, away) in struck)
             {
-                Hit(attacker.Kind, attack, unit);
+                Hit(
+                      attacker.Kind
+                    , attack
+                    , unit
+                    , blastRadius > HitSlack ? 1 - away / blastRadius : 1
+                );
             }
         }
 

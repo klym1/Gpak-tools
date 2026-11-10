@@ -76,6 +76,8 @@ namespace UnitTests
             descriptor.Protections.Should().Equal(new System.Collections.Generic.Dictionary<string, int> { ["PIKA"] = 6, ["IADRO"] = 3 });
             descriptor.WeaponKindOf("ATTACK").Should().Be("IADRO");
             descriptor.DamageTo(descriptor, "ATTACK").Should().Be(30 - 4 - 3);
+            descriptor.DamageTo(descriptor, "ATTACK", 0.5).Should().Be(15 - 4 - 3, "half the damage reaches it, and the armor comes off that");
+            descriptor.DamageTo(descriptor, "ATTACK", 0).Should().Be(1);
             descriptor.DamageTo(descriptor, "ATTACK2").Should().BeNull();
             GpDescriptor.Parse("W", "DAMAGE 0 5\r\nWEAPONKIND 0 PIKA\r\n").DamageTo(descriptor, "ATTACK").Should().Be(1, "a hit always does some damage");
         }
