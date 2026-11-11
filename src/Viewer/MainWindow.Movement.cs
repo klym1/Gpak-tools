@@ -198,11 +198,10 @@ namespace Viewer
                 return;
             }
 
-            SetFieldState(unit, WalkStateOf(unit.Kind));
-
             var blocker = BlockerOf(unit);
             if (blocker == null)
             {
+                SetFieldState(unit, WalkStateOf(unit.Kind));
                 unit.WaitTicks = 0;
                 // Only a unit that gets on forgets its detours: two units in each other's way step and stop in turn.
                 if (++unit.FreeSteps >= StepsToGetOn)
@@ -218,6 +217,8 @@ namespace Viewer
                 return;
             }
 
+            // It stands while it waits, and does not walk on the spot.
+            SetFieldState(unit, StandStateOf(unit.Kind));
             unit.FreeSteps = 0;
             unit.WaitTicks++;
             var turn = Math.Abs((blocker.Movement.Heading - unit.Movement.Heading + 540) % 360 - 180);

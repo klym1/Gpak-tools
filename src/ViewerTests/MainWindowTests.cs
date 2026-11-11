@@ -1217,6 +1217,48 @@ namespace ViewerTests
         }
 
         [AvaloniaTest]
+        public async Task AUnitStandsWhileItWaitsBehindAnother()
+        {
+            var folder = UnitArchiveFolder(out var archive, "GEOMETRY 1 15 32");
+            try
+            {
+                var window = new MainWindow(archive);
+                window.Show();
+                await window.RenderingCompleted;
+                window.Pause();
+                window.UpdateLayout();
+                window.RemoveSelectedFromField();
+
+                // The one behind is in the room of the one ahead, and both go the same way.
+                var behind = window.AddToField("TST", new Point(110, 150));
+                window.SendSelectedTo(new Point(400, 150));
+                var ahead = window.AddToField("TST", new Point(130, 150));
+                window.SendSelectedTo(new Point(450, 150));
+
+                window.Tick();
+                Assert.That(ahead.State.Code, Is.EqualTo("MOTION_L+MOTION_R"));
+                Assert.That(behind.Movement.IsWalking, Is.True, "it still has its way to go");
+                Assert.That(behind.Movement.Position, Is.EqualTo(new Point(110, 150)));
+                Assert.That(behind.State.Code, Is.EqualTo("STAND"), "it does not walk on the spot");
+
+                // With the one ahead gone on, it walks again.
+                for (var tick = 0; tick < 10; tick++)
+                {
+                    window.Tick();
+                }
+
+                Assert.That(behind.State.Code, Is.EqualTo("MOTION_L+MOTION_R"));
+                Assert.That(behind.Movement.Position.X, Is.GreaterThan(110));
+
+                window.Close();
+            }
+            finally
+            {
+                Directory.Delete(folder, true);
+            }
+        }
+
+        [AvaloniaTest]
         public Task AUnitWalksAsFastAsItsGeometrySaysAndTakesItsRoom()
         {
             // A step of 64 is twice a foot soldier's 32.
