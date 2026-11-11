@@ -110,7 +110,8 @@ namespace ViewerTests
                 await window.RenderingCompleted;
 
                 Assert.That(window.FindControl<StackPanel>("UnitPanel").IsVisible, Is.True);
-                Assert.That(window.FindControl<ComboBox>("UnitBox").ItemCount, Is.EqualTo(2), "the unit, then the building");
+                Assert.That(window.FindControl<ComboBox>("UnitBox").ItemCount, Is.EqualTo(1));
+                Assert.That(window.FindControl<ComboBox>("BuildingBox").ItemCount, Is.EqualTo(1));
                 Assert.That(window.FindControl<Button>("AddUnitButton"), Is.Null);
                 Assert.That(window.FieldUnits.Select(unit => unit.Kind.Descriptor.FileName), Is.EqualTo(new[] { "TST", "TST" }));
                 Assert.That(
@@ -1064,6 +1065,23 @@ namespace ViewerTests
                 Click(window, third.Movement.Position, MouseButton.Left);
                 window.FindControl<Button>("RemoveUnitsButton").RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
                 Assert.That(window.FieldUnits, Is.EqualTo(new[] { first, second }));
+
+                // Ctrl+C copies the selected units; Ctrl+V puts copies around the pointer, placed as they stood.
+                Drag(window, new Point(40, 20), new Point(260, 300));
+                Assert.That(window.SelectedFieldUnits, Is.EqualTo(new[] { first, second }));
+                var apart = second.Movement.Position - first.Movement.Position;
+                window.KeyPressQwerty(PhysicalKey.C, RawInputModifiers.Control);
+                window.MouseMove(OnWindow(window, new Point(400, 150)));
+                window.KeyPressQwerty(PhysicalKey.V, RawInputModifiers.Control);
+                Assert.That(window.FieldUnits, Has.Count.EqualTo(4));
+                var copies = window.FieldUnits.Skip(2).ToList();
+                Assert.That(window.SelectedFieldUnits, Is.EqualTo(copies));
+                Assert.That(copies.Select(u => u.Kind), Is.EqualTo(new[] { first.Kind, second.Kind }));
+                Assert.That(copies.Select(u => u.Color.Offset), Is.EqualTo(new[] { first.Color.Offset, second.Color.Offset }));
+                var middle = new Point(400, 150);
+                Assert.That(((Vector)(copies[0].Movement.Position - (middle - apart / 2))).Length, Is.LessThan(1e-6));
+                Assert.That(((Vector)(copies[1].Movement.Position - (middle + apart / 2))).Length, Is.LessThan(1e-6));
+                window.RemoveSelectedFromField();
 
                 // Opening other game data starts the field over.
                 await window.LoadFile(archive);

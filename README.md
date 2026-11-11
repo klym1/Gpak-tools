@@ -36,8 +36,9 @@ dotnet run --project src/Viewer -- [All.gsc | extracted-folder]
 The field:
 
 - It starts with two armies, blue (selected) and red: a cannon, a musketeer, a grenadier, a pikeman and a dragoon each.
-- Picking a unit or a building in the **Add unit** list puts it there in the picked color.
+- Picking a unit or a building in the **Add** lists (one of units, one of buildings) puts it there in the picked color.
 - Click a unit, or drag a box around several, to select them (Shift adds to the selection; Delete or **Remove** takes them off).
+- Ctrl+C copies the selected units and Ctrl+V puts copies of them around the pointer, placed and colored as they were.
 
 Moving:
 

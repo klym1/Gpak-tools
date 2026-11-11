@@ -381,6 +381,19 @@ namespace Viewer
                 .All(index => unit.Sprite(index) is { } sprite && UnitSprite.Load(catalog, sprite.FileName) != null);
         }
 
+        /// <summary>Fills a list of things to add to the field; returns how many there are.</summary>
+        private int SetKinds(ComboBox box, IEnumerable<GameObject> kinds, string name)
+        {
+            var items = kinds?.ToList() ?? new List<GameObject>();
+            box.ItemsSource = items;
+            box.SelectedItem = null;
+            box.IsVisible = items.Count > 0;
+            ToolTip.SetTip(box, _catalog == null
+                ? null
+                : "Pick one of the " + items.Count + " " + name + " in " + _catalog.Files.Source + " to put it on the field, in the picked color (type to search)");
+            return items.Count;
+        }
+
         private void SetCatalog(GameCatalog catalog)
         {
             if (ReferenceEquals(catalog, _catalog))
@@ -396,13 +409,9 @@ namespace Viewer
             _updatingControls = true;
             try
             {
-                var units = catalog?.Units.Concat(catalog.Buildings).ToList() ?? new List<GameObject>();
-                UnitBox.ItemsSource = units;
-                UnitBox.SelectedItem = null;
-                UnitPanel.IsVisible = units.Count > 0;
-                ToolTip.SetTip(UnitBox, catalog == null
-                    ? null
-                    : "Pick one of the " + units.Count + " units in " + catalog.Files.Source + " to put it on the field (type to search)");
+                var units = SetKinds(UnitBox, catalog?.Units, "units");
+                var buildings = SetKinds(BuildingBox, catalog?.Buildings, "buildings");
+                UnitPanel.IsVisible = units + buildings > 0;
             }
             finally
             {

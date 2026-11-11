@@ -100,6 +100,15 @@ namespace Viewer
         private const int TicksLyingDead = 100;
 
         // A selection box being dragged.
+        private static readonly Vector PasteShift = new Vector(24, 24);
+
+        // The copied units, each with its place relative to the middle of them all.
+        private readonly List<(GameObject Kind, NationColorOffset Color, Point Offset, double Heading, bool StandsGround)> _copiedUnits = new();
+        private Point _copiedMiddle;
+
+        // Where the pointer is on the field; null while it is off it.
+        private Point? _pointer;
+
         private Point? _dragStart;
         private bool _dragging;
         private bool _dragAdds;
@@ -149,10 +158,63 @@ namespace Viewer
             Select(own, add: false);
         }
 
-        private FieldUnitView AddToField(GameObject kind, Point? at = null, NationColorOffset? color = null)
+        /// <summary>Remembers the selected units, to paste copies of them.</summary>
+        public void CopySelected()
+        {
+            var selected = SelectedFieldUnits;
+            if (selected.Count == 0)
+            {
+                return;
+            }
+
+            _copiedMiddle = new Point(
+                  selected.Average(unit => unit.Movement.Position.X)
+                , selected.Average(unit => unit.Movement.Position.Y)
+            );
+            _copiedUnits.Clear();
+            _copiedUnits.AddRange(selected.Select(unit => (
+                  unit.Kind
+                , unit.Color
+                , unit.Movement.Position - _copiedMiddle
+                , unit.Movement.Heading
+                , unit.StandsGround
+            )));
+        }
+
+        /// <summary>
+        /// Puts copies of the copied units on the field, placed as they stood, around the pointer (or a little
+        /// aside of where they were copied, with the pointer off the field); the copies become the selection.
+        /// </summary>
+        public IReadOnlyList<FieldUnitView> PasteCopied()
+        {
+            var middle = _pointer ?? _copiedMiddle + PasteShift;
+            _copiedMiddle = middle;
+            var pasted = new List<FieldUnitView>();
+            foreach (var (kind, color, offset, heading, standsGround) in _copiedUnits)
+            {
+                var unit = AddToField(
+                      kind
+                    , ClampToField(middle + offset)
+                    , color
+                    , heading
+                );
+                unit.StandsGround = standsGround;
+                pasted.Add(unit);
+            }
+
+            Select(pasted, add: false);
+            return pasted;
+        }
+
+        private FieldUnitView AddToField(
+              GameObject kind
+            , Point? at = null
+            , NationColorOffset? color = null
+            , double heading = 0
+        )
         {
             var descriptor = kind.Descriptor;
-            var movement = new FieldUnit(at ?? FreePlace())
+            var movement = new FieldUnit(at ?? FreePlace(), heading)
             {
                 StepLength = FieldUnit.DefaultStepLength * (descriptor.StepSize is > 0 and var step ? step : FootStepSize) / FootStepSize,
                 TurnRate = descriptor.TurnRate * 360 / TurnParts,
@@ -312,17 +374,20 @@ namespace Viewer
 
         private void InitializeField()
         {
-            UnitBox.SelectionChanged += (sender, args) =>
+            foreach (var box in new[] { UnitBox, BuildingBox })
             {
-                // Picking a unit puts one on the field; the list then clears, so the same unit can be picked again.
-                if (!_updatingControls && UnitBox.SelectedItem is GameObject kind)
+                box.SelectionChanged += (sender, args) =>
                 {
-                    AddToField(kind);
-                    _updatingControls = true;
-                    UnitBox.SelectedItem = null;
-                    _updatingControls = false;
-                }
-            };
+                    // Picking a unit puts one on the field; the list then clears, so the same unit can be picked again.
+                    if (!_updatingControls && box.SelectedItem is GameObject kind)
+                    {
+                        AddToField(kind);
+                        _updatingControls = true;
+                        box.SelectedItem = null;
+                        _updatingControls = false;
+                    }
+                };
+            }
             RemoveUnitsButton.Click += (sender, args) => RemoveSelectedFromField();
             AttackButton.Click += (sender, args) => AttackWithSelected();
             KillButton.Click += (sender, args) => KillSelected();
@@ -344,11 +409,29 @@ namespace Viewer
             Field.PointerPressed += OnFieldPressed;
             Field.PointerMoved += OnFieldMoved;
             Field.PointerReleased += OnFieldReleased;
+            Field.PointerExited += (sender, args) => _pointer = null;
             KeyDown += (sender, args) =>
             {
-                if (IsFieldMode && args.Key == Key.Delete && _fieldUnits.Any(unit => unit.IsSelected))
+                if (!IsFieldMode)
+                {
+                    return;
+                }
+
+                // In a text box Ctrl+C and Ctrl+V are the text's.
+                var command = (args.KeyModifiers & (KeyModifiers.Control | KeyModifiers.Meta)) != 0 && args.Source is not TextBox;
+                if (args.Key == Key.Delete && _fieldUnits.Any(unit => unit.IsSelected))
                 {
                     RemoveSelectedFromField();
+                    args.Handled = true;
+                }
+                else if (command && args.Key == Key.C && _fieldUnits.Any(unit => unit.IsSelected))
+                {
+                    CopySelected();
+                    args.Handled = true;
+                }
+                else if (command && args.Key == Key.V && _copiedUnits.Count > 0)
+                {
+                    PasteCopied();
                     args.Handled = true;
                 }
             };
@@ -358,6 +441,7 @@ namespace Viewer
         private void ClearField()
         {
             _fieldUnits.Clear();
+            _copiedUnits.Clear();
             _readyFrames.Clear();
             _renderingFrames.Clear();
             _effects.Clear();
@@ -433,6 +517,7 @@ namespace Viewer
 
             Field.Focus();
             var point = e.GetCurrentPoint(Field);
+            _pointer = point.Position;
             var add = (e.KeyModifiers & (KeyModifiers.Shift | KeyModifiers.Control)) != 0;
 
             if (point.Properties.IsLeftButtonPressed)
@@ -484,12 +569,13 @@ namespace Viewer
 
         private void OnFieldMoved(object sender, PointerEventArgs e)
         {
+            var point = e.GetPosition(Field);
+            _pointer = point;
             if (_dragStart is not { } start)
             {
                 return;
             }
 
-            var point = e.GetPosition(Field);
             if (!_dragging && Distance(start, point) < DragThreshold)
             {
                 return;
