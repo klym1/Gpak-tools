@@ -1175,6 +1175,48 @@ namespace ViewerTests
         }
 
         [AvaloniaTest]
+        public async Task UnitsGetToPlacesCloserThanTheirRoom()
+        {
+            // Each unit takes a room of 15 around it, so two need 30 between them.
+            var folder = UnitArchiveFolder(out var archive, "GEOMETRY 1 15 32");
+            try
+            {
+                var window = new MainWindow(archive);
+                window.Show();
+                await window.RenderingCompleted;
+                window.Pause();
+                window.UpdateLayout();
+                window.RemoveSelectedFromField();
+
+                var units = new[] { new Point(80, 90), new Point(150, 170), new Point(240, 110), new Point(200, 220) }
+                    .Select(at => window.AddToField("TST", at))
+                    .ToList();
+                Drag(window, new Point(40, 40), new Point(300, 260));
+
+                // The places of the hollow square are 20 apart: those who come later wait, then push through.
+                window.FindControl<NumericUpDown>("FormationSpacingBox").Value = 10;
+                window.FindControl<ComboBox>("FormationBox").SelectedIndex = 2;
+                var places = units.Select(u => u.Goal.Value).ToList();
+                Assert.That(places.Distinct().Count(), Is.EqualTo(4));
+
+                for (var tick = 0; tick < 600; tick++)
+                {
+                    window.Tick();
+                }
+
+                Assert.That(units.Select(u => u.Movement.IsWalking), Is.All.False);
+                Assert.That(units.Select(u => u.Movement.Position), Is.EqualTo(places));
+                Assert.That(units.Select(u => u.State.Code), Is.All.EqualTo("STAND"));
+
+                window.Close();
+            }
+            finally
+            {
+                Directory.Delete(folder, true);
+            }
+        }
+
+        [AvaloniaTest]
         public Task AUnitWalksAsFastAsItsGeometrySaysAndTakesItsRoom()
         {
             // A step of 64 is twice a foot soldier's 32.

@@ -71,6 +71,9 @@ namespace Viewer
 
         internal int Detours { get; set; }
 
+        /// <summary>Steps the unit has walked in a row with nothing in its way.</summary>
+        internal int FreeSteps { get; set; }
+
         /// <summary>For smoke: the color it is laid over the field in; null for everything drawn as it is.</summary>
         internal System.Drawing.Color? Fog { get; set; }
 
@@ -95,6 +98,17 @@ namespace Viewer
         internal int IdleTicks { get; set; }
 
         internal int RestAfter { get; set; }
+
+        /// <summary>Ticks until a unit kept from its goal tries the way again, and how long it waited the last time.</summary>
+        internal int RetryIn { get; set; }
+
+        internal int RetryAfter { get; set; }
+
+        /// <summary>
+        /// Whether the unit, kept from its place more than once, pushes through the units in its way: a place
+        /// inside a close formation is walled in by those who got to theirs first.
+        /// </summary>
+        internal bool Squeezes { get; set; }
 
         /// <summary>The way the unit turns once it is at its place in a formation (as its heading), or null.</summary>
         internal double? FacingAtGoal { get; set; }

@@ -72,7 +72,8 @@ namespace Viewer
                 }
             }
 
-            var start = CellOf(from, columns, rows);
+            // A unit standing in another's room first steps out of it.
+            var start = NearestFree(CellOf(from, columns, rows), blocked, columns, rows);
             var goal = CellOf(to, columns, rows);
             var goalIsFree = !blocked[goal.Y * columns + goal.X];
             if (!goalIsFree)

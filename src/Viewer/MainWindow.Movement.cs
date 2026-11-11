@@ -34,7 +34,7 @@ namespace Viewer
         private void WalkTo(FieldUnitView unit, Point goal, Func<FieldUnitView, bool> passes)
         {
             var obstacles = _fieldUnits
-                .Where(other => !ReferenceEquals(other, unit) && !other.IsDead && !passes(other))
+                .Where(other => !unit.Squeezes && !ReferenceEquals(other, unit) && !other.IsDead && !passes(other) && !IsWaiting(other))
                 .Select(other => new FieldObstacle(other.Movement.Position, RadiusOf(other) + RadiusOf(unit)))
                 .ToList();
 
@@ -47,13 +47,55 @@ namespace Viewer
             unit.Goal = goal;
             unit.WaitTicks = 0;
 
-            if (NextLeg(unit))
+            if (unit.Squeezes && IsTaken(unit, goal))
+            {
+                ArriveOrWait(unit);
+            }
+            else if (NextLeg(unit))
             {
                 SetFieldState(unit, WalkStateOf(unit.Kind));
             }
             else
             {
+                ArriveOrWait(unit);
+            }
+        }
+
+        /// <summary>
+        /// The unit's way has ended. Short of the place it was sent to (another unit is in the way, or on the
+        /// place) it stands and tries again in a while, waiting longer each time; a unit after an enemy gives up.
+        /// </summary>
+        private void ArriveOrWait(FieldUnitView unit)
+        {
+            if (unit.Target != null || unit.Goal is not { } goal || Distance(goal, unit.Movement.Position) < 0.5)
+            {
                 Arrive(unit);
+                return;
+            }
+
+            unit.Movement.Stop();
+            unit.Route.Clear();
+            unit.Detours = 0;
+            unit.Squeezes = unit.RetryAfter > 0;
+            unit.RetryAfter = Math.Min(Math.Max(unit.RetryAfter * 2, MinRetryTicks), MaxRetryTicks);
+            // Not all at once: units waiting on each other would meet again.
+            unit.RetryIn = unit.RetryAfter + _random.Next(MinRetryTicks);
+            SetFieldState(unit, StandStateOf(unit.Kind));
+        }
+
+        /// <summary>
+        /// Whether the unit only stands until it can go on to its place. Others walk through it: two units each
+        /// waiting where the other is going would never get there.
+        /// </summary>
+        private static bool IsWaiting(FieldUnitView unit) =>
+            unit.Goal != null && unit.Target == null && !unit.Movement.IsWalking;
+
+        /// <summary>A unit waiting short of its place tries the way again when its time has come.</summary>
+        private void RetryWay(FieldUnitView unit)
+        {
+            if (unit.Goal is { } goal && unit.Target == null && --unit.RetryIn <= 0)
+            {
+                WalkTo(unit, goal, other => false);
             }
         }
 
@@ -61,6 +103,8 @@ namespace Viewer
         private static void Arrive(FieldUnitView unit)
         {
             Halt(unit);
+            unit.RetryAfter = 0;
+            unit.Squeezes = false;
             if (unit.FacingAtGoal is { } facing && unit.Target == null)
             {
                 unit.Movement.TurnTo(facing);
@@ -91,12 +135,17 @@ namespace Viewer
         /// </summary>
         private FieldUnitView BlockerOf(FieldUnitView unit)
         {
+            if (unit.Squeezes)
+            {
+                return null;
+            }
+
             var here = unit.Movement.Position;
             var next = unit.Movement.NextPosition();
 
             return _fieldUnits.FirstOrDefault(other =>
             {
-                if (ReferenceEquals(other, unit) || other.IsDead || ReferenceEquals(other, unit.Target))
+                if (ReferenceEquals(other, unit) || other.IsDead || ReferenceEquals(other, unit.Target) || IsWaiting(other))
                 {
                     return false;
                 }
@@ -119,10 +168,7 @@ namespace Viewer
                 return false;
             }
 
-            var taken = _fieldUnits.Any(other =>
-                !ReferenceEquals(other, unit) && !other.IsDead
-                && FieldPath.GroundDistance(goal, other.Movement.Position) < RadiusOf(unit) + RadiusOf(other));
-            if (taken)
+            if (IsTaken(unit, goal))
             {
                 return false;
             }
@@ -130,6 +176,14 @@ namespace Viewer
             unit.Movement.MoveTo(goal);
             return unit.Movement.IsWalking;
         }
+
+        /// <summary>
+        /// Whether another unit stands where the unit is going: within the room of both, or for a unit that
+        /// pushes through, within half of it, so that it takes a place closer to its neighbours than their room.
+        /// </summary>
+        private bool IsTaken(FieldUnitView unit, Point goal) => _fieldUnits.Any(other =>
+            !ReferenceEquals(other, unit) && !other.IsDead && !IsWaiting(other)
+            && FieldPath.GroundDistance(goal, other.Movement.Position) < (RadiusOf(unit) + RadiusOf(other)) / (unit.Squeezes ? 2 : 1));
 
         /// <summary>
         /// One step along the route. With a unit in the way it waits its turn behind one walking the same way,
@@ -150,15 +204,21 @@ namespace Viewer
             if (blocker == null)
             {
                 unit.WaitTicks = 0;
-                unit.Detours = 0;
+                // Only a unit that gets on forgets its detours: two units in each other's way step and stop in turn.
+                if (++unit.FreeSteps >= StepsToGetOn)
+                {
+                    unit.Detours = 0;
+                }
+
                 if (unit.Movement.Step() && !NextLeg(unit) && !FinishAtGoal(unit))
                 {
-                    Arrive(unit);
+                    ArriveOrWait(unit);
                 }
 
                 return;
             }
 
+            unit.FreeSteps = 0;
             unit.WaitTicks++;
             var turn = Math.Abs((blocker.Movement.Heading - unit.Movement.Heading + 540) % 360 - 180);
             var follows = blocker.Movement.IsWalking && turn < 90;
@@ -169,8 +229,7 @@ namespace Viewer
 
             if (++unit.Detours > MaxDetours)
             {
-                Halt(unit);
-                SetFieldState(unit, StandStateOf(unit.Kind));
+                ArriveOrWait(unit);
                 return;
             }
 
@@ -277,6 +336,8 @@ namespace Viewer
                 unit.Next.Clear();
                 unit.ReadyFor = null;
                 unit.FacingAtGoal = facing;
+                unit.RetryAfter = 0;
+                unit.Squeezes = false;
                 WalkTo(unit, onField[assignment[i]], group.Contains);
             }
         }

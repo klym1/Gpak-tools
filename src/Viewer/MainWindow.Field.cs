@@ -73,6 +73,13 @@ namespace Viewer
         private const int MaxWaitTicks = 25;
         private const int MaxDetours = 6;
 
+        /// <summary>Steps in a row with nothing in its way after which a unit is past what it went round.</summary>
+        private const int StepsToGetOn = 8;
+
+        /// <summary>How long, in ticks, a unit kept from its place waits before it tries the way again: from the first to the longest wait.</summary>
+        private const int MinRetryTicks = 8;
+        private const int MaxRetryTicks = 96;
+
         /// <summary>How long after the shot a weapon lands, in ticks.</summary>
         private const int TicksToImpact = 20;
 
@@ -346,6 +353,7 @@ namespace Viewer
             {
                 // A slow unit at its place in a formation turns to its front.
                 unit.Movement.Turn();
+                RetryWay(unit);
             }
 
             return true;
