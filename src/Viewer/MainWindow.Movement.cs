@@ -182,6 +182,14 @@ namespace Viewer
             target = ClampToField(target);
             if (FormationBox.SelectedItem is GameFormation formation)
             {
+                // The formation turns to look where it is sent; formed up where it stands, it looks as before.
+                var way = target - Middle(group);
+                var onGround = new Vector(way.X, way.Y / Formation.RowSpacing);
+                if (onGround.Length > 1)
+                {
+                    _formationFacing = onGround / onGround.Length;
+                }
+
                 // Officers and drummers take the commanders' places, as far as there are any.
                 var commanders = group.Where(unit => unit.Kind.Descriptor.IsCommander).Take(formation.Commanders.Count).ToList();
                 var soldiers = group.Except(commanders).ToList();
@@ -190,6 +198,7 @@ namespace Viewer
                     , target
                     , FormationSpacing
                     , soldiers.Count
+                    , _formationFacing
                 );
                 SendToPlaces(soldiers, places.Soldiers, group);
                 SendToPlaces(commanders, places.Commanders, group);
@@ -208,12 +217,17 @@ namespace Viewer
             var group = SelectedFieldUnits.Where(unit => !unit.Kind.IsBuilding).ToList();
             if (group.Count > 0)
             {
-                SendSelectedTo(new Point(
-                      group.Average(unit => unit.Movement.Position.X)
-                    , group.Average(unit => unit.Movement.Position.Y)
-                ));
+                SendSelectedTo(Middle(group));
             }
         }
+
+        private static Point Middle(IReadOnlyList<FieldUnitView> units) => new Point(
+              units.Average(unit => unit.Movement.Position.X)
+            , units.Average(unit => unit.Movement.Position.Y)
+        );
+
+        // The way the formation looks, on the ground: up the screen until it is sent somewhere.
+        private Vector _formationFacing = new Vector(0, -1);
 
         /// <summary>Pixels a cell of a formation's picture is wide.</summary>
         private double FormationSpacing => (double) (FormationSpacingBox.Value ?? DefaultFormationSpacing);

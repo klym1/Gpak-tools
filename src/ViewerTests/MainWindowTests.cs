@@ -1140,9 +1140,22 @@ namespace ViewerTests
                 Assert.That(square.Select(p => p.X - middle.X), Is.EqualTo(new[] { -40.0, 40, -40, 40 }).Within(1e-6));
                 Assert.That(square[2].Y - square[0].Y, Is.EqualTo(2 * 40 * Formation.RowSpacing).Within(1e-6));
 
-                // Sent somewhere, the units keep the formation.
-                Click(window, new Point(400, 200), MouseButton.Right);
-                Assert.That(Places().Select(p => p.X - 400), Is.EqualTo(new[] { -40.0, 40, -40, 40 }).Within(1e-6));
+                // Sent somewhere, the units keep the formation, which turns to look that way: sent to the right,
+                // the line runs down the screen, with the one it has no place for behind it, on the left.
+                formations.SelectedIndex = 1;
+                var target = middle + new Vector(150, 0);
+                Click(window, target, MouseButton.Right);
+                var turned = Places().OrderByDescending(p => p.X).ThenBy(p => p.Y).ToList();
+                Assert.That(turned.Take(3).Select(p => p.X), Is.All.EqualTo(target.X).Within(1e-6));
+                Assert.That(
+                      turned.Take(3).Select(p => p.Y - target.Y)
+                    , Is.EqualTo(new[] { -3 * 40 * Formation.RowSpacing, 0, 3 * 40 * Formation.RowSpacing }).Within(1e-6)
+                );
+                Assert.That(turned[3].X, Is.LessThan(target.X));
+
+                // Formed up again where it stands, it looks the same way.
+                window.FindControl<NumericUpDown>("FormationSpacingBox").Value = 20;
+                Assert.That(Places().OrderByDescending(p => p.X).Take(3).Select(p => p.X), Is.All.EqualTo(middle.X).Within(1e-6));
 
                 window.Close();
             }

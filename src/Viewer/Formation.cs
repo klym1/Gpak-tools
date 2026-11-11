@@ -44,35 +44,42 @@ namespace Viewer
         /// <summary>
         /// The places of a game formation centred on <paramref name="target"/>, a cell of its picture being
         /// <paramref name="spacing"/> pixels: <paramref name="soldiers"/> places in the order of the picture, the
-        /// ones it has no room for in a block behind it, and its commanders' places.
+        /// ones it has no room for in a block behind it, and its commanders' places. The top of the picture is
+        /// the front, which looks along <paramref name="facing"/>: a direction on the ground, one long.
         /// </summary>
         public static (IReadOnlyList<Point> Soldiers, IReadOnlyList<Point> Commanders) Of(
               GameFormation formation
             , Point target
             , double spacing
             , int soldiers
+            , Vector facing
         )
         {
             var left = formation.Places.Min(place => place.Column);
-            var right = formation.Places.Max(place => place.Column);
+            var rightmost = formation.Places.Max(place => place.Column);
             var top = formation.Places.Min(place => place.Row);
             var bottom = formation.Places.Max(place => place.Row);
 
-            Point At((int Column, int Row) place) => new Point(
-                  target.X + (place.Column - (left + right) / 2.0) * spacing
-                , target.Y + (place.Row - (top + bottom) / 2.0) * spacing * RowSpacing
-            );
+            var right = new Vector(-facing.Y, facing.X);
 
-            var places = formation.Places.Take(soldiers).Select(At).ToList();
+            Point At(double column, double row)
+            {
+                var onGround = right * ((column - (left + rightmost) / 2.0) * spacing)
+                               - facing * ((row - (top + bottom) / 2.0) * spacing);
+                return new Point(target.X + onGround.X, target.Y + onGround.Y * RowSpacing);
+            }
+
+            Point AtPlace((int Column, int Row) place) => At(place.Column, place.Row);
+
+            var places = formation.Places.Take(soldiers).Select(AtPlace).ToList();
             var extra = soldiers - places.Count;
             if (extra > 0)
             {
                 var rows = (int) Math.Ceiling(extra / Math.Ceiling(Math.Sqrt(extra)));
-                var behind = At(((left + right) / 2, bottom + 2)) + new Vector(0, (rows - 1) / 2.0 * spacing * RowSpacing);
-                places.AddRange(Around(behind, extra, spacing));
+                places.AddRange(Around(At((left + rightmost) / 2.0, bottom + 2 + (rows - 1) / 2.0), extra, spacing));
             }
 
-            return (places, formation.Commanders.Select(At).ToList());
+            return (places, formation.Commanders.Select(AtPlace).ToList());
         }
 
         /// <summary>
