@@ -464,6 +464,7 @@ namespace Viewer
         /// <summary>The state a unit walks in: both walk steps, one of them, or standing if it cannot walk.</summary>
         private static GameObjectState WalkStateOf(GameObject unit) =>
             unit.States.FirstOrDefault(state => state.Code == "MOTION_L+MOTION_R")
+            ?? unit.States.FirstOrDefault(state => state.Code.StartsWith("MOTION_L0+", StringComparison.Ordinal))
             ?? unit.States.FirstOrDefault(state => state.Code == "MOTION_L")
             ?? unit.States.FirstOrDefault(state => state.Code.StartsWith("MOTION", StringComparison.Ordinal))
             ?? StandStateOf(unit);

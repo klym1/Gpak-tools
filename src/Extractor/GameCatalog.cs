@@ -336,7 +336,8 @@ namespace GPExtractor
         }
 
         /// <summary>
-        /// The descriptor's animations, plus "Walk" (and "Walk backwards") joining the left and right steps.
+        /// The descriptor's animations, plus "Walk" (and "Walk backwards") joining the left and right steps,
+        /// or a rider's numbered steps.
         /// </summary>
         public static IReadOnlyList<GameObjectState> StatesOf(GpDescriptor descriptor)
         {
@@ -349,18 +350,64 @@ namespace GPExtractor
 
             Join(states, "MOTION_L", "MOTION_R");
             Join(states, "MOTION_LB", "MOTION_RB");
+            JoinNumberedSteps(states);
             return states;
         }
 
         /// <summary>Adds a state that plays two others in turn (the left and right step of a walk).</summary>
         private static void Join(List<GameObjectState> states, string firstCode, string secondCode)
         {
-            var first = states.FirstOrDefault(state => state.Code.Equals(firstCode, StringComparison.OrdinalIgnoreCase));
-            var second = states.FirstOrDefault(state => state.Code.Equals(secondCode, StringComparison.OrdinalIgnoreCase));
-            if (first != null && second != null && first.Directions == second.Directions)
+            Join(states, new[] { Find(states, firstCode), Find(states, secondCode) }, null);
+        }
+
+        /// <summary>
+        /// A rider has no <c>MOTION_R</c>: its gallop is cut into the steps <c>MOTION_L0</c>, <c>MOTION_L1</c>, …,
+        /// <c>MOTION_R0</c>, <c>MOTION_R1</c>, …, which the walk plays in turn. (With a <c>MOTION_R</c>, numbered
+        /// steps are other walks, not parts of one.)
+        /// </summary>
+        private static void JoinNumberedSteps(List<GameObjectState> states)
+        {
+            if (Find(states, "MOTION_R") != null)
             {
-                var code = firstCode + "+" + secondCode;
-                states.Insert(states.IndexOf(first), new GameObjectState(code, LabelOf(code), first.Directions, first.Frames.Concat(second.Frames).ToList()));
+                return;
+            }
+
+            var left = Numbered(states, "MOTION_L");
+            var right = Numbered(states, "MOTION_R");
+            if (left.Count > 0 && right.Count > 0)
+            {
+                Join(states, left.Concat(right).ToList(), "Walk");
+            }
+        }
+
+        private static List<GameObjectState> Numbered(List<GameObjectState> states, string code)
+        {
+            var steps = new List<GameObjectState>();
+            while (Find(states, code + steps.Count) is { } step)
+            {
+                steps.Add(step);
+            }
+
+            return steps;
+        }
+
+        private static GameObjectState Find(List<GameObjectState> states, string code) =>
+            states.FirstOrDefault(state => state.Code.Equals(code, StringComparison.OrdinalIgnoreCase));
+
+        private static void Join(List<GameObjectState> states, IReadOnlyList<GameObjectState> parts, string label)
+        {
+            if (parts.All(part => part != null && part.Directions == parts[0].Directions))
+            {
+                var code = string.Join("+", parts.Select(part => part.Code));
+                states.Insert(
+                      states.IndexOf(parts[0])
+                    , new GameObjectState(
+                          code
+                        , label == null ? LabelOf(code) : label + " (" + code + ")"
+                        , parts[0].Directions
+                        , parts.SelectMany(part => part.Frames).ToList()
+                    )
+                );
             }
         }
 

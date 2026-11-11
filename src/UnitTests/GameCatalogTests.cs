@@ -191,6 +191,35 @@ namespace UnitTests
             unit.States[4].Label.Should().Be("Walk backwards, left step (MOTION_LB)");
         }
 
+        [Test]
+        public void ARidersWalkPlaysItsNumberedStepsInTurn()
+        {
+            var rider = GpDescriptor.Parse("RID", string.Join("\r\n",
+                "USERLC 1 ridr SHADOW -65 -90",
+                "#STAND      9 1 1 0",
+                "@MOTION_L   9 1 0 2",
+                "@MOTION_L0  9 1 0 2",
+                "@MOTION_L1  9 1 2 4",
+                "@MOTION_R0  9 1 4 6",
+                "#MOTION_R1  9 2 1 6 1 7",
+                ""));
+
+            var walk = GameCatalog.StatesOf(rider)[2];
+            walk.Code.Should().Be("MOTION_L0+MOTION_L1+MOTION_R0+MOTION_R1");
+            walk.Label.Should().StartWith("Walk (");
+            walk.Frames.Select(frame => frame.Item2).Should().Equal(0, 1, 2, 3, 4, 5, 6, 7);
+
+            // Beside a MOTION_R the numbered steps are other walks.
+            var soldier = GpDescriptor.Parse("SOL", string.Join("\r\n",
+                "USERLC 1 solg SHADOW -62 -89",
+                "@MOTION_L   9 1 0 2",
+                "@MOTION_R   9 1 2 4",
+                "@MOTION_L0  9 1 0 2",
+                "@MOTION_R0  9 1 2 4",
+                ""));
+            GameCatalog.StatesOf(soldier).Select(state => state.Code).Should().Equal("MOTION_L+MOTION_R", "MOTION_L", "MOTION_R", "MOTION_L0", "MOTION_R0");
+        }
+
         [TestCase(false)]
         [TestCase(true)]
         public void LoadsSpritesByName(bool archive)
