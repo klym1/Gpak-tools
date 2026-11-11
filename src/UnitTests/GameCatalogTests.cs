@@ -192,6 +192,19 @@ namespace UnitTests
         }
 
         [Test]
+        public void ListsTheFormationsOfOrdersLst()
+        {
+            using var catalog = GameCatalog.Load(ExtractedFolder());
+
+            catalog.Formations.Select(formation => formation.Name).Should().Equal("LINE3", "KARE4");
+            catalog.Formations[0].Places.Should().Equal((0, 0), (3, 0), (6, 0));
+            catalog.Formations[0].Commanders.Should().BeEmpty();
+            catalog.Formations[1].Places.Should().Equal((0, 2), (2, 2), (0, 4), (2, 4));
+            catalog.Formations[1].Commanders.Should().Equal((1, 0));
+            catalog.Formations[1].ToString().Should().Be("KARE4  \u00b7  4");
+        }
+
+        [Test]
         public void ARidersWalkPlaysItsNumberedStepsInTurn()
         {
             var rider = GpDescriptor.Parse("RID", string.Join("\r\n",

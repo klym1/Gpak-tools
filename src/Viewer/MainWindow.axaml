@@ -32,6 +32,10 @@
                 ToolTip.Tip="The selected units die and leave the field" />
         <CheckBox x:Name="StandGroundBox" Content="Stand ground" IsEnabled="False"
                   ToolTip.Tip="The selected units hold their place: they attack enemies within reach but do not go after them" />
+        <ComboBox x:Name="FormationBox" Width="170" MaxDropDownHeight="520" IsTextSearchEnabled="True" IsVisible="False"
+                  ToolTip.Tip="The formation the selected units stand in, here and where they are sent (the game's ORDERS.LST)" />
+        <NumericUpDown x:Name="FormationSpacingBox" Minimum="4" Maximum="200" Increment="2" FormatString="0" Width="108"
+                       IsVisible="False" ToolTip.Tip="Pixels between neighbouring places of a formation" />
         <CheckBox x:Name="FogBox" Content="Fog of war"
                   ToolTip.Tip="Hide the units of other colors that no unit of the picked color sees" />
       </StackPanel>

@@ -1097,6 +1097,62 @@ namespace ViewerTests
         }
 
         [AvaloniaTest]
+        public async Task PutsTheSelectedUnitsIntoAFormationOfTheGame()
+        {
+            var folder = UnitArchiveFolder(out var archive);
+            try
+            {
+                var window = new MainWindow(archive);
+                window.Show();
+                await window.RenderingCompleted;
+                window.Pause();
+                window.UpdateLayout();
+                window.RemoveSelectedFromField();
+
+                var units = new[] { new Point(80, 90), new Point(150, 170), new Point(240, 110), new Point(200, 220) }
+                    .Select(at => window.AddToField("TST", at))
+                    .ToList();
+                Drag(window, new Point(40, 40), new Point(300, 260));
+                Assert.That(window.SelectedFieldUnits, Is.EquivalentTo(units));
+                var middle = new Point(units.Average(u => u.Movement.Position.X), units.Average(u => u.Movement.Position.Y));
+
+                System.Collections.Generic.List<Point> Places() => units
+                    .Select(u => u.Goal ?? u.Movement.Target ?? u.Movement.Position)
+                    .OrderBy(p => p.Y).ThenBy(p => p.X)
+                    .ToList();
+
+                // The formations of ORDERS.LST follow the plain block; picking one forms the selected units up
+                // around their middle: three in the line, the one it has no place for behind it.
+                var formations = window.FindControl<ComboBox>("FormationBox");
+                Assert.That(formations.Items.Select(item => item.ToString()), Is.EqualTo(new[] { "Block", "LINE3  \u00b7  3", "KARE4  \u00b7  4" }));
+                Assert.That(formations.SelectedIndex, Is.EqualTo(0));
+                formations.SelectedIndex = 1;
+                var spacing = MainWindow.DefaultFormationSpacing;
+                var line = Places();
+                Assert.That(line.Take(3).Select(p => p.X - middle.X), Is.EqualTo(new[] { -3.0 * spacing, 0, 3.0 * spacing }).Within(1e-6));
+                Assert.That(line.Take(3).Select(p => p.Y), Is.All.EqualTo(middle.Y).Within(1e-6));
+                Assert.That(line[3].Y, Is.GreaterThan(middle.Y));
+
+                // The hollow square, and the spacing is a setting.
+                formations.SelectedIndex = 2;
+                window.FindControl<NumericUpDown>("FormationSpacingBox").Value = 40;
+                var square = Places();
+                Assert.That(square.Select(p => p.X - middle.X), Is.EqualTo(new[] { -40.0, 40, -40, 40 }).Within(1e-6));
+                Assert.That(square[2].Y - square[0].Y, Is.EqualTo(2 * 40 * Formation.RowSpacing).Within(1e-6));
+
+                // Sent somewhere, the units keep the formation.
+                Click(window, new Point(400, 200), MouseButton.Right);
+                Assert.That(Places().Select(p => p.X - 400), Is.EqualTo(new[] { -40.0, 40, -40, 40 }).Within(1e-6));
+
+                window.Close();
+            }
+            finally
+            {
+                Directory.Delete(folder, true);
+            }
+        }
+
+        [AvaloniaTest]
         public Task AUnitWalksAsFastAsItsGeometrySaysAndTakesItsRoom()
         {
             // A step of 64 is twice a foot soldier's 32.

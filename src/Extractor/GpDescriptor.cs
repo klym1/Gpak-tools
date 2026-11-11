@@ -207,6 +207,9 @@ namespace GPExtractor
         /// <summary>The <c>STANDGROUND</c> line: the object can be told to hold its place.</summary>
         public bool CanStandGround => Flags.Contains("STANDGROUND");
 
+        /// <summary>Whether the unit leads a formation: an officer (<c>OFFICER</c>) or a drummer (<c>BARABAN</c>).</summary>
+        public bool IsCommander => Flags.Contains("OFFICER") || Flags.Contains("BARABAN");
+
         private const string SearchEnemyRadiusKey = "SEARCH_ENEMY_RADIUS";
         private const string ScatterKey = "RAZBROS";
         private const string TurnRateKey = "ROTATE";

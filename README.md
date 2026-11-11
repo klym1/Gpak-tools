@@ -38,6 +38,7 @@ The field:
 - It starts with two armies, blue (selected) and red: a cannon, a musketeer, a grenadier, a pikeman and a dragoon each.
 - Picking a unit or a building in the **Add** lists (one of units, one of buildings) puts it there in the picked color.
 - Click a unit, or drag a box around several, to select them (Shift adds to the selection; Delete or **Remove** takes them off).
+- The formation list holds the game's formations (`ORDERS.LST`: lines, squares, hollow squares and the gunners' and ships' ones, with the number of soldiers each has room for) after the plain **Block**. Picking one forms the selected units up where they are, and they keep it where they are sent; officers and drummers take the commanders' places, and units the formation has no room for stand in a block behind it. The number beside it is the distance in pixels between neighbouring places: the game's own is not known, so it is a setting.
 - Ctrl+C copies the selected units and Ctrl+V puts copies of them around the pointer, placed and colored as they were.
 
 Moving:

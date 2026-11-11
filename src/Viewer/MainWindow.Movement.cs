@@ -14,6 +14,9 @@ namespace Viewer
     /// <summary>How units get about: routes around each other, steps, and orders to go somewhere.</summary>
     public partial class MainWindow
     {
+        /// <summary>Pixels a cell of a formation's picture is wide, until another is picked: the game's own is not known.</summary>
+        public const int DefaultFormationSpacing = 24;
+
         /// <summary>The room a unit takes on the ground, as a radius: its <c>GEOMETRY</c>'s, or half its selection ring.</summary>
         private static double RadiusOf(FieldUnitView unit) => unit.Kind.Descriptor.Radius ?? RingWidthOf(unit) / 2;
 
@@ -176,21 +179,59 @@ namespace Viewer
                 return;
             }
 
-            var spacing = group.Max(SpacingOf);
-            var places = Formation.Around(ClampToField(target), group.Count, spacing).Select(ClampToField).ToList();
-            var assignment = Formation.Assign(group.Select(unit => unit.Movement.Position).ToList(), places);
-
-            for (var i = 0; i < group.Count; i++)
+            target = ClampToField(target);
+            if (FormationBox.SelectedItem is GameFormation formation)
             {
-                var unit = group[i];
+                // Officers and drummers take the commanders' places, as far as there are any.
+                var commanders = group.Where(unit => unit.Kind.Descriptor.IsCommander).Take(formation.Commanders.Count).ToList();
+                var soldiers = group.Except(commanders).ToList();
+                var places = Formation.Of(
+                      formation
+                    , target
+                    , FormationSpacing
+                    , soldiers.Count
+                );
+                SendToPlaces(soldiers, places.Soldiers, group);
+                SendToPlaces(commanders, places.Commanders, group);
+            }
+            else
+            {
+                SendToPlaces(group, Formation.Around(target, group.Count, group.Max(SpacingOf)), group);
+            }
+
+            UpdateFieldView();
+        }
+
+        /// <summary>Puts the selected units into the picked formation where they are: around their middle.</summary>
+        public void FormUpSelected()
+        {
+            var group = SelectedFieldUnits.Where(unit => !unit.Kind.IsBuilding).ToList();
+            if (group.Count > 0)
+            {
+                SendSelectedTo(new Point(
+                      group.Average(unit => unit.Movement.Position.X)
+                    , group.Average(unit => unit.Movement.Position.Y)
+                ));
+            }
+        }
+
+        /// <summary>Pixels a cell of a formation's picture is wide.</summary>
+        private double FormationSpacing => (double) (FormationSpacingBox.Value ?? DefaultFormationSpacing);
+
+        private void SendToPlaces(IReadOnlyList<FieldUnitView> units, IReadOnlyList<Point> places, IReadOnlyList<FieldUnitView> group)
+        {
+            var onField = places.Select(ClampToField).ToList();
+            var assignment = Formation.Assign(units.Select(unit => unit.Movement.Position).ToList(), onField);
+
+            for (var i = 0; i < units.Count; i++)
+            {
+                var unit = units[i];
                 unit.Target = null;
                 unit.Detours = 0;
                 unit.Next.Clear();
                 unit.ReadyFor = null;
-                WalkTo(unit, places[assignment[i]], group.Contains);
+                WalkTo(unit, onField[assignment[i]], group.Contains);
             }
-
-            UpdateFieldView();
         }
 
         private Size FieldSize()

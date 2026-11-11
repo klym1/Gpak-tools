@@ -100,6 +100,11 @@ namespace GPExtractor
             var weaponList = files.Find("WEAPON", ".NDS");
             Weapons = weaponList == null ? WeaponList.Empty : WeaponList.Parse(Encoding.Latin1.GetString(files.Read(weaponList)));
 
+            var formations = files.Find("ORDERS", ".LST");
+            Formations = formations == null
+                ? Array.Empty<GameFormation>()
+                : FormationList.Parse(Encoding.Latin1.GetString(files.Read(formations)));
+
             var weaponAnimations = files.Find("WEAPON", ".ADS");
             WeaponAnimations = weaponAnimations == null ? null : GpDescriptor.Parse("WEAPON", files.Read(weaponAnimations));
         }
@@ -184,6 +189,9 @@ namespace GPExtractor
 
         /// <summary>The weapons of <c>WEAPON.NDS</c>; empty if the game files have none.</summary>
         public WeaponList Weapons { get; }
+
+        /// <summary>The formations of <c>ORDERS.LST</c>; empty if the game files have none.</summary>
+        public IReadOnlyList<GameFormation> Formations { get; }
 
         /// <summary>The sounds of <c>SOUNDLIST.TXT</c>; empty if the game files have none.</summary>
         public SoundList Sounds { get; }

@@ -381,6 +381,9 @@ namespace Viewer
                 .All(index => unit.Sprite(index) is { } sprite && UnitSprite.Load(catalog, sprite.FileName) != null);
         }
 
+        /// <summary>The first choice of formations: a plain block.</summary>
+        private const string NoFormation = "Block";
+
         /// <summary>Fills a list of things to add to the field; returns how many there are.</summary>
         private int SetKinds(ComboBox box, IEnumerable<GameObject> kinds, string name)
         {
@@ -412,6 +415,12 @@ namespace Viewer
                 var units = SetKinds(UnitBox, catalog?.Units, "units");
                 var buildings = SetKinds(BuildingBox, catalog?.Buildings, "buildings");
                 UnitPanel.IsVisible = units + buildings > 0;
+
+                var formations = catalog?.Formations ?? Array.Empty<GameFormation>();
+                FormationBox.ItemsSource = new object[] { NoFormation }.Concat(formations).ToList();
+                FormationBox.SelectedIndex = 0;
+                FormationBox.IsVisible = formations.Count > 0;
+                FormationSpacingBox.IsVisible = formations.Count > 0;
             }
             finally
             {

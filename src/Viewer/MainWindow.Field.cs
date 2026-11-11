@@ -388,6 +388,9 @@ namespace Viewer
                     }
                 };
             }
+            FormationSpacingBox.Value = DefaultFormationSpacing;
+            FormationBox.SelectionChanged += (sender, args) => FormUpWhenPicked();
+            FormationSpacingBox.ValueChanged += (sender, args) => FormUpWhenPicked();
             RemoveUnitsButton.Click += (sender, args) => RemoveSelectedFromField();
             AttackButton.Click += (sender, args) => AttackWithSelected();
             KillButton.Click += (sender, args) => KillSelected();
@@ -435,6 +438,14 @@ namespace Viewer
                     args.Handled = true;
                 }
             };
+        }
+
+        private void FormUpWhenPicked()
+        {
+            if (!_updatingControls && IsFieldMode && FormationBox.SelectedItem is GameFormation)
+            {
+                FormUpSelected();
+            }
         }
 
         /// <summary>Removes every unit and the frames rendered for them.</summary>

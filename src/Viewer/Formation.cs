@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Avalonia;
+using GPExtractor;
 
 namespace Viewer
 {
@@ -38,6 +39,40 @@ namespace Viewer
             }
 
             return places;
+        }
+
+        /// <summary>
+        /// The places of a game formation centred on <paramref name="target"/>, a cell of its picture being
+        /// <paramref name="spacing"/> pixels: <paramref name="soldiers"/> places in the order of the picture, the
+        /// ones it has no room for in a block behind it, and its commanders' places.
+        /// </summary>
+        public static (IReadOnlyList<Point> Soldiers, IReadOnlyList<Point> Commanders) Of(
+              GameFormation formation
+            , Point target
+            , double spacing
+            , int soldiers
+        )
+        {
+            var left = formation.Places.Min(place => place.Column);
+            var right = formation.Places.Max(place => place.Column);
+            var top = formation.Places.Min(place => place.Row);
+            var bottom = formation.Places.Max(place => place.Row);
+
+            Point At((int Column, int Row) place) => new Point(
+                  target.X + (place.Column - (left + right) / 2.0) * spacing
+                , target.Y + (place.Row - (top + bottom) / 2.0) * spacing * RowSpacing
+            );
+
+            var places = formation.Places.Take(soldiers).Select(At).ToList();
+            var extra = soldiers - places.Count;
+            if (extra > 0)
+            {
+                var rows = (int) Math.Ceiling(extra / Math.Ceiling(Math.Sqrt(extra)));
+                var behind = At(((left + right) / 2, bottom + 2)) + new Vector(0, (rows - 1) / 2.0 * spacing * RowSpacing);
+                places.AddRange(Around(behind, extra, spacing));
+            }
+
+            return (places, formation.Commanders.Select(At).ToList());
         }
 
         /// <summary>
