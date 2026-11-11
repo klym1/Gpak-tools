@@ -384,6 +384,17 @@ namespace Viewer
         /// <summary>The first choice of formations: a plain block.</summary>
         private const string NoFormation = "Block";
 
+        private IReadOnlyList<GameFormation> _offeredFormations = Array.Empty<GameFormation>();
+
+        /// <summary>Lists these formations after the plain block; the picked one stays picked if it is among them.</summary>
+        private void OfferFormations(IReadOnlyList<GameFormation> formations)
+        {
+            var picked = FormationBox.SelectedItem as GameFormation;
+            _offeredFormations = formations;
+            FormationBox.ItemsSource = new object[] { NoFormation }.Concat(formations).ToList();
+            FormationBox.SelectedIndex = picked == null ? 0 : formations.ToList().IndexOf(picked) + 1;
+        }
+
         /// <summary>Fills a list of things to add to the field; returns how many there are.</summary>
         private int SetKinds(ComboBox box, IEnumerable<GameObject> kinds, string name)
         {
@@ -417,8 +428,7 @@ namespace Viewer
                 UnitPanel.IsVisible = units + buildings > 0;
 
                 var formations = catalog?.Formations ?? Array.Empty<GameFormation>();
-                FormationBox.ItemsSource = new object[] { NoFormation }.Concat(formations).ToList();
-                FormationBox.SelectedIndex = 0;
+                OfferFormations(formations);
                 FormationBox.IsVisible = formations.Count > 0;
                 FormationSpacingBox.IsVisible = formations.Count > 0;
             }

@@ -105,6 +105,12 @@ namespace GPExtractor
                 ? Array.Empty<GameFormation>()
                 : FormationList.Parse(Encoding.Latin1.GetString(files.Read(formations)));
 
+            // Every nation has a file of its own; the weapons' file has no officers.
+            FormationRules = files.Paths
+                .Where(path => path.EndsWith(".NDS", StringComparison.OrdinalIgnoreCase))
+                .SelectMany(path => GPExtractor.FormationRules.Parse(Encoding.Latin1.GetString(files.Read(path))))
+                .ToList();
+
             var weaponAnimations = files.Find("WEAPON", ".ADS");
             WeaponAnimations = weaponAnimations == null ? null : GpDescriptor.Parse("WEAPON", files.Read(weaponAnimations));
         }
@@ -192,6 +198,28 @@ namespace GPExtractor
 
         /// <summary>The formations of <c>ORDERS.LST</c>; empty if the game files have none.</summary>
         public IReadOnlyList<GameFormation> Formations { get; }
+
+        /// <summary>Who may stand in which formations, by the <c>[OFFICERS]</c> of all nations; empty if the game files have none.</summary>
+        public IReadOnlyList<FormationRule> FormationRules { get; }
+
+        /// <summary>
+        /// The formations units of these kinds may stand in together: those of the rules every one of them has a
+        /// part in. All formations for no units, or if the game files have no rules.
+        /// </summary>
+        public IReadOnlyList<GameFormation> FormationsFor(IEnumerable<GameObject> kinds)
+        {
+            var names = kinds.Select(kind => kind.Descriptor.Name).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            if (names.Count == 0 || FormationRules.Count == 0)
+            {
+                return Formations;
+            }
+
+            var allowed = FormationRules
+                .Where(rule => names.All(rule.Allows))
+                .SelectMany(rule => rule.Formations)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            return Formations.Where(formation => allowed.Contains(formation.Name)).ToList();
+        }
 
         /// <summary>The sounds of <c>SOUNDLIST.TXT</c>; empty if the game files have none.</summary>
         public SoundList Sounds { get; }

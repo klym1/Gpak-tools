@@ -196,12 +196,35 @@ namespace UnitTests
         {
             using var catalog = GameCatalog.Load(ExtractedFolder());
 
-            catalog.Formations.Select(formation => formation.Name).Should().Equal("LINE3", "KARE4");
+            catalog.Formations.Select(formation => formation.Name).Should().Equal("LINE3", "KARE4", "SHIPS2");
             catalog.Formations[0].Places.Should().Equal((0, 0), (3, 0), (6, 0));
             catalog.Formations[0].Commanders.Should().BeEmpty();
             catalog.Formations[1].Places.Should().Equal((0, 2), (2, 2), (0, 4), (2, 4));
             catalog.Formations[1].Commanders.Should().Equal((1, 0));
             catalog.Formations[1].ToString().Should().Be("KARE4  \u00b7  4");
+        }
+
+        [Test]
+        public void OffersTheFormationsTheNationsLetUnitsStandIn()
+        {
+            using var catalog = GameCatalog.Load(ExtractedFolder());
+
+            catalog.FormationRules.Should().HaveCount(3);
+            var line = catalog.FormationRules[0];
+            (line.Officer, line.Drummer).Should().Be(("Komandir", "Baraban"));
+            line.Formations.Should().BeEquivalentTo("LINE3");
+            line.Units.Should().BeEquivalentTo("Testovyj", "Pikiner");
+            catalog.FormationRules[1].Formations.Should().BeEquivalentTo("KARE4");
+
+            // Gunners stand in formations of their own, with nobody else.
+            var guns = catalog.FormationRules[2];
+            guns.Formations.Should().BeEquivalentTo("LINE3", "SHIPS2");
+            guns.Units.Should().BeEquivalentTo("Pushka");
+
+            var unit = catalog.Units.Single();
+            catalog.FormationsFor(new[] { unit }).Select(formation => formation.Name).Should().Equal("LINE3", "KARE4");
+            catalog.FormationsFor(new GameObject[0]).Should().HaveCount(3);
+            catalog.FormationsFor(new[] { unit, catalog.Buildings.Single() }).Should().BeEmpty("the building has no part in any rule");
         }
 
         [Test]

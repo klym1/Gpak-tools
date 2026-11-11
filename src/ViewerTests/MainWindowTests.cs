@@ -1123,6 +1123,7 @@ namespace ViewerTests
 
                 // The formations of ORDERS.LST follow the plain block; picking one forms the selected units up
                 // around their middle: three in the line, the one it has no place for behind it.
+                // Only those the nations' files let these units stand in are offered: not the ships' one.
                 var formations = window.FindControl<ComboBox>("FormationBox");
                 Assert.That(formations.Items.Select(item => item.ToString()), Is.EqualTo(new[] { "Block", "LINE3  \u00b7  3", "KARE4  \u00b7  4" }));
                 Assert.That(formations.SelectedIndex, Is.EqualTo(0));
@@ -1152,6 +1153,18 @@ namespace ViewerTests
                     , Is.EqualTo(new[] { -3 * 40 * Formation.RowSpacing, 0, 3 * 40 * Formation.RowSpacing }).Within(1e-6)
                 );
                 Assert.That(turned[3].X, Is.LessThan(target.X));
+
+                // With no unit selected every formation is offered, and the picked one stays picked.
+                Click(window, new Point(600, 30), MouseButton.Left);
+                Assert.That(window.SelectedFieldUnits, Is.Empty);
+                Assert.That(formations.Items.Select(item => item.ToString().Split(' ')[0]), Is.EqualTo(new[] { "Block", "LINE3", "KARE4", "SHIPS2" }));
+                Assert.That(formations.SelectedIndex, Is.EqualTo(1));
+                formations.SelectedIndex = 3;
+                Drag(window, new Point(40, 40), new Point(300, 260));
+                Assert.That(window.SelectedFieldUnits, Is.EquivalentTo(units));
+                Assert.That(formations.ItemCount, Is.EqualTo(3));
+                Assert.That(formations.SelectedIndex, Is.EqualTo(0), "the ships' formation is not for these units");
+                formations.SelectedIndex = 1;
 
                 // At their places the units turn to the formation's front.
                 for (var tick = 0; tick < 200 && units.Any(u => u.Movement.IsWalking); tick++)

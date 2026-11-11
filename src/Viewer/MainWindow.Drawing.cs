@@ -42,6 +42,23 @@ namespace Viewer
                 ? Math.Max(24, Math.Max(Math.Max(opaque.Width, opaque.Height) * 0.9, RingWidthOf(unit) + 8))
                 : RingWidthOf(unit) + 8;
 
+        /// <summary>The formation list offers what the selected units may stand in, by the nations' rules.</summary>
+        private void UpdateFormationBox()
+        {
+            var allowed = _catalog.FormationsFor(_fieldUnits
+                .Where(unit => unit.IsSelected && !unit.Kind.IsBuilding)
+                .Select(unit => unit.Kind));
+            if (allowed.SequenceEqual(_offeredFormations))
+            {
+                return;
+            }
+
+            var updating = _updatingControls;
+            _updatingControls = true;
+            OfferFormations(allowed);
+            _updatingControls = updating;
+        }
+
         /// <summary>Draws every unit: its current frame with its feet at its position, its ring and target.</summary>
         private void UpdateFieldView()
         {
@@ -122,6 +139,7 @@ namespace Viewer
             StandGroundBox.IsEnabled = holders.Count > 0;
             StandGroundBox.IsChecked = holders.Count > 0 && holders.All(unit => unit.StandsGround);
             UpdateAttackBox();
+            UpdateFormationBox();
             FieldHint.Text = selected == 0
                 ? "Click a unit, or drag a box around several, to select them (Shift adds to the selection). Pick a unit in the list to put another one on the field."
                 : selected + (selected == 1 ? " unit" : " units") + " selected: right-click where to go, or an enemy (a unit of another color) to attack it. Delete removes them.";
