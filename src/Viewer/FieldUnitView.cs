@@ -71,6 +71,9 @@ namespace Viewer
 
         internal int Detours { get; set; }
 
+        /// <summary>Ticks the unit still stands after something was in its way, before it walks on.</summary>
+        internal int HoldTicks { get; set; }
+
         /// <summary>Steps the unit has walked in a row with nothing in its way.</summary>
         internal int FreeSteps { get; set; }
 

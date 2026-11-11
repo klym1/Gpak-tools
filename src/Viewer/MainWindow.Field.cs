@@ -73,6 +73,9 @@ namespace Viewer
         private const int MaxWaitTicks = 25;
         private const int MaxDetours = 6;
 
+        /// <summary>Ticks a unit stands at least once something was in its way.</summary>
+        private const int MinHoldTicks = 6;
+
         /// <summary>Steps in a row with nothing in its way after which a unit is past what it went round.</summary>
         private const int StepsToGetOn = 8;
 

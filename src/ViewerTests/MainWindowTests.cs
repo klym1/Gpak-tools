@@ -1241,11 +1241,15 @@ namespace ViewerTests
                 Assert.That(behind.Movement.Position, Is.EqualTo(new Point(110, 150)));
                 Assert.That(behind.State.Code, Is.EqualTo("STAND"), "it does not walk on the spot");
 
-                // With the one ahead gone on, it walks again.
-                for (var tick = 0; tick < 10; tick++)
+                // With the one ahead gone on it stands a little longer, and then walks again.
+                var stood = 0;
+                while (behind.State.Code == "STAND" && stood < 50)
                 {
                     window.Tick();
+                    stood++;
                 }
+
+                Assert.That(stood, Is.InRange(6, 20));
 
                 Assert.That(behind.State.Code, Is.EqualTo("MOTION_L+MOTION_R"));
                 Assert.That(behind.Movement.Position.X, Is.GreaterThan(110));
