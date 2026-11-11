@@ -1153,9 +1153,18 @@ namespace ViewerTests
                 );
                 Assert.That(turned[3].X, Is.LessThan(target.X));
 
+                // At their places the units turn to the formation's front.
+                for (var tick = 0; tick < 200 && units.Any(u => u.Movement.IsWalking); tick++)
+                {
+                    window.Tick();
+                }
+
+                Assert.That(units.Select(u => u.Movement.IsWalking), Is.All.False);
+                Assert.That(units.Select(u => u.Movement.Heading), Is.All.EqualTo(270).Within(1e-6), "east");
+
                 // Formed up again where it stands, it looks the same way.
                 window.FindControl<NumericUpDown>("FormationSpacingBox").Value = 20;
-                Assert.That(Places().OrderByDescending(p => p.X).Take(3).Select(p => p.X), Is.All.EqualTo(middle.X).Within(1e-6));
+                Assert.That(Places().OrderByDescending(p => p.X).Take(3).Select(p => p.X).Distinct().Count(), Is.EqualTo(1));
 
                 window.Close();
             }

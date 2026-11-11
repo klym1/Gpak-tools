@@ -53,9 +53,21 @@ namespace Viewer
             }
             else
             {
-                Halt(unit);
-                SetFieldState(unit, StandStateOf(unit.Kind));
+                Arrive(unit);
             }
+        }
+
+        /// <summary>The unit stands where its way ends, and in a formation turns to its front.</summary>
+        private static void Arrive(FieldUnitView unit)
+        {
+            Halt(unit);
+            if (unit.FacingAtGoal is { } facing && unit.Target == null)
+            {
+                unit.Movement.TurnTo(facing);
+            }
+
+            unit.FacingAtGoal = null;
+            SetFieldState(unit, StandStateOf(unit.Kind));
         }
 
         /// <summary>Turns the unit to the next point of its route; false when there is none left.</summary>
@@ -141,8 +153,7 @@ namespace Viewer
                 unit.Detours = 0;
                 if (unit.Movement.Step() && !NextLeg(unit) && !FinishAtGoal(unit))
                 {
-                    Halt(unit);
-                    SetFieldState(unit, StandStateOf(unit.Kind));
+                    Arrive(unit);
                 }
 
                 return;
@@ -200,12 +211,28 @@ namespace Viewer
                     , soldiers.Count
                     , _formationFacing
                 );
-                SendToPlaces(soldiers, places.Soldiers, group);
-                SendToPlaces(commanders, places.Commanders, group);
+                var front = FieldUnit.HeadingOf(new Vector(_formationFacing.X, _formationFacing.Y * Formation.RowSpacing));
+                SendToPlaces(
+                      soldiers
+                    , places.Soldiers
+                    , group
+                    , front
+                );
+                SendToPlaces(
+                      commanders
+                    , places.Commanders
+                    , group
+                    , front
+                );
             }
             else
             {
-                SendToPlaces(group, Formation.Around(target, group.Count, group.Max(SpacingOf)), group);
+                SendToPlaces(
+                      group
+                    , Formation.Around(target, group.Count, group.Max(SpacingOf))
+                    , group
+                    , null
+                );
             }
 
             UpdateFieldView();
@@ -232,7 +259,12 @@ namespace Viewer
         /// <summary>Pixels a cell of a formation's picture is wide.</summary>
         private double FormationSpacing => (double) (FormationSpacingBox.Value ?? DefaultFormationSpacing);
 
-        private void SendToPlaces(IReadOnlyList<FieldUnitView> units, IReadOnlyList<Point> places, IReadOnlyList<FieldUnitView> group)
+        private void SendToPlaces(
+              IReadOnlyList<FieldUnitView> units
+            , IReadOnlyList<Point> places
+            , IReadOnlyList<FieldUnitView> group
+            , double? facing
+        )
         {
             var onField = places.Select(ClampToField).ToList();
             var assignment = Formation.Assign(units.Select(unit => unit.Movement.Position).ToList(), onField);
@@ -244,6 +276,7 @@ namespace Viewer
                 unit.Detours = 0;
                 unit.Next.Clear();
                 unit.ReadyFor = null;
+                unit.FacingAtGoal = facing;
                 WalkTo(unit, onField[assignment[i]], group.Contains);
             }
         }

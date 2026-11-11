@@ -342,6 +342,11 @@ namespace Viewer
             {
                 StepAlongRoute(unit);
             }
+            else if (unit.Target == null)
+            {
+                // A slow unit at its place in a formation turns to its front.
+                unit.Movement.Turn();
+            }
 
             return true;
         }

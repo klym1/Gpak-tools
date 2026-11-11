@@ -96,6 +96,9 @@ namespace Viewer
 
         internal int RestAfter { get; set; }
 
+        /// <summary>The way the unit turns once it is at its place in a formation (as its heading), or null.</summary>
+        internal double? FacingAtGoal { get; set; }
+
         /// <summary>The enemy the unit was sent to attack, or null.</summary>
         public FieldUnitView Target { get; internal set; }
 
